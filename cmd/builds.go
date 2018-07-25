@@ -7,19 +7,13 @@ import (
 
 	knativeApi "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/spf13/cobra"
-	"github.com/triggermesh/tm/lib/knative"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // buildsCmd represents the builds command
 var buildsCmd = &cobra.Command{
 	Use:   "builds",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "List of knative build resources",
 	Run: func(cmd *cobra.Command, args []string) {
 		list()
 	},
@@ -30,7 +24,7 @@ func init() {
 }
 
 func list() (*knativeApi.BuildList, error) {
-	l, err := knative.GetBuildListByNamespace(k8sclient, namespace)
+	l, err := k8sclient.BuildV1alpha1().Builds(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
