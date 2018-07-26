@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/user"
 
-	"github.com/knative/build/pkg/client/clientset/versioned"
+	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
+	servingApi "github.com/knative/serving/pkg/client/clientset/versioned"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
@@ -14,7 +16,10 @@ import (
 var (
 	cfgFile   string
 	namespace string
-	k8sclient *versioned.Clientset
+	build     *buildApi.Clientset
+	serving   *servingApi.Clientset
+	log       logrus.Logger
+	debug     bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -32,26 +37,37 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "k8s config file (default is ~/.kube/config)")
+	rootCmd.Flags().StringVar(&cfgFile, "config", "", "k8s config file (default is ~/.kube/config)")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
 	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
 }
 
 func initConfig() {
+	log = *logrus.New()
+	log.Out = os.Stdout
+	if debug {
+		log.Level = logrus.DebugLevel
+	}
+
 	if len(cfgFile) == 0 {
 		usr, err := user.Current()
 		if err != nil {
-			panic(err.Error())
+			log.Panicln(err)
 		}
 		cfgFile = usr.HomeDir + "/.kube/config"
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
 	if err != nil {
-		panic(err.Error())
+		log.Panicln(err)
 	}
 
-	k8sclient, err = versioned.NewForConfig(config)
+	build, err = buildApi.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		log.Panicln(err)
+	}
+	serving, err = servingApi.NewForConfig(config)
+	if err != nil {
+		log.Panicln(err)
 	}
 }
