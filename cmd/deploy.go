@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"errors"
-
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	v1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/spf13/cobra"
@@ -19,12 +17,7 @@ var (
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy knative service",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("Exactly one argument expected")
-		}
-		return nil
-	},
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		deploy(args)
 	},
@@ -48,6 +41,12 @@ func deploy(args []string) {
 			RunLatest: &v1alpha1.RunLatestType{
 				Configuration: v1alpha1.ConfigurationSpec{
 					RevisionTemplate: v1alpha1.RevisionTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								"sidecar.istio.io/inject": "true",
+							},
+							Name: args[0],
+						},
 						Spec: v1alpha1.RevisionSpec{
 							Container: corev1.Container{
 								Image: image,
@@ -103,17 +102,21 @@ func deploy(args []string) {
 			Labels: map[string]string{
 				"created-by": "tm",
 			},
-			// Annotations: map[string]string{},
+			// Annotations: map[string]string{
+			// "test": "test",
+			// },
 		},
 
 		Spec: spec,
 	}
+
+	log.Debugf("Service object: %+v\n", s)
+	log.Debugf("Service specs: %+v\n", s.Spec.RunLatest)
 
 	service, err := serving.ServingV1alpha1().Services(namespace).Create(&s)
 	if err != nil {
 		log.Errorln(err)
 		return
 	}
-	log.Debugf("+%v\n", service.Status)
 	log.Infof("Service %s successfully deployed\n", service.Name)
 }
