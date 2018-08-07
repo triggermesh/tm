@@ -43,7 +43,7 @@ var describeConfigurationCmd = &cobra.Command{
 
 var describeRevisionCmd = &cobra.Command{
 	Use:   "revision",
-	Short: "Knative service latest revision details",
+	Short: "Knative revision details",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		output, err := describeRevision(args)
@@ -98,11 +98,7 @@ func describeConfiguration(args []string) ([]byte, error) {
 }
 
 func describeRevision(args []string) ([]byte, error) {
-	configuration, err := serving.ServingV1alpha1().Configurations(namespace).Get(args[0], metav1.GetOptions{})
-	if err != nil {
-		return []byte{}, err
-	}
-	revisions, err := serving.ServingV1alpha1().Revisions(namespace).Get(configuration.Status.LatestCreatedRevisionName, metav1.GetOptions{})
+	revisions, err := serving.ServingV1alpha1().Revisions(namespace).Get(args[0], metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}
