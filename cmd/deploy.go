@@ -91,7 +91,7 @@ func deployService(args []string) {
 		log.Errorln(err)
 		return
 	}
-	log.Infof("Service %s successfully deployed\n", service.Name)
+	log.Infof("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", namespace, service.Name)
 }
 
 func deployKaniko() error {
@@ -125,16 +125,16 @@ func deployKaniko() error {
 						Name:  "build-and-push",
 						Image: "gcr.io/kaniko-project/executor",
 						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}"},
+						Env: []corev1.EnvVar{
+							corev1.EnvVar{
+								Name:  "DOCKER_CONFIG",
+								Value: "/docker-config",
+							},
+						},
 						VolumeMounts: []corev1.VolumeMount{
 							corev1.VolumeMount{
 								Name:      "docker-secret",
-								MountPath: "/secret",
-							},
-						},
-						Env: []corev1.EnvVar{
-							corev1.EnvVar{
-								Name:  "DOCKER_APPLICATION_CREDENTIALS",
-								Value: "/secret/docker-secret.json",
+								MountPath: "/docker-config",
 							},
 						},
 					},
@@ -145,6 +145,12 @@ func deployKaniko() error {
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "docker-secret",
+								// Items: []corev1.KeyToPath{
+								// 	corev1.KeyToPath{
+								// 		Key:  "config.json",
+								// 		Path: "config.json",
+								// 	},
+								// },
 							},
 						},
 					},
@@ -179,6 +185,7 @@ func fromImage(args []string) servingv1alpha1.ConfigurationSpec {
 }
 
 func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
+	image = "index.docker.io/triggermesh/" + args[0] + "-from-source:latest"
 	return servingv1alpha1.ConfigurationSpec{
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
@@ -191,8 +198,9 @@ func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
 				Name: "kaniko",
 				Arguments: []buildv1alpha1.ArgumentSpec{
 					{
-						Name:  "IMAGE",
-						Value: "docker.io/triggermesh/" + args[0] + "-from-source:latest",
+						Name: "IMAGE",
+						// TODO: replace triggermesh docker registry account
+						Value: image,
 					},
 				},
 			},
