@@ -86,12 +86,25 @@ func deployService(args []string) {
 	log.Debugf("Service object: %+v\n", s)
 	log.Debugf("Service specs: %+v\n", s.Spec.RunLatest)
 
-	service, err := serving.ServingV1alpha1().Services(namespace).Create(&s)
-	if err != nil {
+	service, err := serving.ServingV1alpha1().Services(namespace).Get(args[0], metav1.GetOptions{})
+	if err == nil {
+		s.ObjectMeta.ResourceVersion = service.ObjectMeta.ResourceVersion
+		service, err = serving.ServingV1alpha1().Services(namespace).Update(&s)
+		if err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Infof("Service update started. Run \"tm -n %s get revisions %s\" to see available revisions\n", namespace, service.Name)
+	} else if k8sErrors.IsNotFound(err) {
+		service, err := serving.ServingV1alpha1().Services(namespace).Create(&s)
+		if err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Infof("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", namespace, service.Name)
+	} else {
 		log.Errorln(err)
-		return
 	}
-	log.Infof("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", namespace, service.Name)
 }
 
 func deployKaniko() error {
