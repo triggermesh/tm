@@ -48,6 +48,3 @@
   name = "github.com/knative/serving"
   version = "0.1.0"
 
-[[constraint]]
-  name = "k8s.io/api"
-  version = "kubernetes-1.10.0"

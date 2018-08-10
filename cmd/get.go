@@ -52,12 +52,21 @@ var listRevisionsCmd = &cobra.Command{
 	},
 }
 
+var listPodsCmd = &cobra.Command{
+	Use:   "pods",
+	Short: "List of pods",
+	Run: func(cmd *cobra.Command, args []string) {
+		listPods(args)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(getCmd)
 	getCmd.AddCommand(listBuildsCmd)
 	getCmd.AddCommand(listServicesCmd)
 	getCmd.AddCommand(listRoutesCmd)
 	getCmd.AddCommand(listRevisionsCmd)
+	getCmd.AddCommand(listPodsCmd)
 }
 
 func listBuilds(args []string) {
@@ -147,6 +156,29 @@ func listRevisions(args []string) {
 		fmt.Fprintln(w, "Revision\tNamespace")
 		for _, revision := range list.Items {
 			fmt.Fprintln(w, fmt.Sprintf("%s\t%s\t", revision.Name, revision.Namespace))
+		}
+		w.Flush()
+	}
+}
+
+func listPods(args []string) {
+	list, err := core.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Errorln(err)
+		return
+	}
+
+	switch output {
+	case "json":
+		fmt.Println(toJSON(list))
+	case "yaml":
+		fmt.Println(toYAML(list))
+	default:
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.DiscardEmptyColumns)
+
+		fmt.Fprintln(w, "Pods\tNamespace")
+		for _, pod := range list.Items {
+			fmt.Fprintln(w, fmt.Sprintf("%s\t%s\t", pod.Name, pod.Namespace))
 		}
 		w.Flush()
 	}

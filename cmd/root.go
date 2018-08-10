@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -21,6 +22,7 @@ var (
 	namespace string
 	output    string
 	log       logrus.Logger
+	core      *kubernetes.Clientset
 	build     *buildApi.Clientset
 	serving   *servingApi.Clientset
 )
@@ -59,6 +61,10 @@ func initConfig() {
 		log.Level = logrus.DebugLevel
 	}
 
+	// if len(namespace) == 0 {
+	// 	namespace = os.Getenv("NAMESPACE")
+	// }
+
 	if len(cfgFile) == 0 {
 		usr, err := user.Current()
 		if err != nil {
@@ -77,6 +83,10 @@ func initConfig() {
 		log.Panicln(err)
 	}
 	serving, err = servingApi.NewForConfig(config)
+	if err != nil {
+		log.Panicln(err)
+	}
+	core, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Panicln(err)
 	}

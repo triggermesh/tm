@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	image, source, ports string
-	df                   = "/workspace/Dockerfile"
+	image, source, url string
+	df                 = "/workspace/Dockerfile"
 )
 
 // deployCmd represents the deploy command
@@ -29,7 +29,8 @@ var deployCmd = &cobra.Command{
 
 func init() {
 	deployCmd.Flags().StringVar(&image, "from-image", "", "Image to deploy")
-	deployCmd.Flags().StringVar(&source, "from-source", "", "Source URL to deploy")
+	deployCmd.Flags().StringVar(&source, "from-source", "", "Git source URL to deploy")
+	deployCmd.Flags().StringVar(&url, "from-url", "", "File source URL to deploy")
 	rootCmd.AddCommand(deployCmd)
 }
 
@@ -51,14 +52,21 @@ func deployService(args []string) {
 	}
 
 	configuration := servingv1alpha1.ConfigurationSpec{}
-	if len(image) != 0 {
+	switch {
+	case len(image) != 0:
 		configuration = fromImage(args)
-	} else if len(source) != 0 {
-		if err := deployKaniko(); err != nil {
+	case len(source) != 0:
+		if err := kanikoBuildTemplate(); err != nil {
 			log.Errorln(err)
 			return
 		}
 		configuration = fromSource(args)
+	case len(url) != 0:
+		if err := getterBuildTemplate(); err != nil {
+			log.Errorln(err)
+			return
+		}
+		configuration = fromURL(args)
 	}
 
 	s := servingv1alpha1.Service{
@@ -107,11 +115,10 @@ func deployService(args []string) {
 	}
 }
 
-func deployKaniko() error {
+func kanikoBuildTemplate() error {
 	_, err := build.BuildV1alpha1().BuildTemplates(namespace).Get("kaniko", metav1.GetOptions{})
 	if err == nil {
 		log.Debugln("kaniko already exist")
-		return nil
 	} else if k8sErrors.IsNotFound(err) {
 		log.Debugln("deploying kaniko")
 		bt := buildv1alpha1.BuildTemplate{
@@ -134,18 +141,18 @@ func deployKaniko() error {
 					},
 				},
 				Steps: []corev1.Container{
-					corev1.Container{
+					{
 						Name:  "build-and-push",
 						Image: "gcr.io/kaniko-project/executor",
 						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}"},
 						Env: []corev1.EnvVar{
-							corev1.EnvVar{
+							{
 								Name:  "DOCKER_CONFIG",
 								Value: "/docker-config",
 							},
 						},
 						VolumeMounts: []corev1.VolumeMount{
-							corev1.VolumeMount{
+							{
 								Name:      "docker-secret",
 								MountPath: "/docker-config",
 							},
@@ -153,17 +160,83 @@ func deployKaniko() error {
 					},
 				},
 				Volumes: []corev1.Volume{
-					corev1.Volume{
+					{
 						Name: "docker-secret",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName: "docker-secret",
-								// Items: []corev1.KeyToPath{
-								// 	corev1.KeyToPath{
-								// 		Key:  "config.json",
-								// 		Path: "config.json",
-								// 	},
-								// },
+							},
+						},
+					},
+				},
+			},
+		}
+		_, err = build.BuildV1alpha1().BuildTemplates(namespace).Create(&bt)
+		return err
+	}
+	return err
+}
+
+// https://gist.githubusercontent.com/tzununbekov/8c9573f75ea5a35d0c3c15b192adbc7e/raw/main.go
+
+func getterBuildTemplate() error {
+	_, err := build.BuildV1alpha1().BuildTemplates(namespace).Get("getandbuild", metav1.GetOptions{})
+	if err == nil {
+		log.Debugln("getandbuild template already exist")
+	} else if k8sErrors.IsNotFound(err) {
+		log.Debugln("deploying getandbuild template")
+		bt := buildv1alpha1.BuildTemplate{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "BuildTemplate",
+				APIVersion: "build.knative.dev/v1alpha1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "getandbuild",
+				Namespace: namespace,
+			},
+			Spec: buildv1alpha1.BuildTemplateSpec{
+				Parameters: []buildv1alpha1.ParameterSpec{
+					{
+						Name: "URL",
+					},
+					{
+						Name: "IMAGE",
+					},
+					{
+						Name:    "DOCKERFILE",
+						Default: &df,
+					},
+				},
+				Steps: []corev1.Container{
+					{
+						Name:  "get",
+						Image: "index.docker.io/byrnedo/alpine-curl",
+						Args:  []string{"-o", "${DOCKERFILE}", "${URL}"},
+					},
+					{
+						Name:  "build-and-push",
+						Image: "gcr.io/kaniko-project/executor",
+						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}"},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "DOCKER_CONFIG",
+								Value: "/docker-config",
+							},
+						},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      "docker-secret",
+								MountPath: "/docker-config",
+							},
+						},
+					},
+				},
+				Volumes: []corev1.Volume{
+					{
+						Name: "docker-secret",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "docker-secret",
 							},
 						},
 					},
@@ -214,6 +287,47 @@ func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
 						Name: "IMAGE",
 						// TODO: replace triggermesh docker registry account
 						Value: image,
+					},
+				},
+			},
+		},
+		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"sidecar.istio.io/inject": "true",
+				},
+				Name: args[0],
+			},
+			Spec: servingv1alpha1.RevisionSpec{
+				Container: corev1.Container{
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+				},
+			},
+		},
+	}
+}
+
+func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
+	image = "index.docker.io/triggermesh/" + args[0] + "-from-url:latest"
+	return servingv1alpha1.ConfigurationSpec{
+		Build: &buildv1alpha1.BuildSpec{
+			Source: &buildv1alpha1.SourceSpec{
+				Custom: &corev1.Container{
+					Image: "registry.hub.docker.com/library/busybox",
+				},
+			},
+			Template: &buildv1alpha1.TemplateInstantiationSpec{
+				Name: "getandbuild",
+				Arguments: []buildv1alpha1.ArgumentSpec{
+					{
+						Name: "IMAGE",
+						// TODO: replace triggermesh docker registry account
+						Value: image,
+					},
+					{
+						Name:  "URL",
+						Value: url,
 					},
 				},
 			},

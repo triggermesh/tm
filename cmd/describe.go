@@ -67,12 +67,26 @@ var describeRouteCmd = &cobra.Command{
 	},
 }
 
+var describePodCmd = &cobra.Command{
+	Use:   "pod",
+	Short: "Pod details",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		output, err := describePod(args)
+		if err != nil {
+			log.Errorln(err)
+		}
+		fmt.Println(string(output))
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(describeCmd)
 	describeCmd.AddCommand(describeServiceCmd)
 	describeCmd.AddCommand(describeConfigurationCmd)
 	describeCmd.AddCommand(describeRevisionCmd)
 	describeCmd.AddCommand(describeRouteCmd)
+	describeCmd.AddCommand(describePodCmd)
 }
 
 func describeService(args []string) ([]byte, error) {
@@ -81,9 +95,9 @@ func describeService(args []string) ([]byte, error) {
 		return []byte{}, err
 	}
 	if output == "yaml" {
-		return yaml.Marshal(service.Status)
+		return yaml.Marshal(service)
 	}
-	return json.MarshalIndent(service.Status, "", "	")
+	return json.MarshalIndent(service, "", "	")
 }
 
 func describeConfiguration(args []string) ([]byte, error) {
@@ -92,9 +106,9 @@ func describeConfiguration(args []string) ([]byte, error) {
 		return []byte{}, err
 	}
 	if output == "yaml" {
-		return yaml.Marshal(configuration.Status)
+		return yaml.Marshal(configuration)
 	}
-	return json.MarshalIndent(configuration.Status, "", "	")
+	return json.MarshalIndent(configuration, "", "	")
 }
 
 func describeRevision(args []string) ([]byte, error) {
@@ -103,9 +117,9 @@ func describeRevision(args []string) ([]byte, error) {
 		return []byte{}, err
 	}
 	if output == "yaml" {
-		return yaml.Marshal(revisions.Status)
+		return yaml.Marshal(revisions)
 	}
-	return json.MarshalIndent(revisions.Status, "", "	")
+	return json.MarshalIndent(revisions, "", "	")
 }
 
 func describeRoute(args []string) ([]byte, error) {
@@ -114,7 +128,18 @@ func describeRoute(args []string) ([]byte, error) {
 		return []byte{}, err
 	}
 	if output == "yaml" {
-		return yaml.Marshal(routes.Status)
+		return yaml.Marshal(routes)
 	}
-	return json.MarshalIndent(routes.Status, "", "	")
+	return json.MarshalIndent(routes, "", "	")
+}
+
+func describePod(args []string) ([]byte, error) {
+	pods, err := core.CoreV1().Pods(namespace).Get(args[0], metav1.GetOptions{})
+	if err != nil {
+		return []byte{}, err
+	}
+	if output == "yaml" {
+		return yaml.Marshal(pods)
+	}
+	return json.MarshalIndent(pods, "", "	")
 }
