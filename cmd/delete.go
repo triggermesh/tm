@@ -21,7 +21,7 @@ var deleteServiceCmd = &cobra.Command{
 			log.Errorln(err)
 			return
 		}
-		log.Info("Service deleted")
+		log.Info("Service is being deleted")
 	},
 }
 

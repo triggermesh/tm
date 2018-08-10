@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"fmt"
+	"io/ioutil"
+	"time"
 
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
@@ -12,8 +13,8 @@ import (
 )
 
 var (
-	image, source, url string
-	df                 = "/workspace/Dockerfile"
+	image, source, url, path string
+	df                       = "/workspace/Dockerfile"
 )
 
 // deployCmd represents the deploy command
@@ -22,7 +23,6 @@ var deployCmd = &cobra.Command{
 	Short: "Deploy knative service",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// prepareNetwork(args)
 		deployService(args)
 	},
 }
@@ -30,19 +30,9 @@ var deployCmd = &cobra.Command{
 func init() {
 	deployCmd.Flags().StringVar(&image, "from-image", "", "Image to deploy")
 	deployCmd.Flags().StringVar(&source, "from-source", "", "Git source URL to deploy")
+	deployCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
 	deployCmd.Flags().StringVar(&url, "from-url", "", "File source URL to deploy")
 	rootCmd.AddCommand(deployCmd)
-}
-
-func prepareNetwork(args []string) {
-	// net := istiov1alpha3.VirtualService{}
-
-	vs, err := serving.NetworkingV1alpha3().Gateways(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		log.Errorln(err)
-		return
-	}
-	fmt.Println(vs.Items)
 }
 
 func deployService(args []string) {
@@ -67,8 +57,24 @@ func deployService(args []string) {
 			return
 		}
 		configuration = fromURL(args)
+	case len(path) != 0:
+		if err := createConfigMap(args); err != nil {
+			log.Errorln(err)
+			return
+		}
+		if err := kanikoBuildTemplate(); err != nil {
+			log.Errorln(err)
+			return
+		}
+		configuration = fromFile(args)
 	}
 
+	configuration.RevisionTemplate.Spec.Container.Env = []corev1.EnvVar{
+		{
+			Name:  "timestamp",
+			Value: time.Now().Format("2006-01-02 15:04:05"),
+		},
+	}
 	s := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -78,6 +84,9 @@ func deployService(args []string) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      args[0],
 			Namespace: namespace,
+			CreationTimestamp: metav1.Time{
+				time.Now(),
+			},
 			Labels: map[string]string{
 				"created-by": "tm",
 				// "knative":    "ingressgateway",
@@ -132,10 +141,10 @@ func kanikoBuildTemplate() error {
 			},
 			Spec: buildv1alpha1.BuildTemplateSpec{
 				Parameters: []buildv1alpha1.ParameterSpec{
-					buildv1alpha1.ParameterSpec{
+					{
 						Name: "IMAGE",
 					},
-					buildv1alpha1.ParameterSpec{
+					{
 						Name:    "DOCKERFILE",
 						Default: &df,
 					},
@@ -156,6 +165,10 @@ func kanikoBuildTemplate() error {
 								Name:      "docker-secret",
 								MountPath: "/docker-config",
 							},
+							{
+								Name:      "docker-file",
+								MountPath: "/docker-file",
+							},
 						},
 					},
 				},
@@ -168,6 +181,14 @@ func kanikoBuildTemplate() error {
 							},
 						},
 					},
+					{
+						Name: "docker-file",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{Name: "dockerfile"},
+							},
+						},
+					},
 				},
 			},
 		}
@@ -176,8 +197,6 @@ func kanikoBuildTemplate() error {
 	}
 	return err
 }
-
-// https://gist.githubusercontent.com/tzununbekov/8c9573f75ea5a35d0c3c15b192adbc7e/raw/main.go
 
 func getterBuildTemplate() error {
 	_, err := build.BuildV1alpha1().BuildTemplates(namespace).Get("getandbuild", metav1.GetOptions{})
@@ -256,9 +275,6 @@ func fromImage(args []string) servingv1alpha1.ConfigurationSpec {
 				Annotations: map[string]string{
 					"sidecar.istio.io/inject": "true",
 				},
-				// Labels: map[string]string{
-				// "knative": "ingressgateway",
-				// },
 				Name: args[0],
 			},
 			Spec: servingv1alpha1.RevisionSpec{
@@ -347,4 +363,75 @@ func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 		},
 	}
+}
+
+func fromFile(args []string) servingv1alpha1.ConfigurationSpec {
+	image = "index.docker.io/triggermesh/" + args[0] + "-from-file:latest"
+	return servingv1alpha1.ConfigurationSpec{
+		Build: &buildv1alpha1.BuildSpec{
+			Source: &buildv1alpha1.SourceSpec{
+				Custom: &corev1.Container{
+					Image: "registry.hub.docker.com/library/busybox",
+				},
+			},
+			Template: &buildv1alpha1.TemplateInstantiationSpec{
+				Name: "kaniko",
+				Arguments: []buildv1alpha1.ArgumentSpec{
+					{
+						Name: "IMAGE",
+						// TODO: replace triggermesh docker registry account
+						Value: image,
+					},
+					{
+						Name:  "DOCKERFILE",
+						Value: "/docker-file/" + args[0],
+					},
+				},
+			},
+		},
+		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: args[0],
+				Annotations: map[string]string{
+					"sidecar.istio.io/inject": "true",
+				},
+			},
+			Spec: servingv1alpha1.RevisionSpec{
+				Container: corev1.Container{
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+				},
+			},
+		},
+	}
+}
+
+func createConfigMap(args []string) error {
+	filebody, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	newmap := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "dockerfile",
+			Namespace: namespace,
+		},
+		Data: map[string]string{
+			args[0]: string(filebody),
+		},
+	}
+	cm, err := core.CoreV1().ConfigMaps(namespace).Get("dockerfile", metav1.GetOptions{})
+	if err == nil {
+		newmap.ObjectMeta.ResourceVersion = cm.ObjectMeta.ResourceVersion
+		_, err = core.CoreV1().ConfigMaps(namespace).Update(&newmap)
+		return err
+	} else if k8sErrors.IsNotFound(err) {
+		_, err = core.CoreV1().ConfigMaps(namespace).Create(&newmap)
+		return err
+	}
+	return err
 }
