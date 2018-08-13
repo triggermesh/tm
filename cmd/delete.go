@@ -25,7 +25,91 @@ var deleteServiceCmd = &cobra.Command{
 	},
 }
 
+var deleteConfigurationCmd = &cobra.Command{
+	Use:   "configuration",
+	Short: "Delete knative configuration resource",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := serving.ServingV1alpha1().Configurations(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Info("Configuration is being deleted")
+	},
+}
+
+var deleteBuildCmd = &cobra.Command{
+	Use:   "build",
+	Short: "Delete knative build resource",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := build.BuildV1alpha1().Builds(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Info("Build is being deleted")
+	},
+}
+
+var deleteBuildTemplateCmd = &cobra.Command{
+	Use:   "buildtemplate",
+	Short: "Delete knative buildtemplate resource",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := build.BuildV1alpha1().BuildTemplates(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Info("Buildtemplate is being deleted")
+	},
+}
+
+var deleteRevisionCmd = &cobra.Command{
+	Use:   "revision",
+	Short: "Delete knative revision resource",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := serving.ServingV1alpha1().Revisions(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Info("Revision is being deleted")
+	},
+}
+
+var deleteRouteCmd = &cobra.Command{
+	Use:   "route",
+	Short: "Delete knative route resource",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := serving.ServingV1alpha1().Routes(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Info("Route is being deleted")
+	},
+}
+
+var deletePodCmd = &cobra.Command{
+	Use:   "pod",
+	Short: "Delete kubernetes pod resource",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := core.CoreV1().Pods(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Info("Pod is being deleted")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(deleteCmd)
 	deleteCmd.AddCommand(deleteServiceCmd)
+	deleteCmd.AddCommand(deleteConfigurationCmd)
+	deleteCmd.AddCommand(deleteBuildCmd)
+	deleteCmd.AddCommand(deleteBuildTemplateCmd)
+	deleteCmd.AddCommand(deleteRevisionCmd)
+	deleteCmd.AddCommand(deleteRouteCmd)
+	deleteCmd.AddCommand(deletePodCmd)
 }

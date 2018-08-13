@@ -80,6 +80,32 @@ var describePodCmd = &cobra.Command{
 	},
 }
 
+var describeBuildCmd = &cobra.Command{
+	Use:   "build",
+	Short: "Build details",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		output, err := describeBuild(args)
+		if err != nil {
+			log.Errorln(err)
+		}
+		fmt.Println(string(output))
+	},
+}
+
+var describeBuildTemplateCmd = &cobra.Command{
+	Use:   "buildtemplate",
+	Short: "Buildtemplate details",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		output, err := describeBuildTemplate(args)
+		if err != nil {
+			log.Errorln(err)
+		}
+		fmt.Println(string(output))
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(describeCmd)
 	describeCmd.AddCommand(describeServiceCmd)
@@ -87,6 +113,9 @@ func init() {
 	describeCmd.AddCommand(describeRevisionCmd)
 	describeCmd.AddCommand(describeRouteCmd)
 	describeCmd.AddCommand(describePodCmd)
+	describeCmd.AddCommand(describeBuildCmd)
+	describeCmd.AddCommand(describeBuildTemplateCmd)
+
 }
 
 func describeService(args []string) ([]byte, error) {
@@ -142,4 +171,26 @@ func describePod(args []string) ([]byte, error) {
 		return yaml.Marshal(pods)
 	}
 	return json.MarshalIndent(pods, "", "	")
+}
+
+func describeBuild(args []string) ([]byte, error) {
+	build, err := build.BuildV1alpha1().Builds(namespace).Get(args[0], metav1.GetOptions{})
+	if err != nil {
+		return []byte{}, err
+	}
+	if output == "yaml" {
+		return yaml.Marshal(build)
+	}
+	return json.MarshalIndent(build, "", "	")
+}
+
+func describeBuildTemplate(args []string) ([]byte, error) {
+	buildtemplate, err := build.BuildV1alpha1().BuildTemplates(namespace).Get(args[0], metav1.GetOptions{})
+	if err != nil {
+		return []byte{}, err
+	}
+	if output == "yaml" {
+		return yaml.Marshal(buildtemplate)
+	}
+	return json.MarshalIndent(buildtemplate, "", "	")
 }

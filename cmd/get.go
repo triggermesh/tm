@@ -60,6 +60,22 @@ var listPodsCmd = &cobra.Command{
 	},
 }
 
+var listBuildTemplatesCmd = &cobra.Command{
+	Use:   "buildtemplates",
+	Short: "List of buildtemplates",
+	Run: func(cmd *cobra.Command, args []string) {
+		listBuildTemplates(args)
+	},
+}
+
+var listConfigurationsCmd = &cobra.Command{
+	Use:   "configurations",
+	Short: "List of configurations",
+	Run: func(cmd *cobra.Command, args []string) {
+		listConfigurations(args)
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(getCmd)
 	getCmd.AddCommand(listBuildsCmd)
@@ -67,6 +83,8 @@ func init() {
 	getCmd.AddCommand(listRoutesCmd)
 	getCmd.AddCommand(listRevisionsCmd)
 	getCmd.AddCommand(listPodsCmd)
+	getCmd.AddCommand(listBuildTemplatesCmd)
+	getCmd.AddCommand(listConfigurationsCmd)
 }
 
 func listBuilds(args []string) {
@@ -179,6 +197,52 @@ func listPods(args []string) {
 		fmt.Fprintln(w, "Pods\tNamespace")
 		for _, pod := range list.Items {
 			fmt.Fprintln(w, fmt.Sprintf("%s\t%s\t", pod.Name, pod.Namespace))
+		}
+		w.Flush()
+	}
+}
+
+func listBuildTemplates(args []string) {
+	list, err := build.BuildV1alpha1().BuildTemplates(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Errorln(err)
+		return
+	}
+
+	switch output {
+	case "json":
+		fmt.Println(toJSON(list))
+	case "yaml":
+		fmt.Println(toYAML(list))
+	default:
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.DiscardEmptyColumns)
+
+		fmt.Fprintln(w, "Template\tNamespace")
+		for _, template := range list.Items {
+			fmt.Fprintln(w, fmt.Sprintf("%s\t%s\t", template.Name, template.Namespace))
+		}
+		w.Flush()
+	}
+}
+
+func listConfigurations(args []string) {
+	list, err := serving.ServingV1alpha1().Configurations(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Errorln(err)
+		return
+	}
+
+	switch output {
+	case "json":
+		fmt.Println(toJSON(list))
+	case "yaml":
+		fmt.Println(toYAML(list))
+	default:
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.DiscardEmptyColumns)
+
+		fmt.Fprintln(w, "Configuration\tNamespace")
+		for _, configuration := range list.Items {
+			fmt.Fprintln(w, fmt.Sprintf("%s\t%s\t", configuration.Name, configuration.Namespace))
 		}
 		w.Flush()
 	}

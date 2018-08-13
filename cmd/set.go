@@ -31,8 +31,8 @@ var setRouteCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(setCmd)
 	setCmd.AddCommand(setRouteCmd)
-	setRouteCmd.Flags().StringSliceVarP(&revisions, "revisions", "r", []string{}, "Blabla")
-	setRouteCmd.Flags().StringSliceVarP(&configs, "configs", "c", []string{}, "Blabla")
+	setRouteCmd.Flags().StringSliceVarP(&revisions, "revisions", "r", []string{}, "Set traffic percentage for revision")
+	setRouteCmd.Flags().StringSliceVarP(&configs, "configs", "c", []string{}, "Set traffic percentage for configuration")
 }
 
 func split(slice []string) map[string]int {
