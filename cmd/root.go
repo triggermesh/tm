@@ -29,8 +29,9 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "tm",
-	Short: "Triggermesh CLI",
+	Use:     "tm",
+	Short:   "Triggermesh CLI",
+	Version: "0.0.1",
 }
 
 func Execute() {

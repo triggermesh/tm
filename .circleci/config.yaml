@@ -1,0 +1,61 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/github.com/triggermesh/tm
+
+    docker:
+      - image: circleci/golang
+
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-pkg-cache
+
+      - run:
+          name: Run unit tests
+          command: |
+            go test | tee ${TEST_RESULTS}/go-test.out
+
+      - save_cache:
+          key: v1-pkg-cache
+          paths:
+            - "/go/pkg"
+      
+      - run:
+          name: Build binary
+          command: |
+            go build
+
+      - store_artifacts:
+          path: tm
+
+publish-github-release:
+  docker:
+    - image: circleci/golang
+  steps:
+    - attach_workspace:
+        at: /tmp/artifacts
+    - run:
+        name: "Publish Release on GitHub"
+        command: |
+          go get github.com/tcnksm/ghr
+          VERSION=$(/tmp/artifacts/tm --version)
+          ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts/
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - publish-github-release:
+          requires:
+            - build
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
