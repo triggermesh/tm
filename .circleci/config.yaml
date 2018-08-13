@@ -40,7 +40,7 @@ publish-github-release:
         name: "Publish Release on GitHub"
         command: |
           go get github.com/tcnksm/ghr
-          VERSION=$(/tmp/artifacts/tm --version)
+          VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
           ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts/
 
 workflows:

@@ -23,7 +23,9 @@ var deployCmd = &cobra.Command{
 	Short: "Deploy knative service",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		deployService(args)
+		if err := deployService(args); err != nil {
+			log.Errorln(err)
+		}
 	},
 }
 
@@ -35,36 +37,27 @@ func init() {
 	rootCmd.AddCommand(deployCmd)
 }
 
-func deployService(args []string) {
-	if len(image) != 0 && len(source) != 0 {
-		log.Errorln("Only one image source allowed for deploy")
-		return
-	}
-
+func deployService(args []string) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	switch {
 	case len(image) != 0:
 		configuration = fromImage(args)
 	case len(source) != 0:
 		if err := kanikoBuildTemplate(); err != nil {
-			log.Errorln(err)
-			return
+			return err
 		}
 		configuration = fromSource(args)
 	case len(url) != 0:
 		if err := getterBuildTemplate(); err != nil {
-			log.Errorln(err)
-			return
+			return err
 		}
 		configuration = fromURL(args)
 	case len(path) != 0:
 		if err := createConfigMap(args); err != nil {
-			log.Errorln(err)
-			return
+			return err
 		}
 		if err := kanikoBuildTemplate(); err != nil {
-			log.Errorln(err)
-			return
+			return err
 		}
 		configuration = fromFile(args)
 	}
@@ -89,7 +82,6 @@ func deployService(args []string) {
 			},
 			Labels: map[string]string{
 				"created-by": "tm",
-				// "knative":    "ingressgateway",
 			},
 		},
 
@@ -108,20 +100,19 @@ func deployService(args []string) {
 		s.ObjectMeta.ResourceVersion = service.ObjectMeta.ResourceVersion
 		service, err = serving.ServingV1alpha1().Services(namespace).Update(&s)
 		if err != nil {
-			log.Errorln(err)
-			return
+			return err
 		}
 		log.Infof("Service update started. Run \"tm -n %s get revisions %s\" to see available revisions\n", namespace, service.Name)
 	} else if k8sErrors.IsNotFound(err) {
 		service, err := serving.ServingV1alpha1().Services(namespace).Create(&s)
 		if err != nil {
-			log.Errorln(err)
-			return
+			return err
 		}
 		log.Infof("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", namespace, service.Name)
 	} else {
-		log.Errorln(err)
+		return err
 	}
+	return nil
 }
 
 func kanikoBuildTemplate() error {

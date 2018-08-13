@@ -22,7 +22,9 @@ var listBuildsCmd = &cobra.Command{
 	Use:   "builds",
 	Short: "List of knative build resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		listBuilds(args)
+		if err := listBuilds(args); err != nil {
+			log.Errorln(err)
+		}
 	},
 }
 
@@ -31,7 +33,9 @@ var listServicesCmd = &cobra.Command{
 	Use:   "services",
 	Short: "List of knative service resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		listServices(args)
+		if err := listServices(args); err != nil {
+			log.Errorln(err)
+		}
 	},
 }
 
@@ -40,7 +44,9 @@ var listRoutesCmd = &cobra.Command{
 	Use:   "routes",
 	Short: "List of knative routes resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		listRoutes(args)
+		if err := listRoutes(args); err != nil {
+			log.Errorln(err)
+		}
 	},
 }
 
@@ -48,7 +54,9 @@ var listRevisionsCmd = &cobra.Command{
 	Use:   "revisions",
 	Short: "List of knative revision resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		listRevisions(args)
+		if err := listRevisions(args); err != nil {
+			log.Errorln(err)
+		}
 	},
 }
 
@@ -56,7 +64,9 @@ var listPodsCmd = &cobra.Command{
 	Use:   "pods",
 	Short: "List of pods",
 	Run: func(cmd *cobra.Command, args []string) {
-		listPods(args)
+		if err := listPods(args); err != nil {
+			log.Errorln(err)
+		}
 	},
 }
 
@@ -64,7 +74,9 @@ var listBuildTemplatesCmd = &cobra.Command{
 	Use:   "buildtemplates",
 	Short: "List of buildtemplates",
 	Run: func(cmd *cobra.Command, args []string) {
-		listBuildTemplates(args)
+		if err := listBuildTemplates(args); err != nil {
+			log.Errorln(err)
+		}
 	},
 }
 
@@ -72,7 +84,9 @@ var listConfigurationsCmd = &cobra.Command{
 	Use:   "configurations",
 	Short: "List of configurations",
 	Run: func(cmd *cobra.Command, args []string) {
-		listConfigurations(args)
+		if err := listConfigurations(args); err != nil {
+			log.Errorln(err)
+		}
 	},
 }
 
@@ -87,11 +101,10 @@ func init() {
 	getCmd.AddCommand(listConfigurationsCmd)
 }
 
-func listBuilds(args []string) {
+func listBuilds(args []string) error {
 	list, err := build.BuildV1alpha1().Builds(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		log.Error(err)
-		return
+		return err
 	}
 
 	switch output {
@@ -108,13 +121,13 @@ func listBuilds(args []string) {
 		}
 		w.Flush()
 	}
+	return err
 }
 
-func listServices(args []string) {
+func listServices(args []string) error {
 	list, err := serving.ServingV1alpha1().Services(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		log.Errorln(err)
-		return
+		return err
 	}
 
 	switch output {
@@ -131,13 +144,13 @@ func listServices(args []string) {
 		}
 		w.Flush()
 	}
+	return err
 }
 
-func listRoutes(args []string) {
+func listRoutes(args []string) error {
 	list, err := serving.ServingV1alpha1().Routes(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		log.Errorln(err)
-		return
+		return err
 	}
 
 	switch output {
@@ -154,13 +167,13 @@ func listRoutes(args []string) {
 		}
 		w.Flush()
 	}
+	return err
 }
 
-func listRevisions(args []string) {
+func listRevisions(args []string) error {
 	list, err := serving.ServingV1alpha1().Revisions(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		log.Errorln(err)
-		return
+		return err
 	}
 
 	switch output {
@@ -177,13 +190,13 @@ func listRevisions(args []string) {
 		}
 		w.Flush()
 	}
+	return err
 }
 
-func listPods(args []string) {
+func listPods(args []string) error {
 	list, err := core.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		log.Errorln(err)
-		return
+		return err
 	}
 
 	switch output {
@@ -200,13 +213,13 @@ func listPods(args []string) {
 		}
 		w.Flush()
 	}
+	return err
 }
 
-func listBuildTemplates(args []string) {
+func listBuildTemplates(args []string) error {
 	list, err := build.BuildV1alpha1().BuildTemplates(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		log.Errorln(err)
-		return
+		return err
 	}
 
 	switch output {
@@ -223,13 +236,13 @@ func listBuildTemplates(args []string) {
 		}
 		w.Flush()
 	}
+	return err
 }
 
-func listConfigurations(args []string) {
+func listConfigurations(args []string) error {
 	list, err := serving.ServingV1alpha1().Configurations(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		log.Errorln(err)
-		return
+		return err
 	}
 
 	switch output {
@@ -246,4 +259,5 @@ func listConfigurations(args []string) {
 		}
 		w.Flush()
 	}
+	return err
 }
