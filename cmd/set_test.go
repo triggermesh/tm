@@ -21,7 +21,7 @@ func TestSet(t *testing.T) {
 	initConfig()
 
 	var r routes
-	name := "test-get-" + time.Now().Format("20060102150405")
+	name := "test-set-" + time.Now().Format("20060102150405")
 	namespace = "default"
 	image = "gcr.io/knative-samples/helloworld-go"
 

@@ -82,7 +82,7 @@ var deleteRouteCmd = &cobra.Command{
 	Short: "Delete knative route resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := deleteRoute; err != nil {
+		if err := deleteRoute(args); err != nil {
 			log.Errorln(err)
 			return
 		}
