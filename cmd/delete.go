@@ -17,7 +17,7 @@ var deleteServiceCmd = &cobra.Command{
 	Short: "Delete knative service resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := serving.ServingV1alpha1().Services(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+		if err := deleteService(args); err != nil {
 			log.Errorln(err)
 			return
 		}
@@ -30,7 +30,7 @@ var deleteConfigurationCmd = &cobra.Command{
 	Short: "Delete knative configuration resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := serving.ServingV1alpha1().Configurations(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+		if err := deleteConfiguration; err != nil {
 			log.Errorln(err)
 			return
 		}
@@ -43,7 +43,7 @@ var deleteBuildCmd = &cobra.Command{
 	Short: "Delete knative build resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := build.BuildV1alpha1().Builds(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+		if err := deleteBuild; err != nil {
 			log.Errorln(err)
 			return
 		}
@@ -56,7 +56,7 @@ var deleteBuildTemplateCmd = &cobra.Command{
 	Short: "Delete knative buildtemplate resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := build.BuildV1alpha1().BuildTemplates(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+		if err := deleteBuildTemplate(args); err != nil {
 			log.Errorln(err)
 			return
 		}
@@ -69,7 +69,7 @@ var deleteRevisionCmd = &cobra.Command{
 	Short: "Delete knative revision resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := serving.ServingV1alpha1().Revisions(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+		if err := deleteRevision(args); err != nil {
 			log.Errorln(err)
 			return
 		}
@@ -82,7 +82,7 @@ var deleteRouteCmd = &cobra.Command{
 	Short: "Delete knative route resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := serving.ServingV1alpha1().Routes(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+		if err := deleteRoute; err != nil {
 			log.Errorln(err)
 			return
 		}
@@ -95,7 +95,7 @@ var deletePodCmd = &cobra.Command{
 	Short: "Delete kubernetes pod resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := core.CoreV1().Pods(namespace).Delete(args[0], &metav1.DeleteOptions{}); err != nil {
+		if err := deletePod(args); err != nil {
 			log.Errorln(err)
 			return
 		}
@@ -112,4 +112,32 @@ func init() {
 	deleteCmd.AddCommand(deleteRevisionCmd)
 	deleteCmd.AddCommand(deleteRouteCmd)
 	deleteCmd.AddCommand(deletePodCmd)
+}
+
+func deletePod(args []string) error {
+	return core.CoreV1().Pods(namespace).Delete(args[0], &metav1.DeleteOptions{})
+}
+
+func deleteRoute(args []string) error {
+	return serving.ServingV1alpha1().Routes(namespace).Delete(args[0], &metav1.DeleteOptions{})
+}
+
+func deleteRevision(args []string) error {
+	return serving.ServingV1alpha1().Revisions(namespace).Delete(args[0], &metav1.DeleteOptions{})
+}
+
+func deleteBuildTemplate(args []string) error {
+	return build.BuildV1alpha1().BuildTemplates(namespace).Delete(args[0], &metav1.DeleteOptions{})
+}
+
+func deleteBuild(args []string) error {
+	return build.BuildV1alpha1().Builds(namespace).Delete(args[0], &metav1.DeleteOptions{})
+}
+
+func deleteConfiguration(args []string) error {
+	return serving.ServingV1alpha1().Configurations(namespace).Delete(args[0], &metav1.DeleteOptions{})
+}
+
+func deleteService(args []string) error {
+	return serving.ServingV1alpha1().Services(namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

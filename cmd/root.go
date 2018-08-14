@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
@@ -10,7 +9,6 @@ import (
 	servingApi "github.com/knative/serving/pkg/client/clientset/versioned"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	yaml "gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
@@ -91,20 +89,4 @@ func initConfig() {
 	if err != nil {
 		log.Panicln(err)
 	}
-}
-
-func toJSON(v interface{}) string {
-	o, err := json.MarshalIndent(v, "", "    ")
-	if err != nil {
-		log.Errorln(err)
-	}
-	return string(o)
-}
-
-func toYAML(v interface{}) string {
-	o, err := yaml.Marshal(v)
-	if err != nil {
-		log.Errorln(err)
-	}
-	return string(o)
 }

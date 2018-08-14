@@ -24,7 +24,11 @@ var setRouteCmd = &cobra.Command{
 	Short: "Configure service route",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		setPercentage(args)
+		if err := setPercentage(args); err != nil {
+			log.Errorln(err)
+			return
+		}
+		log.Infoln("Routes successfully updated")
 	},
 }
 
@@ -53,7 +57,7 @@ func split(slice []string) map[string]int {
 	return m
 }
 
-func setPercentage(args []string) {
+func setPercentage(args []string) error {
 	targets := []servingv1alpha1.TrafficTarget{}
 	// TODO: add named target support
 	for revision, percent := range split(revisions) {
@@ -71,8 +75,7 @@ func setPercentage(args []string) {
 
 	r, err := serving.ServingV1alpha1().Routes(namespace).Get(args[0], metav1.GetOptions{})
 	if err != nil {
-		log.Errorln(err)
-		return
+		return err
 	}
 	// fmt.Printf("%+v\n", routes)
 	route := servingv1alpha1.Route{
@@ -93,8 +96,7 @@ func setPercentage(args []string) {
 	route.ObjectMeta.ResourceVersion = r.ObjectMeta.ResourceVersion
 	route.Spec.Traffic = targets
 	if _, err = serving.ServingV1alpha1().Routes(namespace).Update(&route); err != nil {
-		log.Errorln(err)
-		return
+		return err
 	}
-	log.Infoln("Routes successfully updated")
+	return nil
 }

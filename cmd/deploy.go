@@ -19,7 +19,10 @@ var (
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use:   "deploy",
+	Use: "deploy",
+	Annotations: map[string]string{
+		"Name": "sdfsdf",
+	},
 	Short: "Deploy knative service",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
