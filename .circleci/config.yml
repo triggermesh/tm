@@ -27,7 +27,7 @@ jobs:
           keys:
             - v1-pkg-cache
       - attach_workspace:
-          at: ${HOME}/.kube
+          at: /home/circleci/.kube
       - run:
           name: Run unit tests
           command: |

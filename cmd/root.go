@@ -41,8 +41,8 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.Flags().StringVar(&cfgFile, "config", "", "k8s config file (default is ~/.kube/config)")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "k8s config file (default is ~/.kube/config)")
 	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
 }
