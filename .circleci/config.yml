@@ -13,7 +13,9 @@ jobs:
           gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
           gcloud --quiet container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
       - persist_to_workspace:
-          root: ${KUBECONFIG}
+          root: /tmp
+          paths:
+            - config
 
   build:
     working_directory: /go/src/github.com/triggermesh/tm
