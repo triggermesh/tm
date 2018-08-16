@@ -60,10 +60,6 @@ func initConfig() {
 		log.Level = logrus.DebugLevel
 	}
 
-	// if len(namespace) == 0 {
-	// 	namespace = os.Getenv("NAMESPACE")
-	// }
-
 	if len(cfgFile) == 0 {
 		usr, err := user.Current()
 		if err != nil {

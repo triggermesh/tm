@@ -65,7 +65,7 @@ func TestDeploy(t *testing.T) {
 		if err := deployService([]string{name}); err != nil {
 			t.Error(err)
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(5 * time.Second)
 	})
 	t.Run("Describe service update", func(t *testing.T) {
 		data, err := describeService([]string{name})

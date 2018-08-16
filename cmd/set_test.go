@@ -42,7 +42,7 @@ func TestSet(t *testing.T) {
 		if err := deployService([]string{name}); err != nil {
 			t.Error(err)
 		}
-		time.Sleep(5 * time.Second)
+		time.Sleep(7 * time.Second)
 	})
 	t.Run("Setting route traffic percentage", func(t *testing.T) {
 		if err := setPercentage([]string{name}); err != nil {
@@ -68,6 +68,9 @@ func TestSet(t *testing.T) {
 		}
 	})
 	t.Run("Delete service", func(t *testing.T) {
+		if err := deleteRoute([]string{name}); err != nil {
+			t.Error(err)
+		}
 		if err := deleteService([]string{name}); err != nil {
 			t.Error(err)
 		}

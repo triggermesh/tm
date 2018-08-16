@@ -1,57 +1,74 @@
 version: 2
 jobs:
+  auth:
+    docker:
+    - image: google/cloud-sdk
+    steps:
+      - run:
+          name: Store Service Account
+          command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
+      - run: |
+          sudo gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+          sudo gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+          sudo gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+          sudo gcloud --quiet container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
+      - persist_to_workspace:
+          root: ${KUBECONFIG}
+
   build:
     working_directory: /go/src/github.com/triggermesh/tm
-
     docker:
       - image: circleci/golang
-
     steps:
       - checkout
       - restore_cache:
           keys:
             - v1-pkg-cache
-
+      - attach_workspace:
+          at: ${HOME}/.kube
       - run:
           name: Run unit tests
           command: |
-            go test | tee ${TEST_RESULTS}/go-test.out
-
+            go test | tee ${HOME}/go-test.out
+      - store_test_results:
+          path: ${HOME}/go-test.out
       - save_cache:
           key: v1-pkg-cache
           paths:
             - "/go/pkg"
-      
       - run:
           name: Build binary
           command: |
             go build
 
-      - store_artifacts:
-          path: tm
-
-publish-github-release:
-  docker:
-    - image: circleci/golang
-  steps:
-    - attach_workspace:
-        at: /tmp/artifacts
-    - run:
-        name: "Publish Release on GitHub"
-        command: |
-          go get github.com/tcnksm/ghr
-          VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
-          ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts/
+  release:
+    docker:
+      - image: circleci/golang
+    steps:
+      - attach_workspace:
+          at: /tmp/artifacts
+      - run:
+          name: "Publish Release on GitHub"
+          command: |
+            go get github.com/tcnksm/ghr
+            VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts/
 
 workflows:
   version: 2
   main:
     jobs:
-      - build:
+      - auth:
           filters:
             tags:
               only: /^\d+\.\d+\.\d+$/
-      - publish-github-release:
+      - build:
+          requires:
+            - auth
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - release:
           requires:
             - build
           filters:
