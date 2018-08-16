@@ -1,27 +1,27 @@
 version: 2
 jobs:
-  auth:
-    docker:
-    - image: google/cloud-sdk
-    steps:
-      - run:
-          name: Store Service Account
-          command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
-      - run: |
-          gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-          gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
-          gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
-          gcloud --quiet container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
-      - persist_to_workspace:
-          root: /tmp
-          paths:
-            - config
-
   build:
     working_directory: /go/src/github.com/triggermesh/tm
     docker:
       - image: circleci/golang
     steps:
+      - run:
+          name: Install gcloud SDK
+          command: |
+            echo "deb http://packages.cloud.google.com/apt cloud-sdk-stretch main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+            sudo apt-get update -y
+            sudo apt-get install google-cloud-sdk -y
+      - run:
+          name: Store Service Account
+          command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
+      - run:
+          name: Setup credentials 
+          command: |
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+            gcloud --quiet container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
       - checkout
       - restore_cache:
           keys:
@@ -60,13 +60,7 @@ workflows:
   version: 2
   main:
     jobs:
-      - auth:
-          filters:
-            tags:
-              only: /^\d+\.\d+\.\d+$/
       - build:
-          requires:
-            - auth
           filters:
             tags:
               only: /^\d+\.\d+\.\d+$/
