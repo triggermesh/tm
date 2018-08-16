@@ -26,8 +26,6 @@ jobs:
       - restore_cache:
           keys:
             - v1-pkg-cache
-      - attach_workspace:
-          at: /home/circleci/.kube
       - run:
           name: Run unit tests
           command: |
@@ -42,6 +40,10 @@ jobs:
           name: Build binary
           command: |
             go build
+      - persist_to_workspace:
+          root: /go/src/github.com/triggermesh/tm
+          paths:
+            - tm
 
   release:
     docker:
@@ -54,7 +56,7 @@ jobs:
           command: |
             go get github.com/tcnksm/ghr
             VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts/
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts/tm
 
 workflows:
   version: 2
