@@ -1,0 +1,97 @@
+go test -v ./...
+?   	github.com/triggermesh/tm	[no test files]
+=== RUN   TestDelete
+=== RUN   TestDelete/Describe_before_creation
+=== RUN   TestDelete/Deploy_new_service
+time="2018-08-17 18:10:00" level=info msg="Deployment started. Run \"tm -n default describe service test-delete-20180817180958\" to see the details\n"
+=== RUN   TestDelete/Delete_route
+=== RUN   TestDelete/Delete_revision
+=== RUN   TestDelete/Delete_configuration
+=== RUN   TestDelete/Delete_service
+=== RUN   TestDelete/Describe_after_deletion
+--- PASS: TestDelete (7.31s)
+    --- PASS: TestDelete/Describe_before_creation (0.86s)
+    --- PASS: TestDelete/Deploy_new_service (5.43s)
+    --- PASS: TestDelete/Delete_route (0.20s)
+    --- PASS: TestDelete/Delete_revision (0.21s)
+    --- PASS: TestDelete/Delete_configuration (0.21s)
+    --- PASS: TestDelete/Delete_service (0.20s)
+    --- PASS: TestDelete/Describe_after_deletion (0.20s)
+=== RUN   TestDeploy
+=== RUN   TestDeploy/Describe_before_creation
+=== RUN   TestDeploy/Deploy_new_service
+time="2018-08-17 18:10:06" level=info msg="Deployment started. Run \"tm -n default describe service test-deploy-20180817181006\" to see the details\n"
+=== RUN   TestDeploy/Describe_new_service
+=== RUN   TestDeploy/Deploy_service_update
+time="2018-08-17 18:10:12" level=info msg="Service update started. Run \"tm -n default get revisions test-deploy-20180817181006\" to see available revisions\n"
+=== RUN   TestDeploy/Describe_service_update
+=== RUN   TestDeploy/Delete_service
+=== RUN   TestDeploy/Describe_deleted_service
+--- PASS: TestDeploy (13.90s)
+    --- PASS: TestDeploy/Describe_before_creation (0.21s)
+    --- PASS: TestDeploy/Deploy_new_service (5.42s)
+    --- PASS: TestDeploy/Describe_new_service (0.21s)
+    --- PASS: TestDeploy/Deploy_service_update (7.42s)
+    --- PASS: TestDeploy/Describe_service_update (0.25s)
+    --- PASS: TestDeploy/Delete_service (0.20s)
+    --- PASS: TestDeploy/Describe_deleted_service (0.20s)
+=== RUN   TestDescribe
+=== RUN   TestDescribe/Describe_before_creation
+=== RUN   TestDescribe/Deploy_new_service
+time="2018-08-17 18:10:20" level=info msg="Deployment started. Run \"tm -n default describe service test-describe-20180817181019\" to see the details\n"
+=== RUN   TestDescribe/Describe_Service
+=== RUN   TestDescribe/Describe_Configuration
+=== RUN   TestDescribe/Describe_Revision
+=== RUN   TestDescribe/Describe_Route
+=== RUN   TestDescribe/Describe_Buildtemplate
+=== RUN   TestDescribe/Delete_service
+=== RUN   TestDescribe/Describe_after_deletion
+--- PASS: TestDescribe (7.11s)
+    --- PASS: TestDescribe/Describe_before_creation (0.20s)
+    --- PASS: TestDescribe/Deploy_new_service (5.41s)
+    --- PASS: TestDescribe/Describe_Service (0.20s)
+    --- PASS: TestDescribe/Describe_Configuration (0.21s)
+    --- PASS: TestDescribe/Describe_Revision (0.22s)
+    --- PASS: TestDescribe/Describe_Route (0.21s)
+    --- PASS: TestDescribe/Describe_Buildtemplate (0.24s)
+    --- PASS: TestDescribe/Delete_service (0.20s)
+    --- PASS: TestDescribe/Describe_after_deletion (0.20s)
+=== RUN   TestGet
+=== RUN   TestGet/Describe_before_creation
+=== RUN   TestGet/Deploy_new_service
+time="2018-08-17 18:10:27" level=info msg="Deployment started. Run \"tm -n default describe service test-get-20180817181027\" to see the details\n"
+=== RUN   TestGet/Get_services
+=== RUN   TestGet/Get_routes
+=== RUN   TestGet/Get_revisions
+=== RUN   TestGet/Get_configurations
+=== RUN   TestGet/Delete_service
+=== RUN   TestGet/Describe_after_deletion
+--- PASS: TestGet (6.85s)
+    --- PASS: TestGet/Describe_before_creation (0.20s)
+    --- PASS: TestGet/Deploy_new_service (5.41s)
+    --- PASS: TestGet/Get_services (0.21s)
+    --- PASS: TestGet/Get_routes (0.20s)
+    --- PASS: TestGet/Get_revisions (0.20s)
+    --- PASS: TestGet/Get_configurations (0.22s)
+    --- PASS: TestGet/Delete_service (0.20s)
+    --- PASS: TestGet/Describe_after_deletion (0.20s)
+=== RUN   TestSet
+=== RUN   TestSet/Describe_before_creation
+=== RUN   TestSet/Deploy_new_service
+time="2018-08-17 18:10:34" level=info msg="Deployment started. Run \"tm -n default describe service test-set-20180817181033\" to see the details\n"
+=== RUN   TestSet/Adding_service_new_revision
+time="2018-08-17 18:10:40" level=info msg="Service update started. Run \"tm -n default get revisions test-set-20180817181033\" to see available revisions\n"
+=== RUN   TestSet/Setting_route_traffic_percentage
+=== RUN   TestSet/Getting_route_traffic_percentage
+=== RUN   TestSet/Delete_service
+=== RUN   TestSet/Describe_after_deletion
+--- PASS: TestSet (14.34s)
+    --- PASS: TestSet/Describe_before_creation (0.20s)
+    --- PASS: TestSet/Deploy_new_service (5.42s)
+    --- PASS: TestSet/Adding_service_new_revision (7.49s)
+    --- PASS: TestSet/Setting_route_traffic_percentage (0.41s)
+    --- PASS: TestSet/Getting_route_traffic_percentage (0.20s)
+    --- PASS: TestSet/Delete_service (0.41s)
+    --- PASS: TestSet/Describe_after_deletion (0.20s)
+PASS
+ok  	github.com/triggermesh/tm/cmd	49.528s

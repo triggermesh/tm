@@ -115,14 +115,16 @@ func init() {
 	getCmd.AddCommand(listConfigurationsCmd)
 }
 
-func format(v interface{}) ([]byte, error) {
+func format(v interface{}) (string, error) {
 	switch output {
 	case "json":
-		return json.MarshalIndent(v, "", "    ")
+		o, err := json.MarshalIndent(v, "", "    ")
+		return string(o), err
 	case "yaml":
-		return yaml.Marshal(v)
+		o, err := yaml.Marshal(v)
+		return string(o), err
 	}
-	return []byte{}, nil
+	return "", nil
 }
 
 func listBuilds() (string, error) {
@@ -131,14 +133,13 @@ func listBuilds() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		str := fmt.Sprintf("%-25s%-25s", "NAME", "NAMESPACE")
+		table.AddRow("BUILD", "NAMESPACE")
 		for _, item := range list.Items {
-			str = fmt.Sprintf("%s\n%-25s%-25s", str, item.Name, item.Namespace)
+			table.AddRow(item.Name, item.Namespace)
 		}
-		return str, err
+		return table.String(), err
 	}
-	o, err := format(list)
-	return string(o), err
+	return format(list)
 }
 
 func listServices() (string, error) {
@@ -147,14 +148,13 @@ func listServices() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		str := fmt.Sprintf("%-25s%-25s", "NAME", "NAMESPACE")
+		table.AddRow("SERVICE", "NAMESPACE")
 		for _, item := range list.Items {
-			str = fmt.Sprintf("%s\n%-25s%-25s", str, item.Name, item.Namespace)
+			table.AddRow(item.Name, item.Namespace)
 		}
-		return str, err
+		return table.String(), err
 	}
-	o, err := format(list)
-	return string(o), err
+	return format(list)
 }
 
 func listRoutes() (string, error) {
@@ -163,14 +163,13 @@ func listRoutes() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		str := fmt.Sprintf("%-25s%-25s%-25s", "NAME", "NAMESPACE", "TARGETS(%)")
+		table.AddRow("SERVICE", "NAMESPACE", "TARGETS")
 		for _, item := range list.Items {
-			str = fmt.Sprintf("%s\n%-25s%-25s%v", str, item.Name, item.Namespace, item.Spec.Traffic)
+			table.AddRow(item.Name, item.Namespace, item.Spec.Traffic)
 		}
-		return str, err
+		return table.String(), err
 	}
-	o, err := format(list)
-	return string(o), err
+	return format(list)
 }
 
 func listRevisions() (string, error) {
@@ -179,14 +178,13 @@ func listRevisions() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		str := fmt.Sprintf("%-25s%-25s", "NAME", "NAMESPACE")
+		table.AddRow("NAME", "NAMESPACE")
 		for _, item := range list.Items {
-			str = fmt.Sprintf("%s\n%-25s%-25s", str, item.Name, item.Namespace)
+			table.AddRow(item.Name, item.Namespace)
 		}
-		return str, err
+		return table.String(), err
 	}
-	o, err := format(list)
-	return string(o), err
+	return format(list)
 }
 
 func listPods() (string, error) {
@@ -195,14 +193,13 @@ func listPods() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		str := fmt.Sprintf("%-25s%-25s", "NAME", "NAMESPACE")
+		table.AddRow("NAME", "NAMESPACE")
 		for _, item := range list.Items {
-			str = fmt.Sprintf("%s\n%-25s%-25s", str, item.Name, item.Namespace)
+			table.AddRow(item.Name, item.Namespace)
 		}
-		return str, err
+		return table.String(), err
 	}
-	o, err := format(list)
-	return string(o), err
+	return format(list)
 }
 
 func listBuildTemplates() (string, error) {
@@ -211,14 +208,13 @@ func listBuildTemplates() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		str := fmt.Sprintf("%-25s%-25s", "NAME", "NAMESPACE")
+		table.AddRow("NAME", "NAMESPACE")
 		for _, item := range list.Items {
-			str = fmt.Sprintf("%s\n%-25s%-25s", str, item.Name, item.Namespace)
+			table.AddRow(item.Name, item.Namespace)
 		}
-		return str, err
+		return table.String(), err
 	}
-	o, err := format(list)
-	return string(o), err
+	return format(list)
 }
 
 func listConfigurations() (string, error) {
@@ -227,12 +223,11 @@ func listConfigurations() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		str := fmt.Sprintf("%-25s%-25s", "NAME", "NAMESPACE")
+		table.AddRow("NAME", "NAMESPACE")
 		for _, item := range list.Items {
-			str = fmt.Sprintf("%s\n%-25s%-25s", str, item.Name, item.Namespace)
+			table.AddRow(item.Name, item.Namespace)
 		}
-		return str, err
+		return table.String(), err
 	}
-	o, err := format(list)
-	return string(o), err
+	return format(list)
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/user"
 
+	"github.com/gosuri/uitable"
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
 	servingApi "github.com/knative/serving/pkg/client/clientset/versioned"
 	"github.com/sirupsen/logrus"
@@ -23,6 +24,7 @@ var (
 	core      *kubernetes.Clientset
 	build     *buildApi.Clientset
 	serving   *servingApi.Clientset
+	table     *uitable.Table
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -59,6 +61,10 @@ func initConfig() {
 	if debug {
 		log.Level = logrus.DebugLevel
 	}
+
+	table = uitable.New()
+	table.Wrap = true
+	table.MaxColWidth = 50
 
 	if len(cfgFile) == 0 {
 		usr, err := user.Current()

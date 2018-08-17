@@ -31,7 +31,7 @@ jobs:
           name: Run unit tests
           command: |
             trap "go-junit-report <go-test.out > go-test-report.xml" EXIT
-            go test ./cmd | tee go-test.out
+            make test | tee go-test.out
       - store_test_results:
           path: go-test-report.xml
       - save_cache:
@@ -39,13 +39,15 @@ jobs:
           paths:
             - "/go/pkg"
       - run:
-          name: Build binary
+          name: Build binaries
           command: |
-            go build
+            make build
+            make build-osx
       - persist_to_workspace:
           root: /go/src/github.com/triggermesh/tm
           paths:
             - tm
+            - tm_osx
 
   release:
     docker:
