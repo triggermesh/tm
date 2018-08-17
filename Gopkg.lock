@@ -70,6 +70,16 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/gosuri/uitable"
+  packages = [
+    ".",
+    "util/strutil",
+    "util/wordwrap"
+  ]
+  revision = "36ee7e946282a3fb1cfecd476ddc9b35d8847e42"
+
+[[projects]]
+  branch = "master"
   name = "github.com/howeyc/gopass"
   packages = ["."]
   revision = "bf9dde6d0d2c004a008c27aaee91170c786f6db8"
@@ -118,6 +128,12 @@
   ]
   revision = "091d4519394bb7bee5ae4d3ab764c3f4f6f2a51b"
   version = "v0.1.0"
+
+[[projects]]
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  revision = "ce7b0b5c7b45a81508558cd1dba6bb1e4ddb51bb"
+  version = "v0.0.3"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -384,6 +400,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a7c928c3ca70892f9c575bb6759d92a0612c1c8cf6293646e209a7ed23450976"
+  inputs-digest = "f77dd716dd5a4b9057a2f1819624673b04fb49df6420ec706a6fbf395238bdbc"
   solver-name = "gps-cdcl"
   solver-version = 1
