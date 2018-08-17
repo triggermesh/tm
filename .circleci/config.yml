@@ -10,6 +10,7 @@ jobs:
           command: |
             echo "deb http://packages.cloud.google.com/apt cloud-sdk-stretch main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
             curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+            go get -u github.com/jstemmer/go-junit-report
             sudo apt-get update -y
             sudo apt-get install google-cloud-sdk -y
       - run:
@@ -29,9 +30,10 @@ jobs:
       - run:
           name: Run unit tests
           command: |
+            trap "go-junit-report <${HOME}/go-test.out > ${HOME}/go-test-report.xml" EXIT
             go test ./cmd | tee ${HOME}/go-test.out
       - store_test_results:
-          path: ${HOME}/go-test.out
+          path: ${HOME}/go-test-report.xml
       - save_cache:
           key: v1-pkg-cache
           paths:
