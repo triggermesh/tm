@@ -28,6 +28,9 @@ jobs:
           keys:
             - v1-pkg-cache
       - run:
+          name: Run validations
+          command: make validation
+      - run:
           name: Run unit tests
           command: |
             trap "go-junit-report <go-test.out > go-test-report.xml" EXIT
@@ -60,7 +63,7 @@ jobs:
           command: |
             go get github.com/tcnksm/ghr
             VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
-            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts/tm
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts
 
 workflows:
   version: 2

@@ -133,9 +133,9 @@ func listBuilds() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		table.AddRow("BUILD", "NAMESPACE")
+		table.AddRow("NAMESPACE", "BUILD")
 		for _, item := range list.Items {
-			table.AddRow(item.Name, item.Namespace)
+			table.AddRow(item.Namespace, item.Name)
 		}
 		return table.String(), err
 	}
@@ -148,9 +148,9 @@ func listServices() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		table.AddRow("SERVICE", "NAMESPACE")
+		table.AddRow("NAMESPACE", "SERVICE")
 		for _, item := range list.Items {
-			table.AddRow(item.Name, item.Namespace)
+			table.AddRow(item.Namespace, item.Name)
 		}
 		return table.String(), err
 	}
@@ -163,9 +163,9 @@ func listRoutes() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		table.AddRow("SERVICE", "NAMESPACE", "TARGETS")
+		table.AddRow("NAMESPACE", "ROUTE", "TARGETS")
 		for _, item := range list.Items {
-			table.AddRow(item.Name, item.Namespace, item.Spec.Traffic)
+			table.AddRow(item.Namespace, item.Name, item.Spec.Traffic)
 		}
 		return table.String(), err
 	}
@@ -178,9 +178,9 @@ func listRevisions() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		table.AddRow("NAME", "NAMESPACE")
+		table.AddRow("NAMESPACE", "REVISION")
 		for _, item := range list.Items {
-			table.AddRow(item.Name, item.Namespace)
+			table.AddRow(item.Namespace, item.Name)
 		}
 		return table.String(), err
 	}
@@ -193,9 +193,9 @@ func listPods() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		table.AddRow("NAME", "NAMESPACE")
+		table.AddRow("NAMESPACE", "POD")
 		for _, item := range list.Items {
-			table.AddRow(item.Name, item.Namespace)
+			table.AddRow(item.Namespace, item.Name)
 		}
 		return table.String(), err
 	}
@@ -208,9 +208,9 @@ func listBuildTemplates() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		table.AddRow("NAME", "NAMESPACE")
+		table.AddRow("NAMESPACE", "BUILDTEMPLATE")
 		for _, item := range list.Items {
-			table.AddRow(item.Name, item.Namespace)
+			table.AddRow(item.Namespace, item.Name)
 		}
 		return table.String(), err
 	}
@@ -223,9 +223,9 @@ func listConfigurations() (string, error) {
 		return "", err
 	}
 	if output == "" {
-		table.AddRow("NAME", "NAMESPACE")
+		table.AddRow("NAMESPACE", "CONFIGURATION")
 		for _, item := range list.Items {
-			table.AddRow(item.Name, item.Namespace)
+			table.AddRow(item.Namespace, item.Name)
 		}
 		return table.String(), err
 	}

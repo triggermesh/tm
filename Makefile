@@ -5,9 +5,11 @@ GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 BINARY_NAME=tm
 BINARY_OSX=$(BINARY_NAME)_osx
-BINARY_WIN=$(BINARY_NAME)_win
 
-all: test build
+.PHONY: all test clean run validation
+
+all: test install
+
 build: 
 	$(GOBUILD) -o $(BINARY_NAME) -v
 
@@ -34,6 +36,9 @@ validation:
 
 # TODO
 # deps:
+
+install:
+	$(GOCMD) install -v 
 
 build-osx:
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GOBUILD) -o $(BINARY_OSX) -v
