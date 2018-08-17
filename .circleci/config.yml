@@ -30,10 +30,10 @@ jobs:
       - run:
           name: Run unit tests
           command: |
-            trap "go-junit-report <${HOME}/go-test.out > ${HOME}/go-test-report.xml" EXIT
-            go test ./cmd | tee ${HOME}/go-test.out
+            trap "go-junit-report <go-test.out > go-test-report.xml" EXIT
+            go test ./cmd | tee go-test.out
       - store_test_results:
-          path: ${HOME}/go-test-report.xml
+          path: go-test-report.xml
       - save_cache:
           key: v1-pkg-cache
           paths:
