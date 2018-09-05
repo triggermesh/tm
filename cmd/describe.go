@@ -16,93 +16,149 @@ var describeCmd = &cobra.Command{
 }
 
 var describeServiceCmd = &cobra.Command{
-	Use:   "service",
-	Short: "Knative service details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "service",
+	Aliases: []string{"services"},
+	Short:   "Knative service details",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := describeService(args)
-		if err != nil {
-			log.Errorln(err)
+		if len(args) != 0 {
+			output, err := describeService(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
+		} else {
+			output, err := listServices()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
 		}
-		fmt.Println(string(output))
 	},
 }
 
 var describeConfigurationCmd = &cobra.Command{
-	Use:   "configuration",
-	Short: "Knative service configuration details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "configuration",
+	Aliases: []string{"configurations"},
+	Short:   "Knative service configuration details",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := describeConfiguration(args)
-		if err != nil {
-			log.Errorln(err)
+		if len(args) != 0 {
+			output, err := describeConfiguration(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
+		} else {
+			output, err := listConfigurations()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
 		}
-		fmt.Println(string(output))
 	},
 }
 
 var describeRevisionCmd = &cobra.Command{
-	Use:   "revision",
-	Short: "Knative revision details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "revision",
+	Aliases: []string{"revisions"},
+	Short:   "Knative revision details",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := describeRevision(args)
-		if err != nil {
-			log.Errorln(err)
+		if len(args) != 0 {
+			output, err := describeRevision(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
+		} else {
+			output, err := listRevisions()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
 		}
-		fmt.Println(string(output))
 	},
 }
 
 var describeRouteCmd = &cobra.Command{
-	Use:   "route",
-	Short: "Knative service route details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "route",
+	Aliases: []string{"routes"},
+	Short:   "Knative service route details",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := describeRoute(args)
-		if err != nil {
-			log.Errorln(err)
+		if len(args) != 0 {
+			output, err := describeRoute(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
+		} else {
+			output, err := listRoutes()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
 		}
-		fmt.Println(string(output))
 	},
 }
 
 var describePodCmd = &cobra.Command{
-	Use:   "pod",
-	Short: "Pod details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "pod",
+	Aliases: []string{"pods"},
+	Short:   "Pod details",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := describePod(args)
-		if err != nil {
-			log.Errorln(err)
+		if len(args) != 0 {
+			output, err := describePod(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
+		} else {
+			output, err := listPods()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
 		}
-		fmt.Println(string(output))
 	},
 }
 
 var describeBuildCmd = &cobra.Command{
-	Use:   "build",
-	Short: "Build details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "build",
+	Aliases: []string{"builds"},
+	Short:   "Build details",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := describeBuild(args)
-		if err != nil {
-			log.Errorln(err)
+		if len(args) != 0 {
+			output, err := describeBuild(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
+		} else {
+			output, err := listBuilds()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
 		}
-		fmt.Println(string(output))
 	},
 }
 
 var describeBuildTemplateCmd = &cobra.Command{
-	Use:   "buildtemplate",
-	Short: "Buildtemplate details",
-	Args:  cobra.ExactArgs(1),
+	Use:     "buildtemplate",
+	Aliases: []string{"buildtemplates"},
+	Short:   "Buildtemplate details",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := describeBuildTemplate(args)
-		if err != nil {
-			log.Errorln(err)
+		if len(args) != 0 {
+			output, err := describeBuildTemplate(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
+		} else {
+			output, err := listBuildTemplates()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
 		}
-		fmt.Println(string(output))
 	},
 }
 

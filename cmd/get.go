@@ -19,88 +19,158 @@ var getCmd = &cobra.Command{
 
 // servicesCmd represents the builds command
 var listServicesCmd = &cobra.Command{
-	Use:   "services",
-	Short: "List of knative service resources",
+	Use:     "service",
+	Aliases: []string{"services"},
+	Short:   "List of knative service resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := listServices()
-		if err != nil {
-			log.Errorln(err)
+		if len(args) == 0 {
+			output, err := listServices()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
+
+		} else {
+			output, err := describeService(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
 		}
-		fmt.Println(output)
 	},
 }
 
 // listBuildsCmd represents the builds command
 var listBuildsCmd = &cobra.Command{
-	Use:   "builds",
-	Short: "List of knative build resources",
+	Use:     "build",
+	Aliases: []string{"builds"},
+	Short:   "List of knative build resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := listBuilds()
-		if err != nil {
-			log.Errorln(err)
+		if len(args) == 0 {
+			output, err := listBuilds()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
+
+		} else {
+			output, err := describeBuild(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
 		}
-		fmt.Println(output)
 	},
 }
 
 // listRoutesCmd represents the builds command
 var listRoutesCmd = &cobra.Command{
-	Use:   "routes",
-	Short: "List of knative routes resources",
+	Use:     "route",
+	Aliases: []string{"routes"},
+	Short:   "List of knative routes resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := listRoutes()
-		if err != nil {
-			log.Errorln(err)
+		if len(args) == 0 {
+			output, err := listRoutes()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
+
+		} else {
+			output, err := describeRoute(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
 		}
-		fmt.Println(output)
 	},
 }
 
 var listRevisionsCmd = &cobra.Command{
-	Use:   "revisions",
-	Short: "List of knative revision resources",
+	Use:     "revision",
+	Aliases: []string{"revisions"},
+	Short:   "List of knative revision resources",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := listRevisions()
-		if err != nil {
-			log.Errorln(err)
+		if len(args) == 0 {
+			output, err := listRevisions()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
+
+		} else {
+			output, err := describeRevision(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
 		}
-		fmt.Println(output)
 	},
 }
 
 var listPodsCmd = &cobra.Command{
-	Use:   "pods",
-	Short: "List of pods",
+	Use:     "pod",
+	Aliases: []string{"pods"},
+	Short:   "List of pods",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := listPods()
-		if err != nil {
-			log.Errorln(err)
+		if len(args) == 0 {
+			output, err := listPods()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
+
+		} else {
+			output, err := describePod(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
 		}
-		fmt.Println(output)
 	},
 }
 
 var listBuildTemplatesCmd = &cobra.Command{
-	Use:   "buildtemplates",
-	Short: "List of buildtemplates",
+	Use:     "buildtemplate",
+	Aliases: []string{"buildtemplates"},
+	Short:   "List of buildtemplates",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := listBuildTemplates()
-		if err != nil {
-			log.Errorln(err)
+		if len(args) == 0 {
+			output, err := listBuildTemplates()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
+
+		} else {
+			output, err := describeBuildTemplate(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
 		}
-		fmt.Println(output)
 	},
 }
 
 var listConfigurationsCmd = &cobra.Command{
-	Use:   "configurations",
-	Short: "List of configurations",
+	Use:     "configuration",
+	Aliases: []string{"configurations"},
+	Short:   "List of configurations",
 	Run: func(cmd *cobra.Command, args []string) {
-		output, err := listConfigurations()
-		if err != nil {
-			log.Errorln(err)
+		if len(args) == 0 {
+			output, err := listConfigurations()
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(output)
+
+		} else {
+			output, err := describeConfiguration(args)
+			if err != nil {
+				log.Errorln(err)
+			}
+			fmt.Println(string(output))
 		}
-		fmt.Println(output)
 	},
 }
 
