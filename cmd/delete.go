@@ -30,7 +30,7 @@ var deleteConfigurationCmd = &cobra.Command{
 	Short: "Delete knative configuration resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := deleteConfiguration; err != nil {
+		if err := deleteConfiguration(args); err != nil {
 			log.Errorln(err)
 			return
 		}
@@ -43,7 +43,7 @@ var deleteBuildCmd = &cobra.Command{
 	Short: "Delete knative build resource",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := deleteBuild; err != nil {
+		if err := deleteBuild(args); err != nil {
 			log.Errorln(err)
 			return
 		}

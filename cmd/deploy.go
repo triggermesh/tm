@@ -19,12 +19,10 @@ var (
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use: "deploy",
-	Annotations: map[string]string{
-		"Name": "sdfsdf",
-	},
-	Short: "Deploy knative service",
-	Args:  cobra.ExactArgs(1),
+	Use:     "deploy",
+	Short:   "Deploy knative service",
+	Args:    cobra.ExactArgs(1),
+	Example: "tm -n default deploy foo --from-image gcr.io/google-samples/hello-app:1.0",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := deployService(args); err != nil {
 			log.Errorln(err)
