@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/user"
+	"path/filepath"
 
 	"github.com/gosuri/uitable"
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
@@ -13,6 +16,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
+)
+
+const (
+	confPath = "/.tm/config"
 )
 
 var (
@@ -26,6 +33,16 @@ var (
 	serving   *servingApi.Clientset
 	table     *uitable.Table
 )
+
+type confStruct struct {
+	Contexts []struct {
+		Context struct {
+			Cluster   string `json:"cluster"`
+			Namespace string `json:"namespace"`
+		} `json:"context"`
+		Name string `json:"name"`
+	} `json:"contexts"`
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -44,9 +61,33 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "k8s config file (default is ~/.kube/config)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("k8s config file (default is $HOME/%s)", confPath))
 	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
+}
+
+func username() string {
+	jsonFile, err := os.Open(cfgFile)
+	if err != nil {
+		log.Panicln(err)
+	}
+	defer jsonFile.Close()
+
+	body, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	var conf confStruct
+	if err := json.Unmarshal(body, &conf); err != nil {
+		log.Panicln(err)
+	}
+	for _, v := range conf.Contexts {
+		if v.Context.Cluster == "triggermesh" {
+			return v.Context.Namespace
+		}
+	}
+	return ""
 }
 
 func initConfig() {
@@ -66,17 +107,28 @@ func initConfig() {
 	table.Wrap = true
 	table.MaxColWidth = 50
 
-	if len(cfgFile) == 0 {
-		usr, err := user.Current()
-		if err != nil {
+	usr, err := user.Current()
+	if err != nil {
+		log.Panicln(err)
+	}
+	tmHome := filepath.Dir(usr.HomeDir + confPath)
+	if _, err := os.Stat(tmHome); os.IsNotExist(err) {
+		if err := os.MkdirAll(tmHome, 0755); err != nil {
 			log.Panicln(err)
 		}
-		cfgFile = usr.HomeDir + "/.kube/config"
+	}
+
+	if len(cfgFile) == 0 {
+		cfgFile = usr.HomeDir + confPath
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
 	if err != nil {
 		log.Panicln(err)
+	}
+
+	if len(namespace) == 0 {
+		namespace = username()
 	}
 
 	build, err = buildApi.NewForConfig(config)
