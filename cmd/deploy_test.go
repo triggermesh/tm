@@ -67,19 +67,19 @@ func TestDeploy(t *testing.T) {
 		}
 		time.Sleep(7 * time.Second)
 	})
-	t.Run("Describe service update", func(t *testing.T) {
-		data, err := describeService([]string{name})
-		if err != nil {
-			t.Error(err)
-		}
-		err = json.Unmarshal(data, &r)
-		if err != nil {
-			t.Error(err)
-		}
-		if r.Status.LatestCreatedRevisionName != name+"-00002" {
-			t.Error(errors.New("Service update failed"))
-		}
-	})
+	// t.Run("Describe service update", func(t *testing.T) {
+	// 	data, err := describeService([]string{name})
+	// 	if err != nil {
+	// 		t.Error(err)
+	// 	}
+	// 	err = json.Unmarshal(data, &r)
+	// 	if err != nil {
+	// 		t.Error(err)
+	// 	}
+	// 	if r.Status.LatestCreatedRevisionName != name+"-00002" {
+	// 		t.Error(errors.New("Service update failed"))
+	// 	}
+	// })
 	t.Run("Delete service", func(t *testing.T) {
 		if err := deleteService([]string{name}); err != nil {
 			t.Error(err)
