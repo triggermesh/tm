@@ -48,7 +48,7 @@ type confStruct struct {
 var rootCmd = &cobra.Command{
 	Use:     "tm",
 	Short:   "Triggermesh CLI",
-	Version: "0.0.1",
+	Version: "0.0.2",
 }
 
 func Execute() {
