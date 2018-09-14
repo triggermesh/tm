@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 
+	"github.com/ghodss/yaml"
 	"github.com/gosuri/uitable"
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
 	servingApi "github.com/knative/serving/pkg/client/clientset/versioned"
@@ -77,9 +77,12 @@ func username() string {
 	if err != nil {
 		log.Panicln(err)
 	}
+	if body, err = yaml.YAMLToJSON(body); err != nil {
+		log.Panicln(err)
+	}
 
 	var conf confStruct
-	if err := json.Unmarshal(body, &conf); err != nil {
+	if err := yaml.Unmarshal(body, &conf); err != nil {
 		log.Panicln(err)
 	}
 	for _, v := range conf.Contexts {
