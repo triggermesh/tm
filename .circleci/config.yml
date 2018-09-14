@@ -23,6 +23,8 @@ jobs:
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
             gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
             gcloud --quiet container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
+            mkdir -p ${HOME}/.tm/
+            cp ${HOME}/.kube/config ${HOME}/.tm/config.json
       - checkout
       - restore_cache:
           keys:

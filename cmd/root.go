@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	confPath = "/.tm/config"
+	confPath = "/.tm/config.json"
 )
 
 var (
