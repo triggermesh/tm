@@ -17,6 +17,7 @@ import (
 var (
 	image, source, url, storage, pullPolicy,
 	memory, path, cpu string
+	port        int32
 	env, labels []string
 	df          = "/workspace/Dockerfile"
 )
@@ -42,7 +43,8 @@ func init() {
 	deployCmd.Flags().StringVar(&cpu, "cpu", "", "Number of core units required for function")
 	deployCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory required by function, eg. 100M, 1.5G")
 	deployCmd.Flags().StringVar(&storage, "storage", "", "Volume size for function root device, eg. 200M, 5G")
-	deployCmd.Flags().StringVar(&pullPolicy, "image-pull-policy", "", "Image pull policy")
+	deployCmd.Flags().Int32Var(&port, "port", 8080, "Custom port for function")
+	deployCmd.Flags().StringVar(&pullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployCmd.Flags().StringSliceVarP(&labels, "label", "l", []string{}, "Function labels")
 	deployCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, "Environment variables of the function, eg. `--env foo=bar`")
 	rootCmd.AddCommand(deployCmd)
@@ -78,6 +80,7 @@ func deployService(args []string) error {
 		return err
 	}
 
+	configuration.RevisionTemplate.Spec.Container.Ports = []corev1.ContainerPort{corev1.ContainerPort{ContainerPort: port}}
 	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(pullPolicy)
 	configuration.RevisionTemplate.Spec.Container.Resources.Requests = res
 	configuration.RevisionTemplate.Spec.Container.Env = append(getEnv(env), corev1.EnvVar{
