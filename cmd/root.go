@@ -61,7 +61,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("k8s config file (default is $HOME/%s)", confPath))
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("k8s config file (default is $HOME%s)", confPath))
 	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
 }
@@ -69,21 +69,21 @@ func init() {
 func username() string {
 	jsonFile, err := os.Open(cfgFile)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	defer jsonFile.Close()
 
 	body, err := ioutil.ReadAll(jsonFile)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	if body, err = yaml.YAMLToJSON(body); err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 
 	var conf confStruct
 	if err := yaml.Unmarshal(body, &conf); err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	for _, v := range conf.Contexts {
 		if v.Context.Cluster == "triggermesh" {
@@ -112,12 +112,12 @@ func initConfig() {
 
 	usr, err := user.Current()
 	if err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	tmHome := filepath.Dir(usr.HomeDir + confPath)
 	if _, err := os.Stat(tmHome); os.IsNotExist(err) {
 		if err := os.MkdirAll(tmHome, 0755); err != nil {
-			log.Panicln(err)
+			log.Fatalln(err)
 		}
 	}
 
@@ -127,7 +127,7 @@ func initConfig() {
 
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 
 	if len(namespace) == 0 {
@@ -136,14 +136,14 @@ func initConfig() {
 
 	build, err = buildApi.NewForConfig(config)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	serving, err = servingApi.NewForConfig(config)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 	core, err = kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Panicln(err)
+		log.Fatalln(err)
 	}
 }

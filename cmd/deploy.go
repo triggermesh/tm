@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"io/ioutil"
+	"regexp"
 	"time"
 
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
@@ -9,12 +10,15 @@ import (
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
-	image, source, url, path string
-	df                       = "/workspace/Dockerfile"
+	image, source, url, storage,
+	memory, path, cpu string
+	env []string
+	df  = "/workspace/Dockerfile"
 )
 
 // deployCmd represents the deploy command
@@ -35,6 +39,10 @@ func init() {
 	deployCmd.Flags().StringVar(&source, "from-source", "", "Git source URL to deploy")
 	deployCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
 	deployCmd.Flags().StringVar(&url, "from-url", "", "File source URL to deploy")
+	deployCmd.Flags().StringVar(&cpu, "cpu", "", "Number of core units required for function")
+	deployCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory required by function, eg. 100M, 1.5G")
+	deployCmd.Flags().StringVar(&storage, "storage", "", "Volume size for function root device, eg. 200M, 5G")
+	setRouteCmd.Flags().StringSliceVar(&env, "env", []string{}, "Environment variables of the function, eg. `--env foo=bar`")
 	rootCmd.AddCommand(deployCmd)
 }
 
@@ -63,12 +71,19 @@ func deployService(args []string) error {
 		configuration = fromFile(args)
 	}
 
-	configuration.RevisionTemplate.Spec.Container.Env = []corev1.EnvVar{
-		{
-			Name:  "timestamp",
-			Value: time.Now().Format("2006-01-02 15:04:05"),
-		},
+	res, err := resources()
+	if err != nil {
+		return err
 	}
+
+	configuration.RevisionTemplate.Spec.Container.Resources = corev1.ResourceRequirements{
+		Requests: res,
+	}
+
+	configuration.RevisionTemplate.Spec.Container.Env = append(getEnv(env), corev1.EnvVar{
+		Name:  "timestamp",
+		Value: time.Now().Format("2006-01-02 15:04:05")})
+
 	s := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -426,4 +441,37 @@ func createConfigMap(args []string) error {
 		return err
 	}
 	return err
+}
+
+func getEnv(slice []string) []corev1.EnvVar {
+	m := []corev1.EnvVar{}
+	for _, s := range slice {
+		t := regexp.MustCompile("[:=]").Split(s, 2)
+		if len(t) != 2 {
+			log.Warnf("Can't parse environment argument %s", s)
+			continue
+		}
+		m = append(m, corev1.EnvVar{Name: t[0], Value: t[1]})
+	}
+	return m
+}
+
+func resources() (map[corev1.ResourceName]resource.Quantity, error) {
+	res := make(map[corev1.ResourceName]resource.Quantity)
+	if cores, err := resource.ParseQuantity(cpu); cpu != "" && err != nil {
+		return nil, err
+	} else {
+		res[corev1.ResourceCPU] = cores
+	}
+	if ram, err := resource.ParseQuantity(memory); memory != "" && err != nil {
+		return nil, err
+	} else {
+		res[corev1.ResourceMemory] = ram
+	}
+	if disk, err := resource.ParseQuantity(storage); storage != "" && err != nil {
+		return nil, err
+	} else {
+		res[corev1.ResourceStorage] = disk
+	}
+	return res, nil
 }
