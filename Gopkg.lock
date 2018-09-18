@@ -4,8 +4,8 @@
 [[projects]]
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
-  revision = "64a2037ec6be8a4b0c1d1f706ed35b428b989239"
-  version = "v0.26.0"
+  revision = "97efc2c9ffd9fe8ef47f7f3203dc60bbca547374"
+  version = "v0.28.0"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -37,8 +37,8 @@
     "ptypes/duration",
     "ptypes/timestamp"
   ]
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/google/go-cmp"
@@ -100,7 +100,7 @@
   name = "github.com/json-iterator/go"
   packages = ["."]
   revision = "1624edc4454b8682399def8740d46db5e4362ba4"
-  version = "1.1.5"
+  version = "v1.1.5"
 
 [[projects]]
   name = "github.com/knative/build"
@@ -126,8 +126,8 @@
     "pkg/client/clientset/versioned/typed/istio/v1alpha3",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1"
   ]
-  revision = "091d4519394bb7bee5ae4d3ab764c3f4f6f2a51b"
-  version = "v0.1.0"
+  revision = "37c640555a3241ed707962ba6b29d6c7fe68f937"
+  version = "v0.1.1"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -169,7 +169,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
+  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
 
 [[projects]]
   branch = "master"
@@ -182,7 +182,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "f9ce57c11b242f0f1599cf25c89d8cb02c45295a"
+  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
 
 [[projects]]
   branch = "master"
@@ -194,7 +194,7 @@
     "jws",
     "jwt"
   ]
-  revision = "3d292e4d0cdc3a0113e6d207bb137145ef1de42f"
+  revision = "d2e6202438beef2727060aa7cabdd924d92ebfd9"
 
 [[projects]]
   branch = "master"
@@ -203,7 +203,7 @@
     "unix",
     "windows"
   ]
-  revision = "904bdc257025c7b3f43c19360ad3ab85783fad78"
+  revision = "d0be0721c37eeb5299f245a996a483160fc36940"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -400,6 +400,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f77dd716dd5a4b9057a2f1819624673b04fb49df6420ec706a6fbf395238bdbc"
+  inputs-digest = "def8188efe244001a27104fb404340eca43cfefa694697d385ca91fd0e7bcf9f"
   solver-name = "gps-cdcl"
   solver-version = 1

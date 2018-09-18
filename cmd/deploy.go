@@ -17,9 +17,9 @@ import (
 var (
 	image, source, url, storage, pullPolicy,
 	memory, path, cpu string
-	port        int32
-	env, labels []string
-	df          = "/workspace/Dockerfile"
+	port                 int32
+	env, labels, secrets []string
+	df                   = "/workspace/Dockerfile"
 )
 
 // deployCmd represents the deploy command
@@ -40,13 +40,14 @@ func init() {
 	deployCmd.Flags().StringVar(&source, "from-source", "", "Git source URL to deploy")
 	deployCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
 	deployCmd.Flags().StringVar(&url, "from-url", "", "File source URL to deploy")
-	deployCmd.Flags().StringVar(&cpu, "cpu", "", "Number of core units required for function")
-	deployCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory required by function, eg. 100M, 1.5G")
-	deployCmd.Flags().StringVar(&storage, "storage", "", "Volume size for function root device, eg. 200M, 5G")
-	deployCmd.Flags().Int32Var(&port, "port", 8080, "Custom port for function")
+	// deployCmd.Flags().StringVar(&cpu, "cpu", "", "Limit number of core units for service")
+	// deployCmd.Flags().StringVar(&memory, "memory", "", "Limit amount of memory for service, eg. 100M, 1.5G")
+	// deployCmd.Flags().StringVar(&storage, "storage", "", "Limit volume size for service root device, eg. 200M, 5G")
+	// deployCmd.Flags().Int32Var(&port, "port", 8080, "Custom service port")
 	deployCmd.Flags().StringVar(&pullPolicy, "image-pull-policy", "Always", "Image pull policy")
-	deployCmd.Flags().StringSliceVarP(&labels, "label", "l", []string{}, "Function labels")
-	deployCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, "Environment variables of the function, eg. `--env foo=bar`")
+	// deployCmd.Flags().StringSliceVar(&secrets, "secrets", []string{}, "Name of Secrets to mount into service environment")
+	deployCmd.Flags().StringSliceVarP(&labels, "label", "l", []string{}, "Service labels")
+	deployCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
 	rootCmd.AddCommand(deployCmd)
 }
 
@@ -75,14 +76,14 @@ func deployService(args []string) error {
 		configuration = fromFile(args)
 	}
 
-	res, err := resources()
-	if err != nil {
-		return err
-	}
+	// res, err := resources()
+	// if err != nil {
+	// 	return err
+	// }
 
-	configuration.RevisionTemplate.Spec.Container.Ports = []corev1.ContainerPort{corev1.ContainerPort{ContainerPort: port}}
+	// configuration.RevisionTemplate.Spec.Container.Ports = []corev1.ContainerPort{corev1.ContainerPort{ContainerPort: port}}
 	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(pullPolicy)
-	configuration.RevisionTemplate.Spec.Container.Resources.Requests = res
+	// configuration.RevisionTemplate.Spec.Container.Resources.Requests = res
 	configuration.RevisionTemplate.Spec.Container.Env = append(getEnv(env), corev1.EnvVar{
 		Name:  "timestamp",
 		Value: time.Now().Format("2006-01-02 15:04:05")})
