@@ -15,10 +15,10 @@ import (
 )
 
 var (
-	image, source, url, storage,
+	image, source, url, storage, pullPolicy,
 	memory, path, cpu string
-	env []string
-	df  = "/workspace/Dockerfile"
+	env, labels []string
+	df          = "/workspace/Dockerfile"
 )
 
 // deployCmd represents the deploy command
@@ -42,7 +42,9 @@ func init() {
 	deployCmd.Flags().StringVar(&cpu, "cpu", "", "Number of core units required for function")
 	deployCmd.Flags().StringVar(&memory, "memory", "", "Amount of memory required by function, eg. 100M, 1.5G")
 	deployCmd.Flags().StringVar(&storage, "storage", "", "Volume size for function root device, eg. 200M, 5G")
-	setRouteCmd.Flags().StringSliceVar(&env, "env", []string{}, "Environment variables of the function, eg. `--env foo=bar`")
+	deployCmd.Flags().StringVar(&pullPolicy, "image-pull-policy", "", "Image pull policy")
+	deployCmd.Flags().StringSliceVarP(&labels, "label", "l", []string{}, "Function labels")
+	deployCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, "Environment variables of the function, eg. `--env foo=bar`")
 	rootCmd.AddCommand(deployCmd)
 }
 
@@ -76,10 +78,8 @@ func deployService(args []string) error {
 		return err
 	}
 
-	configuration.RevisionTemplate.Spec.Container.Resources = corev1.ResourceRequirements{
-		Requests: res,
-	}
-
+	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(pullPolicy)
+	configuration.RevisionTemplate.Spec.Container.Resources.Requests = res
 	configuration.RevisionTemplate.Spec.Container.Env = append(getEnv(env), corev1.EnvVar{
 		Name:  "timestamp",
 		Value: time.Now().Format("2006-01-02 15:04:05")})
@@ -96,9 +96,7 @@ func deployService(args []string) error {
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
-			Labels: map[string]string{
-				"created-by": "tm",
-			},
+			Labels: getLabels(labels),
 		},
 
 		Spec: servingv1alpha1.ServiceSpec{
@@ -441,6 +439,20 @@ func createConfigMap(args []string) error {
 		return err
 	}
 	return err
+}
+
+func getLabels(slice []string) map[string]string {
+	m := make(map[string]string)
+	m["created-by"] = "tm"
+	for _, s := range slice {
+		t := regexp.MustCompile("[:=]").Split(s, 2)
+		if len(t) != 2 {
+			log.Warnf("Can't parse label argument %s", s)
+			continue
+		}
+		m[t[0]] = t[1]
+	}
+	return m
 }
 
 func getEnv(slice []string) []corev1.EnvVar {
