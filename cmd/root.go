@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
@@ -15,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -110,11 +110,11 @@ func initConfig() {
 	table.Wrap = true
 	table.MaxColWidth = 50
 
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatalln(err)
+	homeDir := "."
+	if dir := os.Getenv("HOME"); dir != "" {
+		homeDir = dir
 	}
-	tmHome := filepath.Dir(usr.HomeDir + confPath)
+	tmHome := filepath.Dir(homeDir + confPath)
 	if _, err := os.Stat(tmHome); os.IsNotExist(err) {
 		if err := os.MkdirAll(tmHome, 0755); err != nil {
 			log.Fatalln(err)
@@ -122,16 +122,18 @@ func initConfig() {
 	}
 
 	if len(cfgFile) == 0 {
-		cfgFile = usr.HomeDir + confPath
+		cfgFile = homeDir + confPath
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
+	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Fatalln(err)
-	}
-
-	if len(namespace) == 0 {
-		namespace = username()
+		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if len(namespace) == 0 {
+			namespace = username()
+		}
 	}
 
 	build, err = buildApi.NewForConfig(config)
