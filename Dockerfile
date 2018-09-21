@@ -4,5 +4,3 @@ RUN apt-get update && \
     apt-get -y install ca-certificates
 
 ADD gopath/bin/tm /tm
-
-ENTRYPOINT ["/tm"]
