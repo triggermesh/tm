@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"regexp"
 	"time"
@@ -14,9 +15,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	registry = "unauthenticated.registry.svc.cluster.local"
+)
+
 var (
 	image, source, url, storage, pullPolicy,
-	memory, path, cpu string
+	memory, path, cpu, revision string
 	port                 int32
 	env, labels, secrets []string
 	df                   = "/workspace/Dockerfile"
@@ -38,6 +43,7 @@ var deployCmd = &cobra.Command{
 func init() {
 	deployCmd.Flags().StringVar(&image, "from-image", "", "Image to deploy")
 	deployCmd.Flags().StringVar(&source, "from-source", "", "Git source URL to deploy")
+	deployCmd.Flags().StringVar(&revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
 	deployCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
 	deployCmd.Flags().StringVar(&url, "from-url", "", "File source URL to deploy")
 	// deployCmd.Flags().StringVar(&cpu, "cpu", "", "Limit number of core units for service")
@@ -82,8 +88,8 @@ func deployService(args []string) error {
 	// }
 
 	// configuration.RevisionTemplate.Spec.Container.Ports = []corev1.ContainerPort{corev1.ContainerPort{ContainerPort: port}}
-	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(pullPolicy)
 	// configuration.RevisionTemplate.Spec.Container.Resources.Requests = res
+	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(pullPolicy)
 	configuration.RevisionTemplate.Spec.Container.Env = append(getEnv(env), corev1.EnvVar{
 		Name:  "timestamp",
 		Value: time.Now().Format("2006-01-02 15:04:05")})
@@ -163,17 +169,7 @@ func kanikoBuildTemplate() error {
 						Name:  "build-and-push",
 						Image: "gcr.io/kaniko-project/executor",
 						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}"},
-						Env: []corev1.EnvVar{
-							{
-								Name:  "DOCKER_CONFIG",
-								Value: "/docker-config",
-							},
-						},
 						VolumeMounts: []corev1.VolumeMount{
-							{
-								Name:      "docker-secret",
-								MountPath: "/docker-config",
-							},
 							{
 								Name:      "docker-file",
 								MountPath: "/docker-file",
@@ -182,14 +178,6 @@ func kanikoBuildTemplate() error {
 					},
 				},
 				Volumes: []corev1.Volume{
-					{
-						Name: "docker-secret",
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: "docker-secret",
-							},
-						},
-					},
 					{
 						Name: "docker-file",
 						VolumeSource: corev1.VolumeSource{
@@ -296,22 +284,20 @@ func fromImage(args []string) servingv1alpha1.ConfigurationSpec {
 }
 
 func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
-	image = "index.docker.io/triggermesh/" + args[0] + "-from-source:latest"
 	return servingv1alpha1.ConfigurationSpec{
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Git: &buildv1alpha1.GitSourceSpec{
 					Url:      source,
-					Revision: "master",
+					Revision: revision,
 				},
 			},
 			Template: &buildv1alpha1.TemplateInstantiationSpec{
 				Name: "kaniko",
 				Arguments: []buildv1alpha1.ArgumentSpec{
 					{
-						Name: "IMAGE",
-						// TODO: replace triggermesh docker registry account
-						Value: image,
+						Name:  "IMAGE",
+						Value: fmt.Sprintf("%s/%s-%s-source:latest", registry, namespace, args[0]),
 					},
 				},
 			},
@@ -325,8 +311,7 @@ func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image:           image,
-					ImagePullPolicy: corev1.PullAlways,
+					Image: fmt.Sprintf("%s/%s-%s-source:latest", registry, namespace, args[0]),
 				},
 			},
 		},
@@ -334,7 +319,6 @@ func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
 }
 
 func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
-	image = "index.docker.io/triggermesh/" + args[0] + "-from-url:latest"
 	return servingv1alpha1.ConfigurationSpec{
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
@@ -346,9 +330,8 @@ func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
 				Name: "getandbuild",
 				Arguments: []buildv1alpha1.ArgumentSpec{
 					{
-						Name: "IMAGE",
-						// TODO: replace triggermesh docker registry account
-						Value: image,
+						Name:  "IMAGE",
+						Value: fmt.Sprintf("%s/%s-%s-url:latest", registry, namespace, args[0]),
 					},
 					{
 						Name:  "URL",
@@ -366,8 +349,7 @@ func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image:           image,
-					ImagePullPolicy: corev1.PullAlways,
+					Image: fmt.Sprintf("%s/%s-%s-url:latest", registry, namespace, args[0]),
 				},
 			},
 		},
@@ -375,7 +357,6 @@ func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
 }
 
 func fromFile(args []string) servingv1alpha1.ConfigurationSpec {
-	image = "index.docker.io/triggermesh/" + args[0] + "-from-file:latest"
 	return servingv1alpha1.ConfigurationSpec{
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
@@ -387,9 +368,8 @@ func fromFile(args []string) servingv1alpha1.ConfigurationSpec {
 				Name: "kaniko",
 				Arguments: []buildv1alpha1.ArgumentSpec{
 					{
-						Name: "IMAGE",
-						// TODO: replace triggermesh docker registry account
-						Value: image,
+						Name:  "IMAGE",
+						Value: fmt.Sprintf("%s/%s-%s-file:latest", registry, namespace, args[0]),
 					},
 					{
 						Name:  "DOCKERFILE",
@@ -407,8 +387,7 @@ func fromFile(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image:           image,
-					ImagePullPolicy: corev1.PullAlways,
+					Image: fmt.Sprintf("%s/%s-%s-file:latest", registry, namespace, args[0]),
 				},
 			},
 		},
