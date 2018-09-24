@@ -127,9 +127,11 @@ func initConfig() {
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
-		if err != nil {
-			log.Fatalln(err)
+		if config, err = clientcmd.BuildConfigFromFlags("", cfgFile); err != nil {
+			if config, err = clientcmd.BuildConfigFromFlags("", homeDir+"/.kube/config"); err != nil {
+				log.Fatalln("Can't read config file")
+			}
+			cfgFile = homeDir + "/.kube/config"
 		}
 		if len(namespace) == 0 {
 			namespace = username()
