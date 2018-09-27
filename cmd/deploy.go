@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	registry = "unauthenticated.registry.svc.cluster.local"
+	registry = "knative-local-registry:5000"
 )
 
 var (
@@ -63,6 +63,9 @@ func deployService(args []string) error {
 	case len(image) != 0:
 		configuration = fromImage(args)
 	case len(source) != 0:
+		if err := createConfigMap(nil); err != nil {
+			return err
+		}
 		if err := kanikoBuildTemplate(); err != nil {
 			return err
 		}
@@ -73,7 +76,13 @@ func deployService(args []string) error {
 		}
 		configuration = fromURL(args)
 	case len(path) != 0:
-		if err := createConfigMap(args); err != nil {
+		filebody, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		data := make(map[string]string)
+		data[args[0]] = string(filebody)
+		if err := createConfigMap(data); err != nil {
 			return err
 		}
 		if err := kanikoBuildTemplate(); err != nil {
@@ -126,7 +135,7 @@ func deployService(args []string) error {
 		if err != nil {
 			return err
 		}
-		log.Infof("Service update started. Run \"tm -n %s get revisions %s\" to see available revisions\n", namespace, service.Name)
+		log.Infof("Service update started. Run \"tm -n %s get revisions\" to see available revisions\n", namespace)
 	} else if k8sErrors.IsNotFound(err) {
 		service, err := serving.ServingV1alpha1().Services(namespace).Create(&s)
 		if err != nil {
@@ -145,6 +154,7 @@ func kanikoBuildTemplate() error {
 		log.Debugln("kaniko already exist")
 	} else if k8sErrors.IsNotFound(err) {
 		log.Debugln("deploying kaniko")
+
 		bt := buildv1alpha1.BuildTemplate{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "BuildTemplate",
@@ -168,7 +178,7 @@ func kanikoBuildTemplate() error {
 					{
 						Name:  "build-and-push",
 						Image: "gcr.io/kaniko-project/executor",
-						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}"},
+						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}", "--skip-tls-verify"},
 						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "docker-file",
@@ -232,27 +242,11 @@ func getterBuildTemplate() error {
 					{
 						Name:  "build-and-push",
 						Image: "gcr.io/kaniko-project/executor",
-						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}"},
+						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}", "--skip-tls-verify"},
 						Env: []corev1.EnvVar{
 							{
 								Name:  "DOCKER_CONFIG",
 								Value: "/docker-config",
-							},
-						},
-						VolumeMounts: []corev1.VolumeMount{
-							{
-								Name:      "docker-secret",
-								MountPath: "/docker-config",
-							},
-						},
-					},
-				},
-				Volumes: []corev1.Volume{
-					{
-						Name: "docker-secret",
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: "docker-secret",
 							},
 						},
 					},
@@ -394,11 +388,7 @@ func fromFile(args []string) servingv1alpha1.ConfigurationSpec {
 	}
 }
 
-func createConfigMap(args []string) error {
-	filebody, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
+func createConfigMap(data map[string]string) error {
 	newmap := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -408,9 +398,7 @@ func createConfigMap(args []string) error {
 			Name:      "dockerfile",
 			Namespace: namespace,
 		},
-		Data: map[string]string{
-			args[0]: string(filebody),
-		},
+		Data: data,
 	}
 	cm, err := core.CoreV1().ConfigMaps(namespace).Get("dockerfile", metav1.GetOptions{})
 	if err == nil {
