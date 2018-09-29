@@ -24,3 +24,54 @@ Examples:
 tm deploy foo --from-image=gcr.io/google-samples/echo-python
 ```
 
+## Deploy using a build template
+
+With `--from-image`, the only cluster configuration that tm depends on is that the image can be pulled by cluster nodes - either public readable or with [Kubernetes configured](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/) for private registry access.
+
+With `--from-source`, `--from-file` and `--from-url` tm needs to know more.
+These commands require a build, and hence a build template.
+See [below](#manage-build-templates-using-tm) for how to manage templates.
+Given that a build template exists, builds also need:
+
+ * The build template name
+   - `--build-template` arg
+ * The image registry that holds builds
+   - The cluster has a registry specified in the tm [configuration](#configuration).
+   - Override with `--registry-host` arg.
+ * The build service account.
+   - The cluster tm [configuration](#configuration) specifies a service account
+     for the given namespace.
+   - Using the `--namespace` argument, no service account is the default.
+   - If service account is not set in configuration,
+     builds will be created without `serviceAcountName`.
+   - Override with `--service-account` arg.
+
+### Nice-to-have configuration:
+
+ * `--source-directory` to set `DIRECTORY` in the build spec (see for example github.com/triggermesh/nodejs-runtime)
+   - might not need special handling though, if arbitrary build arguments are supported
+   - source subdirectory support could possibly benefit from tm being able to guide users
+ * `--build-argument` for example `--build-argument=DIRECTORY=./example-module`
+   adds an argument to the generated build passed to the build template
+ * Registry TLS mode
+   - Typically configured with cluster.
+   - Default if neither configured nor overridden with `--registry-tls-mode` is
+     to validate the registry TLS cert using Knative's default set of public CAs.
+   - Set to `cluster-ca` to adapt build templates to validating using the Kubernetes CA
+     (see [build templates](#manage-build-templates-using-tm) below).
+   - Set to `skip-validation` to make tm add `--skip-tls-verify` to Kaniko build steps,
+     etc. (this kind of arg should maybe be a part of build template management instead?)
+
+## Manage build templates using tm
+
+Use `tm buildtemplate` to manage build templates.
+Templates have a unique name within the namespace.
+Templates have no lifecycle and are thus updated using the `replace` verb.
+
+Regular kubernetes API access can be used to manage templates, but tm includes a bit of guidance:
+
+ * Validates that templates contain the `IMAGE` parameter.
+ * Can deploy/update templates directly from a git repository that follows TriggerMesh _runtime_ conventions,
+   such as [github.com/triggermesh/nodejs-runtime](https://github.com/triggermesh/nodejs-runtime).
+ * Can configure the template for image pull registry
+   [validation](https://github.com/triggermesh/knative-local-registry#accepting-a-cluster-generated-cert-during-build) (required until local registry TLS is supported out of the box).
