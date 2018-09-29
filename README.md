@@ -53,6 +53,14 @@ Given that a build template exists, builds also need:
    - source subdirectory support could possibly benefit from tm being able to guide users
  * `--build-argument` for example `--build-argument=DIRECTORY=./example-module`
    adds an argument to the generated build passed to the build template
+ * Registry TLS mode
+   - Typically configured with cluster.
+   - Default if neither configured nor overridden with `--registry-tls-mode` is
+     to validate the registry TLS cert using Knative's default set of public CAs.
+   - Set to `cluster-ca` to adapt build templates to validating using the Kubernetes CA
+     (see [build templates](#manage-build-templates-using-tm) below).
+   - Set to `skip-validation` to make tm add `--skip-tls-verify` to Kaniko build steps,
+     etc. (this kind of arg should maybe be a part of build template management instead?)
 
 ## Manage build templates using tm
 
