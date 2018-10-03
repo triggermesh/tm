@@ -26,6 +26,7 @@ var (
 	debug     bool
 	cfgFile   string
 	namespace string
+	registry  string
 	output    string
 	log       logrus.Logger
 	core      *kubernetes.Clientset
@@ -63,6 +64,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("k8s config file (default is $HOME%s)", confPath))
 	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
+	rootCmd.PersistentFlags().StringVar(&registry, "registry-host", "registry.munu.io", "User namespace")
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
 }
 

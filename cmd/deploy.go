@@ -15,10 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	registry = "knative-local-registry:5000"
-)
-
 var (
 	image, source, url, storage, pullPolicy,
 	memory, path, cpu, revision string
