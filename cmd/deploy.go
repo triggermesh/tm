@@ -27,17 +27,16 @@ import (
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
 	image, source, url, storage, pullPolicy,
 	memory, path, cpu, revision, buildtemplate,
-	contextDir, imageTag, handler string
-	port                 int32
-	env, labels, secrets []string
-	df                   = "Dockerfile"
+	sourceDir, imageTag, handler string
+	port                            int32
+	env, labels, secrets, buildArgs []string
+	df                              = "Dockerfile"
 )
 
 // deployCmd represents the deploy command
@@ -60,21 +59,22 @@ func init() {
 	deployCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
 	deployCmd.Flags().StringVar(&url, "from-url", "", "File source URL to deploy")
 	deployCmd.Flags().StringVar(&buildtemplate, "build-template", "kaniko", "Build template to use with service")
-	deployCmd.Flags().StringVar(&contextDir, "context-directory", "", "Workspace context directory to work in")
+	deployCmd.Flags().StringVar(&sourceDir, "source-directory", "", "Workspace context directory to work in")
 	deployCmd.Flags().StringVar(&imageTag, "tag", "latest", "Image tag to build")
-	// deployCmd.Flags().StringVar(&cpu, "cpu", "", "Limit number of core units for service")
-	// deployCmd.Flags().StringVar(&memory, "memory", "", "Limit amount of memory for service, eg. 100M, 1.5G")
-	// deployCmd.Flags().StringVar(&storage, "storage", "", "Limit volume size for service root device, eg. 200M, 5G")
-	// deployCmd.Flags().Int32Var(&port, "port", 8080, "Custom service port")
 	deployCmd.Flags().StringVar(&pullPolicy, "image-pull-policy", "Always", "Image pull policy")
-	// deployCmd.Flags().StringSliceVar(&secrets, "secrets", []string{}, "Name of Secrets to mount into service environment")
+	deployCmd.Flags().StringSliceVar(&buildArgs, "build-argument", []string{}, "Image tag to build")
 	deployCmd.Flags().StringSliceVarP(&labels, "label", "l", []string{}, "Service labels")
 	deployCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
+	// deployCmd.Flags().StringSliceVar(&secrets, "secrets", []string{}, "Name of Secrets to mount into service environment")
+	// deployCmd.Flags().Int32Var(&port, "port", 8080, "Custom service port")
 	rootCmd.AddCommand(deployCmd)
 }
 
 func deployService(args []string) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
+
+	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s-source", registry, namespace, args[0]), buildArgs)
+
 	switch {
 	case len(image) != 0:
 		configuration = fromImage(args)
@@ -82,14 +82,8 @@ func deployService(args []string) error {
 		if err := createConfigMap(nil); err != nil {
 			return err
 		}
-		if err := kanikoBuildTemplate(); err != nil {
-			return err
-		}
 		configuration = fromSource(args)
 	case len(url) != 0:
-		if err := getterBuildTemplate(); err != nil {
-			return err
-		}
 		configuration = fromURL(args)
 	case len(path) != 0:
 		filebody, err := ioutil.ReadFile(path)
@@ -101,25 +95,27 @@ func deployService(args []string) error {
 		if err := createConfigMap(data); err != nil {
 			return err
 		}
-		if err := kanikoBuildTemplate(); err != nil {
-			return err
-		}
 		configuration = fromFile(args)
 	}
 
-	// res, err := resources()
-	// if err != nil {
-	// 	return err
-	// }
+	if err := updateBuildTemplate(buildtemplate, templateParams); err != nil {
+		return err
+	}
 
-	// configuration.RevisionTemplate.Spec.Container.Ports = []corev1.ContainerPort{corev1.ContainerPort{ContainerPort: port}}
-	// configuration.RevisionTemplate.Spec.Container.Resources.Requests = res
+	configuration.Build.Template.Arguments = buildArguments
+
+	envVars := []corev1.EnvVar{
+		corev1.EnvVar{
+			Name:  "timestamp",
+			Value: time.Now().Format("2006-01-02 15:04:05"),
+		},
+	}
+	for k, v := range getArgsFromSlice(env) {
+		envVars = append(envVars, corev1.EnvVar{Name: k, Value: v})
+	}
+	configuration.RevisionTemplate.Spec.Container.Env = envVars
 	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(pullPolicy)
-	configuration.RevisionTemplate.Spec.Container.Env = append(getEnv(env), corev1.EnvVar{
-		Name:  "timestamp",
-		Value: time.Now().Format("2006-01-02 15:04:05")})
-
-	s := servingv1alpha1.Service{
+	serviceObject := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
 			APIVersion: "serving.knative.dev/servingv1alpha1",
@@ -131,7 +127,7 @@ func deployService(args []string) error {
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
-			Labels: getLabels(labels),
+			Labels: getArgsFromSlice(labels),
 		},
 
 		Spec: servingv1alpha1.ServiceSpec{
@@ -141,19 +137,19 @@ func deployService(args []string) error {
 		},
 	}
 
-	log.Debugf("Service object: %+v\n", s)
-	log.Debugf("Service specs: %+v\n", s.Spec.RunLatest)
+	log.Debugf("Service object: %+v\n", serviceObject)
+	log.Debugf("Service specs: %+v\n", serviceObject.Spec.RunLatest)
 
 	service, err := serving.ServingV1alpha1().Services(namespace).Get(args[0], metav1.GetOptions{})
 	if err == nil {
-		s.ObjectMeta.ResourceVersion = service.ObjectMeta.ResourceVersion
-		service, err = serving.ServingV1alpha1().Services(namespace).Update(&s)
+		serviceObject.ObjectMeta.ResourceVersion = service.ObjectMeta.ResourceVersion
+		service, err = serving.ServingV1alpha1().Services(namespace).Update(&serviceObject)
 		if err != nil {
 			return err
 		}
 		log.Infof("Service update started. Run \"tm -n %s get revisions\" to see available revisions\n", namespace)
 	} else if k8sErrors.IsNotFound(err) {
-		service, err := serving.ServingV1alpha1().Services(namespace).Create(&s)
+		service, err := serving.ServingV1alpha1().Services(namespace).Create(&serviceObject)
 		if err != nil {
 			return err
 		}
@@ -162,133 +158,6 @@ func deployService(args []string) error {
 		return err
 	}
 	return nil
-}
-
-func kanikoBuildTemplate() error {
-	_, err := build.BuildV1alpha1().BuildTemplates(namespace).Get("kaniko", metav1.GetOptions{})
-	if err == nil {
-		log.Debugln("kaniko already exist")
-	} else if k8sErrors.IsNotFound(err) {
-		log.Debugln("deploying kaniko")
-
-		bt := buildv1alpha1.BuildTemplate{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "BuildTemplate",
-				APIVersion: "build.knative.dev/v1alpha1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kaniko",
-				Namespace: namespace,
-			},
-			Spec: buildv1alpha1.BuildTemplateSpec{
-				Parameters: []buildv1alpha1.ParameterSpec{
-					{
-						Name: "IMAGE",
-					},
-					{
-						Name:    "DOCKERFILE",
-						Default: &df,
-					},
-					{
-						Name: "DIRECTORY",
-					},
-					{
-						Name: "TAG",
-					},
-				},
-				Steps: []corev1.Container{
-					{
-						Name:  "build-and-push",
-						Image: "gcr.io/kaniko-project/executor",
-						Args: []string{
-							"--dockerfile=/workspace/${DIRECTORY}/${DOCKERFILE}",
-							"--context=/workspace/${DIRECTORY}",
-							"--destination=${IMAGE}:${TAG}",
-							"--skip-tls-verify",
-						},
-						VolumeMounts: []corev1.VolumeMount{
-							{
-								Name:      "docker-file",
-								MountPath: "/docker-file",
-							},
-						},
-					},
-				},
-				Volumes: []corev1.Volume{
-					{
-						Name: "docker-file",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: "dockerfile"},
-							},
-						},
-					},
-				},
-			},
-		}
-		_, err = build.BuildV1alpha1().BuildTemplates(namespace).Create(&bt)
-		return err
-	}
-	return err
-}
-
-func getterBuildTemplate() error {
-	_, err := build.BuildV1alpha1().BuildTemplates(namespace).Get("getandbuild", metav1.GetOptions{})
-	if err == nil {
-		log.Debugln("getandbuild template already exist")
-	} else if k8sErrors.IsNotFound(err) {
-		log.Debugln("deploying getandbuild template")
-		bt := buildv1alpha1.BuildTemplate{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "BuildTemplate",
-				APIVersion: "build.knative.dev/v1alpha1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "getandbuild",
-				Namespace: namespace,
-			},
-			Spec: buildv1alpha1.BuildTemplateSpec{
-				Parameters: []buildv1alpha1.ParameterSpec{
-					{
-						Name: "URL",
-					},
-					{
-						Name: "IMAGE",
-					},
-					{
-						Name:    "DOCKERFILE",
-						Default: &df,
-					},
-					{
-						Name: "DIRECTORY",
-					},
-					{
-						Name: "TAG",
-					},
-				},
-				Steps: []corev1.Container{
-					{
-						Name:  "get",
-						Image: "index.docker.io/byrnedo/alpine-curl",
-						Args:  []string{"-o", "${DOCKERFILE}", "${URL}"},
-					},
-					{
-						Name:  "build-and-push",
-						Image: "gcr.io/kaniko-project/executor",
-						Args: []string{
-							"--dockerfile=/workspace/${DIRECTORY}/${DOCKERFILE}",
-							"--context=/workspace/${DIRECTORY}",
-							"--destination=${IMAGE}:${TAG}",
-							"--skip-tls-verify",
-						},
-					},
-				},
-			},
-		}
-		_, err = build.BuildV1alpha1().BuildTemplates(namespace).Create(&bt)
-		return err
-	}
-	return err
 }
 
 func fromImage(args []string) servingv1alpha1.ConfigurationSpec {
@@ -320,24 +189,6 @@ func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Template: &buildv1alpha1.TemplateInstantiationSpec{
 				Name: buildtemplate,
-				Arguments: []buildv1alpha1.ArgumentSpec{
-					{
-						Name:  "IMAGE",
-						Value: fmt.Sprintf("%s/%s-%s-source", registry, namespace, args[0]),
-					},
-					{
-						Name:  "TAG",
-						Value: imageTag,
-					},
-					{
-						Name:  "FUNCTION_NAME",
-						Value: handler,
-					},
-					{
-						Name:  "DIRECTORY",
-						Value: contextDir,
-					},
-				},
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
@@ -366,20 +217,6 @@ func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Template: &buildv1alpha1.TemplateInstantiationSpec{
 				Name: "getandbuild",
-				Arguments: []buildv1alpha1.ArgumentSpec{
-					{
-						Name:  "IMAGE",
-						Value: fmt.Sprintf("%s/%s-%s-url", registry, namespace, args[0]),
-					},
-					{
-						Name:  "TAG",
-						Value: imageTag,
-					},
-					{
-						Name:  "URL",
-						Value: url,
-					},
-				},
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
@@ -408,20 +245,6 @@ func fromFile(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Template: &buildv1alpha1.TemplateInstantiationSpec{
 				Name: "kaniko",
-				Arguments: []buildv1alpha1.ArgumentSpec{
-					{
-						Name:  "IMAGE",
-						Value: fmt.Sprintf("%s/%s-%s-file", registry, namespace, args[0]),
-					},
-					{
-						Name:  "TAG",
-						Value: imageTag,
-					},
-					{
-						Name:  "DOCKERFILE",
-						Value: "/docker-file/" + args[0],
-					},
-				},
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
@@ -464,13 +287,12 @@ func createConfigMap(data map[string]string) error {
 	return err
 }
 
-func getLabels(slice []string) map[string]string {
+func getArgsFromSlice(slice []string) map[string]string {
 	m := make(map[string]string)
-	m["created-by"] = "tm"
 	for _, s := range slice {
 		t := regexp.MustCompile("[:=]").Split(s, 2)
 		if len(t) != 2 {
-			log.Warnf("Can't parse label argument %s", s)
+			log.Warnf("Can't parse argument slice %s", s)
 			continue
 		}
 		m[t[0]] = t[1]
@@ -478,35 +300,58 @@ func getLabels(slice []string) map[string]string {
 	return m
 }
 
-func getEnv(slice []string) []corev1.EnvVar {
-	m := []corev1.EnvVar{}
-	for _, s := range slice {
-		t := regexp.MustCompile("[:=]").Split(s, 2)
-		if len(t) != 2 {
-			log.Warnf("Can't parse environment argument %s", s)
-			continue
-		}
-		m = append(m, corev1.EnvVar{Name: t[0], Value: t[1]})
+func getBuildArguments(image string, buildArgs []string) ([]buildv1alpha1.ArgumentSpec, []buildv1alpha1.ParameterSpec) {
+	args := []buildv1alpha1.ArgumentSpec{
+		buildv1alpha1.ArgumentSpec{
+			Name:  "IMAGE",
+			Value: image,
+		},
 	}
-	return m
+
+	for k, v := range getArgsFromSlice(buildArgs) {
+		args = append(args, buildv1alpha1.ArgumentSpec{
+			Name: k, Value: v,
+		})
+	}
+
+	params := []buildv1alpha1.ParameterSpec{
+		buildv1alpha1.ParameterSpec{
+			Name: "IMAGE",
+		},
+	}
+
+	for _, v := range args {
+		params = append(params, buildv1alpha1.ParameterSpec{
+			Name: v.Name,
+		})
+	}
+	return args, params
 }
 
-func resources() (map[corev1.ResourceName]resource.Quantity, error) {
-	res := make(map[corev1.ResourceName]resource.Quantity)
-	if cores, err := resource.ParseQuantity(cpu); cpu != "" && err != nil {
-		return nil, err
-	} else {
-		res[corev1.ResourceCPU] = cores
+func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec) error {
+	buildTemplate, err := build.BuildV1alpha1().BuildTemplates(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return err
 	}
-	if ram, err := resource.ParseQuantity(memory); memory != "" && err != nil {
-		return nil, err
-	} else {
-		res[corev1.ResourceMemory] = ram
+	// Matching new build parameters with existing to check if need to update build template
+	var new bool
+	for _, v := range params {
+		new = true
+		for _, vv := range buildTemplate.Spec.Parameters {
+			if v.Name == vv.Name {
+				new = false
+				break
+			}
+		}
+		if new {
+			break
+		}
 	}
-	if disk, err := resource.ParseQuantity(storage); storage != "" && err != nil {
-		return nil, err
-	} else {
-		res[corev1.ResourceStorage] = disk
+
+	if new {
+		buildTemplate.Spec.Parameters = params
+		_, err = build.BuildV1alpha1().BuildTemplates(namespace).Update(buildTemplate)
 	}
-	return res, nil
+
+	return err
 }
