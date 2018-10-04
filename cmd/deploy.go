@@ -33,10 +33,11 @@ import (
 
 var (
 	image, source, url, storage, pullPolicy,
-	memory, path, cpu, revision string
+	memory, path, cpu, revision, buildtemplate,
+	contextDir, imageTag, handler string
 	port                 int32
 	env, labels, secrets []string
-	df                   = "/workspace/Dockerfile"
+	df                   = "Dockerfile"
 )
 
 // deployCmd represents the deploy command
@@ -58,6 +59,9 @@ func init() {
 	deployCmd.Flags().StringVar(&revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
 	deployCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
 	deployCmd.Flags().StringVar(&url, "from-url", "", "File source URL to deploy")
+	deployCmd.Flags().StringVar(&buildtemplate, "build-template", "kaniko", "Build template to use with service")
+	deployCmd.Flags().StringVar(&contextDir, "context-directory", "", "Workspace context directory to work in")
+	deployCmd.Flags().StringVar(&imageTag, "tag", "latest", "Image tag to build")
 	// deployCmd.Flags().StringVar(&cpu, "cpu", "", "Limit number of core units for service")
 	// deployCmd.Flags().StringVar(&memory, "memory", "", "Limit amount of memory for service, eg. 100M, 1.5G")
 	// deployCmd.Flags().StringVar(&storage, "storage", "", "Limit volume size for service root device, eg. 200M, 5G")
@@ -185,12 +189,23 @@ func kanikoBuildTemplate() error {
 						Name:    "DOCKERFILE",
 						Default: &df,
 					},
+					{
+						Name: "DIRECTORY",
+					},
+					{
+						Name: "TAG",
+					},
 				},
 				Steps: []corev1.Container{
 					{
 						Name:  "build-and-push",
 						Image: "gcr.io/kaniko-project/executor",
-						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}", "--skip-tls-verify"},
+						Args: []string{
+							"--dockerfile=/workspace/${DIRECTORY}/${DOCKERFILE}",
+							"--context=/workspace/${DIRECTORY}",
+							"--destination=${IMAGE}:${TAG}",
+							"--skip-tls-verify",
+						},
 						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "docker-file",
@@ -244,6 +259,12 @@ func getterBuildTemplate() error {
 						Name:    "DOCKERFILE",
 						Default: &df,
 					},
+					{
+						Name: "DIRECTORY",
+					},
+					{
+						Name: "TAG",
+					},
 				},
 				Steps: []corev1.Container{
 					{
@@ -254,12 +275,11 @@ func getterBuildTemplate() error {
 					{
 						Name:  "build-and-push",
 						Image: "gcr.io/kaniko-project/executor",
-						Args:  []string{"--dockerfile=${DOCKERFILE}", "--destination=${IMAGE}", "--skip-tls-verify"},
-						Env: []corev1.EnvVar{
-							{
-								Name:  "DOCKER_CONFIG",
-								Value: "/docker-config",
-							},
+						Args: []string{
+							"--dockerfile=/workspace/${DIRECTORY}/${DOCKERFILE}",
+							"--context=/workspace/${DIRECTORY}",
+							"--destination=${IMAGE}:${TAG}",
+							"--skip-tls-verify",
 						},
 					},
 				},
@@ -299,11 +319,23 @@ func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
 				},
 			},
 			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name: "kaniko",
+				Name: buildtemplate,
 				Arguments: []buildv1alpha1.ArgumentSpec{
 					{
 						Name:  "IMAGE",
-						Value: fmt.Sprintf("%s/%s-%s-source:latest", registry, namespace, args[0]),
+						Value: fmt.Sprintf("%s/%s-%s-source", registry, namespace, args[0]),
+					},
+					{
+						Name:  "TAG",
+						Value: imageTag,
+					},
+					{
+						Name:  "FUNCTION_NAME",
+						Value: handler,
+					},
+					{
+						Name:  "DIRECTORY",
+						Value: contextDir,
 					},
 				},
 			},
@@ -317,7 +349,7 @@ func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-source:latest", registry, namespace, args[0]),
+					Image: fmt.Sprintf("%s/%s-%s-source:%s", registry, namespace, args[0], imageTag),
 				},
 			},
 		},
@@ -337,7 +369,11 @@ func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
 				Arguments: []buildv1alpha1.ArgumentSpec{
 					{
 						Name:  "IMAGE",
-						Value: fmt.Sprintf("%s/%s-%s-url:latest", registry, namespace, args[0]),
+						Value: fmt.Sprintf("%s/%s-%s-url", registry, namespace, args[0]),
+					},
+					{
+						Name:  "TAG",
+						Value: imageTag,
 					},
 					{
 						Name:  "URL",
@@ -355,7 +391,7 @@ func fromURL(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-url:latest", registry, namespace, args[0]),
+					Image: fmt.Sprintf("%s/%s-%s-url:%s", registry, namespace, args[0], imageTag),
 				},
 			},
 		},
@@ -375,7 +411,11 @@ func fromFile(args []string) servingv1alpha1.ConfigurationSpec {
 				Arguments: []buildv1alpha1.ArgumentSpec{
 					{
 						Name:  "IMAGE",
-						Value: fmt.Sprintf("%s/%s-%s-file:latest", registry, namespace, args[0]),
+						Value: fmt.Sprintf("%s/%s-%s-file", registry, namespace, args[0]),
+					},
+					{
+						Name:  "TAG",
+						Value: imageTag,
 					},
 					{
 						Name:  "DOCKERFILE",
@@ -393,7 +433,7 @@ func fromFile(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-file:latest", registry, namespace, args[0]),
+					Image: fmt.Sprintf("%s/%s-%s-file:%s", registry, namespace, args[0], imageTag),
 				},
 			},
 		},
