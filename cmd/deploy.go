@@ -91,7 +91,7 @@ var deployServiceCmd = &cobra.Command{
 	Aliases: []string{"services", "svc"},
 	Short:   "Deploy knative service",
 	Args:    cobra.ExactArgs(1),
-	Example: "tm -n default deploy service foo --from-image gcr.io/google-samples/hello-app:1.0",
+	Example: "tm -n default deploy service foo --build-template kaniko --build-argument SKIP_TLS_VERIFY=true --from-image gcr.io/google-samples/hello-app:1.0",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := deployService(args); err != nil {
 			log.Errorln(err)
@@ -103,6 +103,7 @@ var deployBuildtemplateCmd = &cobra.Command{
 	Use:     "buildtemplate",
 	Aliases: []string{"buildtempalte", "bldtmpl"},
 	Short:   "Deploy knative build template",
+	Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := deployBuildtemplate(args); err != nil {
 			log.Errorln(err)
