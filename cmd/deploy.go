@@ -48,38 +48,6 @@ var (
 	df                              = "Dockerfile"
 )
 
-type buildTemplateYaml struct {
-	APIVersion string `yaml:"apiVersion"`
-	Kind       string `yaml:"kind"`
-	Metadata   struct {
-		Name        string `yaml:"name"`
-		Annotations struct {
-		} `yaml:"annotations"`
-	} `yaml:"metadata"`
-	Spec struct {
-		Parameters []struct {
-			Name        string `yaml:"name"`
-			Description string `yaml:"description"`
-			Default     string `yaml:"default,omitempty"`
-		} `yaml:"parameters"`
-		Steps []struct {
-			Name         string   `yaml:"name"`
-			Image        string   `yaml:"image"`
-			Args         []string `yaml:"args"`
-			WorkingDir   string   `yaml:"workingDir"`
-			VolumeMounts []struct {
-				Name      string `yaml:"name"`
-				MountPath string `yaml:"mountPath"`
-			} `yaml:"volumeMounts"`
-		} `yaml:"steps"`
-		Volumes []struct {
-			Name     string `yaml:"name"`
-			EmptyDir struct {
-			} `yaml:"emptyDir"`
-		} `yaml:"volumes"`
-	} `yaml:"spec"`
-}
-
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploy knative resources",
