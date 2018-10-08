@@ -14,22 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package client
 
 import (
-	"fmt"
+	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
-	"github.com/gosuri/uitable"
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
 	servingApi "github.com/knative/serving/pkg/client/clientset/versioned"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -38,18 +35,13 @@ const (
 	confPath = "/.tm/config.json"
 )
 
-var (
-	debug     bool
-	cfgFile   string
-	namespace string
-	registry  string
-	output    string
-	log       logrus.Logger
-	core      *kubernetes.Clientset
-	build     *buildApi.Clientset
-	serving   *servingApi.Clientset
-	table     *uitable.Table
-)
+type ClientSet struct {
+	Core      *kubernetes.Clientset
+	Build     *buildApi.Clientset
+	Serving   *servingApi.Clientset
+	Namespace string
+	Registry  string
+}
 
 type confStruct struct {
 	Contexts []struct {
@@ -61,73 +53,38 @@ type confStruct struct {
 	} `json:"contexts"`
 }
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:     "tm",
-	Short:   "Triggermesh CLI",
-	Version: "0.0.3",
-}
-
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-func init() {
-	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("k8s config file (default is $HOME%s)", confPath))
-	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
-	rootCmd.PersistentFlags().StringVar(&registry, "registry-host", "registry.munu.io", "User namespace")
-	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
-}
-
-func username() string {
+func username(cfgFile string) (string, error) {
 	jsonFile, err := os.Open(cfgFile)
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
 	defer jsonFile.Close()
 
 	body, err := ioutil.ReadAll(jsonFile)
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
 	if body, err = yaml.YAMLToJSON(body); err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
 
 	var conf confStruct
 	if err := yaml.Unmarshal(body, &conf); err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
 	for _, v := range conf.Contexts {
+		// TODO remove hardcoded cluster name
 		if v.Context.Cluster == "triggermesh" {
-			return v.Context.Namespace
+			return v.Context.Namespace, nil
 		}
 	}
-	return ""
+	return "", errors.New("No valid username found")
 }
 
-func initConfig() {
-	log = *logrus.New()
-	log.Out = os.Stdout
-
-	logFormat := new(logrus.TextFormatter)
-	logFormat.TimestampFormat = "2006-01-02 15:04:05"
-	logFormat.FullTimestamp = true
-	log.Formatter = logFormat
-
-	if debug {
-		log.Level = logrus.DebugLevel
+func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
+	c := ClientSet{
+		Namespace: namespace,
 	}
-
-	table = uitable.New()
-	table.Wrap = true
-	table.MaxColWidth = 50
-
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {
 		homeDir = dir
@@ -152,20 +109,22 @@ func initConfig() {
 			cfgFile = homeDir + "/.kube/config"
 		}
 		if len(namespace) == 0 {
-			namespace = username()
+			c.Namespace, err = username(cfgFile)
+			if err != nil {
+				return c, err
+			}
 		}
 	}
 
-	build, err = buildApi.NewForConfig(config)
-	if err != nil {
-		log.Fatalln(err)
+	c.Registry = registry
+	if c.Build, err = buildApi.NewForConfig(config); err != nil {
+		return c, err
 	}
-	serving, err = servingApi.NewForConfig(config)
-	if err != nil {
-		log.Fatalln(err)
+	if c.Serving, err = servingApi.NewForConfig(config); err != nil {
+		return c, err
 	}
-	core, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Fatalln(err)
+	if c.Core, err = kubernetes.NewForConfig(config); err != nil {
+		return c, err
 	}
+	return c, nil
 }
