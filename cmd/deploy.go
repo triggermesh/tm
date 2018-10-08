@@ -158,7 +158,6 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate) error {
 
 func deployService(args []string) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
-
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s-source", registry, namespace, args[0]), buildArgs)
 
 	switch {
@@ -169,6 +168,16 @@ func deployService(args []string) error {
 			return err
 		}
 		configuration = fromSource(args)
+		if err := updateBuildTemplate(buildtemplate, templateParams); err != nil {
+			return err
+		}
+
+		configuration.Build = &buildv1alpha1.BuildSpec{
+			Template: &buildv1alpha1.TemplateInstantiationSpec{
+				Name:      buildtemplate,
+				Arguments: buildArguments,
+			},
+		}
 	case len(url) != 0:
 		configuration = fromURL(args)
 	case len(path) != 0:
@@ -183,12 +192,6 @@ func deployService(args []string) error {
 		}
 		configuration = fromFile(args)
 	}
-
-	if err := updateBuildTemplate(buildtemplate, templateParams); err != nil {
-		return err
-	}
-
-	configuration.Build.Template.Arguments = buildArguments
 
 	envVars := []corev1.EnvVar{
 		corev1.EnvVar{
