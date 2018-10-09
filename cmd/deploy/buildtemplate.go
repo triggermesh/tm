@@ -21,51 +21,46 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
-	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
-	deployBuildTemplateCmd := &cobra.Command{
-		Use:     "buildtemplate",
-		Aliases: []string{"buildtempalte", "bldtmpl"},
-		Short:   "Deploy knative build template",
-		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := BuildTemplate(args, clientset); err != nil {
-				log.Fatal(err)
-			}
-		},
-	}
-
-	deployBuildTemplateCmd.Flags().StringVar(&URL, "from-url", "", "Build template yaml URL")
-	deployBuildTemplateCmd.Flags().StringVar(&Path, "from-file", "", "Local file path to deploy")
-
-	return deployBuildTemplateCmd
+type Buildtemplate struct {
+	url  string
+	path string
 }
 
-func BuildTemplate(args []string, clientset *client.ClientSet) error {
+const (
+	tmpPath = "/tmp"
+)
+
+func NewBuildTemplate(url, path string) Buildtemplate {
+	return Buildtemplate{
+		url:  url,
+		path: path,
+	}
+}
+
+func (b *Buildtemplate) DeployBuildTemplate(args []string, clientset *client.ClientSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
-	if len(URL) != 0 {
+	if len(b.url) != 0 {
 		fmt.Println("Downloading build template definition")
-		if Path, err = downloadFile(URL); err != nil {
+		if b.path, err = downloadFile(b.url); err != nil {
 			return err
 		}
 	}
-	if len(Path) == 0 {
-		return errors.New("Empty path to buildtemplate yaml file: " + URL + " " + Path)
+	if len(b.path) == 0 {
+		return errors.New("Empty path to buildtemplate yaml file")
 	}
-	if bt, err = readYaml(Path); err != nil {
+	if bt, err = readYaml(b.path); err != nil {
 		return err
 	}
 	// If argument is passed overwrite build template name
