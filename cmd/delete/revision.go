@@ -31,7 +31,7 @@ func cmdDeleteRevision(clientset *client.ClientSet) *cobra.Command {
 		Short: "Delete knative revision resource",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := deleteRevision(args, clientset); err != nil {
+			if err := Revision(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Revision is being deleted")
@@ -39,6 +39,6 @@ func cmdDeleteRevision(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func deleteRevision(args []string, clientset *client.ClientSet) error {
+func Revision(args []string, clientset *client.ClientSet) error {
 	return clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

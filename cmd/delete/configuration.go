@@ -31,7 +31,7 @@ func cmdDeleteConfiguration(clientset *client.ClientSet) *cobra.Command {
 		Short: "Delete knative configuration resource",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := deleteConfiguration(args, clientset); err != nil {
+			if err := Configuration(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Configuration is being deleted")
@@ -39,6 +39,6 @@ func cmdDeleteConfiguration(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func deleteConfiguration(args []string, clientset *client.ClientSet) error {
+func Configuration(args []string, clientset *client.ClientSet) error {
 	return clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

@@ -31,7 +31,7 @@ func cmdDeleteBuild(clientset *client.ClientSet) *cobra.Command {
 		Short: "Delete knative build resource",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := deleteBuild(args, clientset); err != nil {
+			if err := Build(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Build is being deleted")
@@ -39,6 +39,6 @@ func cmdDeleteBuild(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func deleteBuild(args []string, clientset *client.ClientSet) error {
+func Build(args []string, clientset *client.ClientSet) error {
 	return clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

@@ -32,7 +32,7 @@ func cmdDeleteService(clientset *client.ClientSet) *cobra.Command {
 		Short: "Delete knative service resource",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := deleteService(args, clientset); err != nil {
+			if err := Service(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Service is being deleted")
@@ -40,6 +40,6 @@ func cmdDeleteService(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func deleteService(args []string, clientset *client.ClientSet) error {
+func Service(args []string, clientset *client.ClientSet) error {
 	return clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

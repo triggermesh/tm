@@ -31,7 +31,7 @@ func cmdDeleteBuildtemplate(clientset *client.ClientSet) *cobra.Command {
 		Short: "Delete knative buildtemplate resource",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := deleteBuildTemplate(args, clientset); err != nil {
+			if err := BuildTemplate(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Buildtemplate is being deleted")
@@ -39,6 +39,6 @@ func cmdDeleteBuildtemplate(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func deleteBuildTemplate(args []string, clientset *client.ClientSet) error {
+func BuildTemplate(args []string, clientset *client.ClientSet) error {
 	return clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

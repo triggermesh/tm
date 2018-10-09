@@ -40,7 +40,7 @@ func cmdDeployBuildtemplate(clientset *client.ClientSet) *cobra.Command {
 		Short:   "Deploy knative build template",
 		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := DeployBuildtemplate(clientset); err != nil {
+			if err := Buildtemplate(clientset); err != nil {
 				log.Fatalln(err)
 			}
 		},
@@ -52,7 +52,7 @@ func cmdDeployBuildtemplate(clientset *client.ClientSet) *cobra.Command {
 	return deployBuildtemplateCmd
 }
 
-func DeployBuildtemplate(clientset *client.ClientSet) error {
+func Buildtemplate(clientset *client.ClientSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 	if len(url) != 0 {

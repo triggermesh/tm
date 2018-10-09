@@ -31,7 +31,7 @@ func cmdDeleteRoute(clientset *client.ClientSet) *cobra.Command {
 		Short: "Delete knative route resource",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := deleteRoute(args, clientset); err != nil {
+			if err := Route(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Route is being deleted")
@@ -39,6 +39,6 @@ func cmdDeleteRoute(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func deleteRoute(args []string, clientset *client.ClientSet) error {
+func Route(args []string, clientset *client.ClientSet) error {
 	return clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }
