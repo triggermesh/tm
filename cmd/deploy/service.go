@@ -46,7 +46,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		Example: "tm -n default deploy service foo --build-template kaniko --build-argument SKIP_TLS_VERIFY=true --from-image gcr.io/google-samples/hello-app:1.0",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := deployService(args, clientset); err != nil {
+			if err := DeployService(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 		},
@@ -70,7 +70,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 	return deployServiceCmd
 }
 
-func deployService(args []string, clientset *client.ClientSet) error {
+func DeployService(args []string, clientset *client.ClientSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s-source", clientset.Registry, clientset.Namespace, args[0]), buildArgs)
 
