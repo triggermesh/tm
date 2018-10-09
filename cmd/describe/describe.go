@@ -36,7 +36,7 @@ var describeCmd = &cobra.Command{
 
 func NewDescribeCmd(clientset *client.ClientSet) *cobra.Command {
 	describeCmd.AddCommand(cmdDescribeBuild(clientset))
-	describeCmd.AddCommand(cmdDescribeBuildtemplate(clientset))
+	describeCmd.AddCommand(cmdDescribeBuildTemplate(clientset))
 	describeCmd.AddCommand(cmdDescribeConfiguration(clientset))
 	describeCmd.AddCommand(cmdDescribeRevision(clientset))
 	describeCmd.AddCommand(cmdDescribeRoute(clientset))

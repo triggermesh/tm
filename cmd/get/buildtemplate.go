@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdListBuildtemplates(clientset *client.ClientSet) *cobra.Command {
+func cmdListBuildTemplates(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "buildtemplate",
 		Aliases: []string{"buildtemplates"},

@@ -38,6 +38,6 @@ var deployCmd = &cobra.Command{
 
 func NewDeployCmd(clientset *client.ClientSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployService(clientset))
-	deployCmd.AddCommand(cmdDeployBuildtemplate(clientset))
+	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
 	return deployCmd
 }

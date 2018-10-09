@@ -61,7 +61,7 @@ func TestDescribe(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	t.Run("Describe Buildtemplate", func(t *testing.T) {
+	t.Run("Describe BuildTemplate", func(t *testing.T) {
 		if _, err := describeBuildTemplate([]string{"kaniko"}); err != nil {
 			t.Error(err)
 		}

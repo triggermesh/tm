@@ -38,7 +38,7 @@ var getCmd = &cobra.Command{
 
 func NewGetCmd(clientset *client.ClientSet) *cobra.Command {
 	getCmd.AddCommand(cmdListBuild(clientset))
-	getCmd.AddCommand(cmdListBuildtemplates(clientset))
+	getCmd.AddCommand(cmdListBuildTemplates(clientset))
 	getCmd.AddCommand(cmdListConfigurations(clientset))
 	getCmd.AddCommand(cmdListRevision(clientset))
 	getCmd.AddCommand(cmdListRoute(clientset))

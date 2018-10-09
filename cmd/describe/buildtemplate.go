@@ -25,11 +25,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDescribeBuildtemplate(clientset *client.ClientSet) *cobra.Command {
+func cmdDescribeBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "buildtemplate",
 		Aliases: []string{"buildtemplates"},
-		Short:   "Buildtemplate details",
+		Short:   "BuildTemplate details",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				if args, err = listBuildTemplates(clientset); err != nil {

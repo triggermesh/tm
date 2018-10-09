@@ -33,26 +33,26 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDeployBuildtemplate(clientset *client.ClientSet) *cobra.Command {
-	deployBuildtemplateCmd := &cobra.Command{
+func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
+	deployBuildTemplateCmd := &cobra.Command{
 		Use:     "buildtemplate",
 		Aliases: []string{"buildtempalte", "bldtmpl"},
 		Short:   "Deploy knative build template",
 		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := Buildtemplate(clientset); err != nil {
+			if err := BuildTemplate(clientset); err != nil {
 				log.Fatalln(err)
 			}
 		},
 	}
 
-	deployBuildtemplateCmd.Flags().StringVar(&url, "from-url", "", "Build template yaml URL")
-	deployBuildtemplateCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
+	deployBuildTemplateCmd.Flags().StringVar(&url, "from-url", "", "Build template yaml URL")
+	deployBuildTemplateCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
 
-	return deployBuildtemplateCmd
+	return deployBuildTemplateCmd
 }
 
-func Buildtemplate(clientset *client.ClientSet) error {
+func BuildTemplate(clientset *client.ClientSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 	if len(url) != 0 {

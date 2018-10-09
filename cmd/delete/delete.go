@@ -28,7 +28,7 @@ var deleteCmd = &cobra.Command{
 
 func NewDeleteCmd(clientset *client.ClientSet) *cobra.Command {
 	deleteCmd.AddCommand(cmdDeleteConfiguration(clientset))
-	deleteCmd.AddCommand(cmdDeleteBuildtemplate(clientset))
+	deleteCmd.AddCommand(cmdDeleteBuildTemplate(clientset))
 	deleteCmd.AddCommand(cmdDeleteRevision(clientset))
 	deleteCmd.AddCommand(cmdDeleteService(clientset))
 	deleteCmd.AddCommand(cmdDeleteBuild(clientset))
