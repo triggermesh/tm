@@ -39,22 +39,24 @@ type Options struct {
 	BuildArgs      []string
 }
 
+type Source struct {
+	URL      string
+	Revision string
+}
+
+type Registry struct {
+	URL string
+}
+
 type Image struct {
-	From struct {
-		Image struct {
-			URL string
-		}
-		Source struct {
-			URL      string
-			Revision string
-		}
-		URL  string
-		Path string
-	}
+	Repository Source
+	Image      Registry
+	URL        string
+	Path       string
 }
 
 type Service struct {
-	Image
+	From Image
 	Options
 }
 
@@ -65,7 +67,7 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	switch {
 	case len(s.From.Image.URL) != 0:
 		configuration = s.fromImage(args)
-	case len(s.From.Source.URL) != 0:
+	case len(s.From.Repository.URL) != 0:
 		if err := createConfigMap(nil, clientset); err != nil {
 			return err
 		}
@@ -171,8 +173,8 @@ func (s *Service) fromSource(args []string, clientset *client.ClientSet) serving
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Git: &buildv1alpha1.GitSourceSpec{
-					Url:      s.From.Source.URL,
-					Revision: s.From.Source.Revision,
+					Url:      s.From.Repository.URL,
+					Revision: s.From.Repository.Revision,
 				},
 			},
 			Template: &buildv1alpha1.TemplateInstantiationSpec{
