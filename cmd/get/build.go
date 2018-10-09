@@ -18,6 +18,7 @@ package get
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/cmd/describe"
@@ -34,13 +35,13 @@ func cmdListBuild(clientset *client.ClientSet) *cobra.Command {
 			if len(args) == 0 {
 				output, err := Builds(clientset)
 				if err != nil {
-					log.Errorln(err)
+					log.Fatalln(err)
 				}
 				fmt.Println(output)
 			} else {
-				output, err := describe.Build(args, clientset)
+				output, err := describe.Build(args[0], clientset)
 				if err != nil {
-					log.Errorln(err)
+					log.Fatalln(err)
 				}
 				fmt.Println(string(output))
 			}
@@ -60,5 +61,5 @@ func Builds(clientset *client.ClientSet) (string, error) {
 		}
 		return table.String(), err
 	}
-	return format(list)
+	return encode(list)
 }

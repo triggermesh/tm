@@ -17,25 +17,31 @@ limitations under the License.
 package describe
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var err error
+
 func cmdDescribeService(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
-		Use:     "configuration",
-		Aliases: []string{"configurations"},
+		Use:     "service",
+		Aliases: []string{"services"},
 		Short:   "Knative service configuration details",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 0 {
-				output, err := Service(args, clientset)
+			if len(args) == 0 {
+				if args, err = listService(clientset); err != nil {
+					log.Fatalln(err)
+				}
+			}
+			for _, v := range args {
+				output, err := Service(v, clientset)
 				if err != nil {
-					log.Errorln(err)
+					log.Fatalln(err)
 				}
 				fmt.Println(string(output))
 			}
@@ -43,13 +49,22 @@ func cmdDescribeService(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Service(args []string, clientset *client.ClientSet) ([]byte, error) {
-	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+func listService(clientset *client.ClientSet) ([]string, error) {
+	var services []string
+	list, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return services, err
+	}
+	for _, v := range list.Items {
+		services = append(services, v.ObjectMeta.Name)
+	}
+	return services, nil
+}
+
+func Service(name string, clientset *client.ClientSet) ([]byte, error) {
+	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}
-	if output == "yaml" {
-		return yaml.Marshal(service)
-	}
-	return json.MarshalIndent(service, "", "	")
+	return encode(service)
 }

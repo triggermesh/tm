@@ -36,7 +36,7 @@ var deployCmd = &cobra.Command{
 	Short: "Deploy knative resource",
 }
 
-func NewDeployCmd(clientset *client.ClientSet, log *logrus.Logger) *cobra.Command {
+func NewDeployCmd(clientset *client.ClientSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployBuildtemplate(clientset))
 	return deployCmd

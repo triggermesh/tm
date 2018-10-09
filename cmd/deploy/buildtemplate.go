@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -40,7 +41,7 @@ func cmdDeployBuildtemplate(clientset *client.ClientSet) *cobra.Command {
 		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := deployBuildtemplate(clientset); err != nil {
-				log.Errorln(err)
+				log.Fatalln(err)
 			}
 		},
 	}
@@ -55,7 +56,7 @@ func deployBuildtemplate(clientset *client.ClientSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 	if len(url) != 0 {
-		log.Infof("Downloading build template definition")
+		fmt.Println("Downloading build template definition")
 		if path, err = downloadFile(url); err != nil {
 			return err
 		}
@@ -66,7 +67,7 @@ func deployBuildtemplate(clientset *client.ClientSet) error {
 	if bt, err = readYaml(path); err != nil {
 		return err
 	}
-	log.Infof("Creating \"%s\" build template", bt.ObjectMeta.Name)
+	fmt.Printf("Creating \"%s\" build template", bt.ObjectMeta.Name)
 	return createBuildTemplate(bt, clientset)
 }
 
@@ -94,10 +95,8 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 	if !hasImage {
 		return errors.New("Build template \"IMAGE\" parameter is missing")
 	}
-	log.Debugf("Build template object: %+v\n", template)
 	btOld, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(template.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil {
-		log.Debugf("Updating Buildtemplate")
 		template.ObjectMeta.ResourceVersion = btOld.ObjectMeta.ResourceVersion
 		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Update(&template)
 	} else if k8sErrors.IsNotFound(err) {

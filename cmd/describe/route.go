@@ -17,12 +17,11 @@ limitations under the License.
 package describe
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,10 +31,15 @@ func cmdDescribeRoute(clientset *client.ClientSet) *cobra.Command {
 		Aliases: []string{"routes"},
 		Short:   "Knative service route details",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 0 {
-				output, err := Route(args, clientset)
+			if len(args) == 0 {
+				if args, err = listRoutes(clientset); err != nil {
+					log.Fatalln(err)
+				}
+			}
+			for _, v := range args {
+				output, err := Route(v, clientset)
 				if err != nil {
-					log.Errorln(err)
+					log.Fatalln(err)
 				}
 				fmt.Println(string(output))
 			}
@@ -43,13 +47,22 @@ func cmdDescribeRoute(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Route(args []string, clientset *client.ClientSet) ([]byte, error) {
-	routes, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+func listRoutes(clientset *client.ClientSet) ([]string, error) {
+	var routes []string
+	list, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return routes, err
+	}
+	for _, v := range list.Items {
+		routes = append(routes, v.ObjectMeta.Name)
+	}
+	return routes, nil
+}
+
+func Route(name string, clientset *client.ClientSet) ([]byte, error) {
+	routes, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}
-	if output == "yaml" {
-		return yaml.Marshal(routes)
-	}
-	return json.MarshalIndent(routes, "", "	")
+	return encode(routes)
 }

@@ -17,13 +17,14 @@ limitations under the License.
 package describe
 
 import (
-	"github.com/sirupsen/logrus"
+	"encoding/json"
+
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
-	log    *logrus.Logger
 	output string
 )
 
@@ -33,7 +34,7 @@ var describeCmd = &cobra.Command{
 	Short: "Details of knative resources",
 }
 
-func NewDescribeCmd(clientset *client.ClientSet, log *logrus.Logger, output *string) *cobra.Command {
+func NewDescribeCmd(clientset *client.ClientSet) *cobra.Command {
 	describeCmd.AddCommand(cmdDescribeBuild(clientset))
 	describeCmd.AddCommand(cmdDescribeBuildtemplate(clientset))
 	describeCmd.AddCommand(cmdDescribeConfiguration(clientset))
@@ -41,4 +42,19 @@ func NewDescribeCmd(clientset *client.ClientSet, log *logrus.Logger, output *str
 	describeCmd.AddCommand(cmdDescribeRoute(clientset))
 	describeCmd.AddCommand(cmdDescribeService(clientset))
 	return describeCmd
+}
+
+func Format(encode *string) {
+	if encode == nil || string(*encode) == "json" {
+		output = "json"
+	} else if encode != nil && string(*encode) == "yaml" {
+		output = "yaml"
+	}
+}
+
+func encode(data interface{}) ([]byte, error) {
+	if output == "yaml" {
+		return yaml.Marshal(data)
+	}
+	return json.MarshalIndent(data, "", "    ")
 }

@@ -17,7 +17,6 @@ limitations under the License.
 package client
 
 import (
-	"errors"
 	"io/ioutil"
 	"log"
 	"os"
@@ -78,12 +77,13 @@ func username(cfgFile string) (string, error) {
 			return v.Context.Namespace, nil
 		}
 	}
-	return "", errors.New("No valid username found")
+	return "default", nil
 }
 
 func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 	c := ClientSet{
 		Namespace: namespace,
+		Registry:  registry,
 	}
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {
@@ -116,7 +116,6 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 		}
 	}
 
-	c.Registry = registry
 	if c.Build, err = buildApi.NewForConfig(config); err != nil {
 		return c, err
 	}

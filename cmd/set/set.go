@@ -17,12 +17,12 @@ limitations under the License.
 package set
 
 import (
+	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
-	"github.com/labstack/gommon/log"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,23 +38,22 @@ var setCmd = &cobra.Command{
 	Short: "Set resource parameters",
 }
 
-func cmdSetRoutes(clientset *client.ClientSet, log *logrus.Logger) *cobra.Command {
+func cmdSetRoutes(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
 		Use:   "route",
 		Short: "Configure service route",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := setPercentage(args, clientset); err != nil {
-				log.Errorln(err)
-				return
+				log.Fatalln(err)
 			}
-			log.Infoln("Routes successfully updated")
+			fmt.Println("Routes successfully updated")
 		},
 	}
 }
 
-func NewSetCmd(clientset *client.ClientSet, log *logrus.Logger) *cobra.Command {
-	setCmd.AddCommand(cmdSetRoutes(clientset, log))
+func NewSetCmd(clientset *client.ClientSet) *cobra.Command {
+	setCmd.AddCommand(cmdSetRoutes(clientset))
 	setCmd.Flags().StringSliceVarP(&revisions, "revisions", "r", []string{}, "Set traffic percentage for revision")
 	setCmd.Flags().StringSliceVarP(&configs, "configs", "c", []string{}, "Set traffic percentage for configuration")
 	return setCmd
@@ -65,12 +64,12 @@ func split(slice []string) map[string]int {
 	for _, s := range slice {
 		t := regexp.MustCompile("[:=]").Split(s, 2)
 		if len(t) != 2 {
-			log.Warnf("Can't parse target %s", s)
+			fmt.Printf("Can't parse target %s", s)
 			continue
 		}
 		percent, err := strconv.Atoi(t[1])
 		if err != nil {
-			log.Warnf("Invalid traffic percent value %s", t[1])
+			fmt.Printf("Invalid traffic percent value %s", t[1])
 			continue
 		}
 		m[t[0]] = percent
@@ -98,7 +97,6 @@ func setPercentage(args []string, clientset *client.ClientSet) error {
 	if err != nil {
 		return err
 	}
-	// fmt.Printf("%+v\n", routes)
 	route := servingv1alpha1.Route{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Route",

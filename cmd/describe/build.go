@@ -17,12 +17,11 @@ limitations under the License.
 package describe
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,10 +31,15 @@ func cmdDescribeBuild(clientset *client.ClientSet) *cobra.Command {
 		Aliases: []string{"builds"},
 		Short:   "Build details",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 0 {
-				output, err := Build(args, clientset)
+			if len(args) == 0 {
+				if args, err = listBuilds(clientset); err != nil {
+					log.Fatalln(err)
+				}
+			}
+			for _, v := range args {
+				output, err := Build(v, clientset)
 				if err != nil {
-					log.Errorln(err)
+					log.Fatalln(err)
 				}
 				fmt.Println(string(output))
 			}
@@ -43,13 +47,22 @@ func cmdDescribeBuild(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Build(args []string, clientset *client.ClientSet) ([]byte, error) {
-	build, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+func listBuilds(clientset *client.ClientSet) ([]string, error) {
+	var builds []string
+	list, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return builds, err
+	}
+	for _, v := range list.Items {
+		builds = append(builds, v.ObjectMeta.Name)
+	}
+	return builds, nil
+}
+
+func Build(name string, clientset *client.ClientSet) ([]byte, error) {
+	build, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}
-	if output == "yaml" {
-		return yaml.Marshal(build)
-	}
-	return json.MarshalIndent(build, "", "	")
+	return encode(build)
 }

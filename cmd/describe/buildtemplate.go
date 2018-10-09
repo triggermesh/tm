@@ -17,12 +17,11 @@ limitations under the License.
 package describe
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,10 +31,15 @@ func cmdDescribeBuildtemplate(clientset *client.ClientSet) *cobra.Command {
 		Aliases: []string{"buildtemplates"},
 		Short:   "Buildtemplate details",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 0 {
-				output, err := BuildTemplate(args, clientset)
+			if len(args) == 0 {
+				if args, err = listBuildTemplates(clientset); err != nil {
+					log.Fatalln(err)
+				}
+			}
+			for _, v := range args {
+				output, err := BuildTemplate(v, clientset)
 				if err != nil {
-					log.Errorln(err)
+					log.Fatalln(err)
 				}
 				fmt.Println(string(output))
 			}
@@ -43,13 +47,22 @@ func cmdDescribeBuildtemplate(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func BuildTemplate(args []string, clientset *client.ClientSet) ([]byte, error) {
-	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+func listBuildTemplates(clientset *client.ClientSet) ([]string, error) {
+	var buildtemplates []string
+	list, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return buildtemplates, err
+	}
+	for _, v := range list.Items {
+		buildtemplates = append(buildtemplates, v.ObjectMeta.Name)
+	}
+	return buildtemplates, nil
+}
+
+func BuildTemplate(name string, clientset *client.ClientSet) ([]byte, error) {
+	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}
-	if output == "yaml" {
-		return yaml.Marshal(buildtemplate)
-	}
-	return json.MarshalIndent(buildtemplate, "", "	")
+	return encode(buildtemplate)
 }

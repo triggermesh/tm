@@ -20,14 +20,12 @@ import (
 	"encoding/json"
 
 	"github.com/gosuri/uitable"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 	yaml "gopkg.in/yaml.v2"
 )
 
 var (
-	log    *logrus.Logger
 	table  *uitable.Table
 	output string
 )
@@ -38,7 +36,7 @@ var getCmd = &cobra.Command{
 	Short: "Retrieve resources from k8s cluster",
 }
 
-func NewGetCmd(clientset *client.ClientSet, log *logrus.Logger, encode *string) *cobra.Command {
+func NewGetCmd(clientset *client.ClientSet) *cobra.Command {
 	getCmd.AddCommand(cmdListBuild(clientset))
 	getCmd.AddCommand(cmdListBuildtemplates(clientset))
 	getCmd.AddCommand(cmdListConfigurations(clientset))
@@ -49,19 +47,23 @@ func NewGetCmd(clientset *client.ClientSet, log *logrus.Logger, encode *string) 
 	table = uitable.New()
 	table.Wrap = true
 	table.MaxColWidth = 50
-	output = *encode
 
 	return getCmd
 }
 
-func format(v interface{}) (string, error) {
-	switch output {
-	case "json":
-		o, err := json.MarshalIndent(v, "", "    ")
-		return string(o), err
-	case "yaml":
-		o, err := yaml.Marshal(v)
+func Format(encode *string) {
+	if encode == nil || string(*encode) == "json" {
+		output = "json"
+	} else if encode != nil && string(*encode) == "yaml" {
+		output = "yaml"
+	}
+}
+
+func encode(data interface{}) (string, error) {
+	if output == "yaml" {
+		o, err := yaml.Marshal(data)
 		return string(o), err
 	}
-	return "", nil
+	o, err := json.MarshalIndent(data, "", "    ")
+	return string(o), err
 }

@@ -17,13 +17,8 @@ limitations under the License.
 package delete
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-)
-
-var (
-	log *logrus.Logger
 )
 
 var deleteCmd = &cobra.Command{
@@ -31,7 +26,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete knative resource",
 }
 
-func NewDeleteCmd(clientset *client.ClientSet, log *logrus.Logger) *cobra.Command {
+func NewDeleteCmd(clientset *client.ClientSet) *cobra.Command {
 	deleteCmd.AddCommand(cmdDeleteConfiguration(clientset))
 	deleteCmd.AddCommand(cmdDeleteBuildtemplate(clientset))
 	deleteCmd.AddCommand(cmdDeleteRevision(clientset))

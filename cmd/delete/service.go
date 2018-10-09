@@ -17,6 +17,9 @@ limitations under the License.
 package delete
 
 import (
+	"fmt"
+	"log"
+
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,9 +33,9 @@ func cmdDeleteService(clientset *client.ClientSet) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := deleteService(args, clientset); err != nil {
-				log.Errorln(err)
+				log.Fatalln(err)
 			}
-			log.Info("Service is being deleted")
+			fmt.Println("Service is being deleted")
 		},
 	}
 }

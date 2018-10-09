@@ -17,25 +17,29 @@ limitations under the License.
 package describe
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func cmdDescribeConfiguration(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
-		Use:     "buildtemplate",
-		Aliases: []string{"buildtemplates"},
-		Short:   "Buildtemplate details",
+		Use:     "configuration",
+		Aliases: []string{"configurations"},
+		Short:   "Configuration details",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 0 {
-				output, err := Configuration(args, clientset)
+			if len(args) == 0 {
+				if args, err = listConfigurations(clientset); err != nil {
+					log.Fatalln(err)
+				}
+			}
+			for _, v := range args {
+				output, err := Configuration(v, clientset)
 				if err != nil {
-					log.Errorln(err)
+					log.Fatalln(err)
 				}
 				fmt.Println(string(output))
 			}
@@ -43,13 +47,22 @@ func cmdDescribeConfiguration(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Configuration(args []string, clientset *client.ClientSet) ([]byte, error) {
-	configuration, err := clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+func listConfigurations(clientset *client.ClientSet) ([]string, error) {
+	var configurations []string
+	list, err := clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return configurations, err
+	}
+	for _, v := range list.Items {
+		configurations = append(configurations, v.ObjectMeta.Name)
+	}
+	return configurations, nil
+}
+
+func Configuration(name string, clientset *client.ClientSet) ([]byte, error) {
+	configuration, err := clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}
-	if output == "yaml" {
-		return yaml.Marshal(configuration)
-	}
-	return json.MarshalIndent(configuration, "", "	")
+	return encode(configuration)
 }

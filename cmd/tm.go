@@ -17,10 +17,8 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-	"os"
+	"log"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/cmd/delete"
 	"github.com/triggermesh/tm/cmd/deploy"
@@ -33,13 +31,12 @@ import (
 
 var (
 	debug     bool
+	err       error
 	cfgFile   string
 	namespace string
 	registry  string
 	output    string
 	clientset client.ClientSet
-	log       *logrus.Logger
-	err       error
 )
 
 // tmCmd represents the base command when called without any subcommands
@@ -51,41 +48,29 @@ var tmCmd = &cobra.Command{
 
 func Execute() {
 	if err := tmCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	tmCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
 	tmCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "k8s config file")
 	tmCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
 	tmCmd.PersistentFlags().StringVar(&registry, "registry-host", "registry.munu.io", "User namespace")
 	tmCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
 
-	tmCmd.AddCommand(set.NewSetCmd(&clientset, log))
-	tmCmd.AddCommand(deploy.NewDeployCmd(&clientset, log))
-	tmCmd.AddCommand(delete.NewDeleteCmd(&clientset, log))
-	tmCmd.AddCommand(get.NewGetCmd(&clientset, log, &output))
-	tmCmd.AddCommand(describe.NewDescribeCmd(&clientset, log, &output))
+	tmCmd.AddCommand(set.NewSetCmd(&clientset))
+	tmCmd.AddCommand(deploy.NewDeployCmd(&clientset))
+	tmCmd.AddCommand(delete.NewDeleteCmd(&clientset))
+	tmCmd.AddCommand(get.NewGetCmd(&clientset))
+	tmCmd.AddCommand(describe.NewDescribeCmd(&clientset))
 }
 
 func initConfig() {
-	log = logrus.New()
-	log.Out = os.Stdout
+	describe.Format(&output)
+	get.Format(&output)
 
-	logFormat := new(logrus.TextFormatter)
-	logFormat.TimestampFormat = "2006-01-02 15:04:05"
-	logFormat.FullTimestamp = true
-	log.Formatter = logFormat
-
-	if debug {
-		log.Level = logrus.DebugLevel
-	}
-
-	clientset, err = client.NewClient(cfgFile, namespace, registry)
-	if err != nil {
+	if clientset, err = client.NewClient(cfgFile, namespace, registry); err != nil {
 		log.Fatalln(err)
 	}
 }

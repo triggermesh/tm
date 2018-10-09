@@ -17,12 +17,11 @@ limitations under the License.
 package describe
 
 import (
-	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,10 +31,15 @@ func cmdDescribeRevision(clientset *client.ClientSet) *cobra.Command {
 		Aliases: []string{"revisions"},
 		Short:   "Knative revision details",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) != 0 {
-				output, err := Revision(args, clientset)
+			if len(args) == 0 {
+				if args, err = listRevisions(clientset); err != nil {
+					log.Fatalln(err)
+				}
+			}
+			for _, v := range args {
+				output, err := Revision(v, clientset)
 				if err != nil {
-					log.Errorln(err)
+					log.Fatalln(err)
 				}
 				fmt.Println(string(output))
 			}
@@ -43,13 +47,22 @@ func cmdDescribeRevision(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Revision(args []string, clientset *client.ClientSet) ([]byte, error) {
-	revisions, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+func listRevisions(clientset *client.ClientSet) ([]string, error) {
+	var revisions []string
+	list, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return revisions, err
+	}
+	for _, v := range list.Items {
+		revisions = append(revisions, v.ObjectMeta.Name)
+	}
+	return revisions, nil
+}
+
+func Revision(name string, clientset *client.ClientSet) ([]byte, error) {
+	revisions, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}
-	if output == "yaml" {
-		return yaml.Marshal(revisions)
-	}
-	return json.MarshalIndent(revisions, "", "	")
+	return encode(revisions)
 }
