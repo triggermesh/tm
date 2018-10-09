@@ -27,9 +27,10 @@ import (
 
 func cmdDeleteRevision(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
-		Use:   "revision",
-		Short: "Delete knative revision resource",
-		Args:  cobra.ExactArgs(1),
+		Use:     "revision",
+		Short:   "Delete knative revision resource",
+		Aliases: []string{"revisions"},
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := Revision(args, clientset); err != nil {
 				log.Fatalln(err)

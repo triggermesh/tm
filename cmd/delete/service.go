@@ -28,9 +28,10 @@ import (
 // deleteServiceCmd represents the builds command
 func cmdDeleteService(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
-		Use:   "service",
-		Short: "Delete knative service resource",
-		Args:  cobra.ExactArgs(1),
+		Use:     "service",
+		Short:   "Delete knative service resource",
+		Aliases: []string{"services"},
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := Service(args, clientset); err != nil {
 				log.Fatalln(err)

@@ -27,9 +27,10 @@ import (
 
 func cmdDeleteBuild(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
-		Use:   "build",
-		Short: "Delete knative build resource",
-		Args:  cobra.ExactArgs(1),
+		Use:     "build",
+		Aliases: []string{"builds"},
+		Short:   "Delete knative build resource",
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := Build(args, clientset); err != nil {
 				log.Fatalln(err)

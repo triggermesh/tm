@@ -17,7 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 )
@@ -27,8 +26,7 @@ const (
 )
 
 var (
-	df  = "Dockerfile"
-	log *logrus.Logger
+	df = "Dockerfile"
 )
 
 var deployCmd = &cobra.Command{

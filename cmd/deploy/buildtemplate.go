@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -41,7 +42,7 @@ func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := BuildTemplate(args, clientset); err != nil {
-				log.Fatalln(err)
+				log.Fatal(err)
 			}
 		},
 	}
@@ -71,7 +72,7 @@ func BuildTemplate(args []string, clientset *client.ClientSet) error {
 	if len(args) != 0 {
 		bt.ObjectMeta.Name = args[0]
 	}
-	fmt.Printf("Creating \"%s\" build template", bt.ObjectMeta.Name)
+	fmt.Printf("Creating \"%s\" build template\n", bt.ObjectMeta.Name)
 	return createBuildTemplate(bt, clientset)
 }
 

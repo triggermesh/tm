@@ -27,9 +27,10 @@ import (
 
 func cmdDeleteRoute(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
-		Use:   "route",
-		Short: "Delete knative route resource",
-		Args:  cobra.ExactArgs(1),
+		Use:     "route",
+		Short:   "Delete knative route resource",
+		Aliases: []string{"routes"},
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := Route(args, clientset); err != nil {
 				log.Fatalln(err)

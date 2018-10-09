@@ -19,6 +19,7 @@ package deploy
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"regexp"
 	"time"
 
@@ -42,7 +43,6 @@ var (
 	ImageTag      string
 	Env           []string
 	Labels        []string
-	Secrets       []string
 	BuildArgs     []string
 )
 
@@ -55,7 +55,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 		Example: "tm -n default deploy service foo --build-template kaniko --build-argument SKIP_TLS_VERIFY=true --from-image gcr.io/google-samples/hello-app:1.0",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := Service(args, clientset); err != nil {
-				log.Fatalln(err)
+				log.Fatal(err)
 			}
 		},
 	}
@@ -152,13 +152,13 @@ func Service(args []string, clientset *client.ClientSet) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println("Service update started. Run \"tm -n %s get revisions\" to see available revisions", clientset.Namespace)
+		fmt.Printf("Service update started. Run \"tm -n %s get revisions\" to see available revisions\n", clientset.Namespace)
 	} else if k8sErrors.IsNotFound(err) {
 		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
 		if err != nil {
 			return err
 		}
-		fmt.Println("Deployment started. Run \"tm -n %s describe service %s\" to see the details", clientset.Namespace, service.Name)
+		fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, service.Name)
 	} else {
 		return err
 	}
@@ -297,7 +297,7 @@ func getArgsFromSlice(slice []string) map[string]string {
 	for _, s := range slice {
 		t := regexp.MustCompile("[:=]").Split(s, 2)
 		if len(t) != 2 {
-			fmt.Println("Can't parse argument slice %s", s)
+			fmt.Printf("Can't parse argument slice %s\n", s)
 			continue
 		}
 		m[t[0]] = t[1]

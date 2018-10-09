@@ -27,9 +27,10 @@ import (
 
 func cmdDeleteBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
-		Use:   "buildtemplate",
-		Short: "Delete knative buildtemplate resource",
-		Args:  cobra.ExactArgs(1),
+		Use:     "buildtemplate",
+		Aliases: []string{"buildtemplates"},
+		Short:   "Delete knative buildtemplate resource",
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := BuildTemplate(args, clientset); err != nil {
 				log.Fatalln(err)

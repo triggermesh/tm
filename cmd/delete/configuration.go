@@ -27,9 +27,10 @@ import (
 
 func cmdDeleteConfiguration(clientset *client.ClientSet) *cobra.Command {
 	return &cobra.Command{
-		Use:   "configuration",
-		Short: "Delete knative configuration resource",
-		Args:  cobra.ExactArgs(1),
+		Use:     "configuration",
+		Short:   "Delete knative configuration resource",
+		Aliases: []string{"configurations"},
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := Configuration(args, clientset); err != nil {
 				log.Fatalln(err)

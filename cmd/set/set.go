@@ -64,12 +64,12 @@ func split(slice []string) map[string]int {
 	for _, s := range slice {
 		t := regexp.MustCompile("[:=]").Split(s, 2)
 		if len(t) != 2 {
-			fmt.Printf("Can't parse target %s", s)
+			fmt.Printf("Can't parse target %s\n", s)
 			continue
 		}
 		percent, err := strconv.Atoi(t[1])
 		if err != nil {
-			fmt.Printf("Invalid traffic percent value %s", t[1])
+			fmt.Printf("Invalid traffic percent value %s\n", t[1])
 			continue
 		}
 		m[t[0]] = percent
