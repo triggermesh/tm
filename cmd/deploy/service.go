@@ -32,10 +32,18 @@ import (
 )
 
 var (
-	image, source, url, storage, pullPolicy,
-	memory, path, cpu, revision, buildtemplate,
-	sourceDir, imageTag, handler string
-	env, labels, secrets, buildArgs []string
+	Image         string
+	Source        string
+	URL           string
+	PullPolicy    string
+	Path          string
+	Revision      string
+	Buildtemplate string
+	ImageTag      string
+	Env           []string
+	Labels        []string
+	Secrets       []string
+	BuildArgs     []string
 )
 
 func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
@@ -52,48 +60,47 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 		},
 	}
 
-	deployServiceCmd.Flags().StringVar(&image, "from-image", "", "Image to deploy")
-	deployServiceCmd.Flags().StringVar(&source, "from-source", "", "Git source URL to deploy")
-	deployServiceCmd.Flags().StringVar(&revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
-	deployServiceCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
-	deployServiceCmd.Flags().StringVar(&url, "from-url", "", "File source URL to deploy")
-	deployServiceCmd.Flags().StringVar(&buildtemplate, "build-template", "kaniko", "Build template to use with service")
-	deployServiceCmd.Flags().StringVar(&sourceDir, "source-directory", "", "Workspace context directory to work in")
-	deployServiceCmd.Flags().StringVar(&imageTag, "tag", "latest", "Image tag to build")
-	deployServiceCmd.Flags().StringVar(&pullPolicy, "image-pull-policy", "Always", "Image pull policy")
-	deployServiceCmd.Flags().StringSliceVar(&buildArgs, "build-argument", []string{}, "Image tag to build")
-	deployServiceCmd.Flags().StringSliceVarP(&labels, "label", "l", []string{}, "Service labels")
-	deployServiceCmd.Flags().StringSliceVarP(&env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
-	// deployCmd.Flags().StringSliceVar(&secrets, "secrets", []string{}, "Name of Secrets to mount into service environment")
-	// deployCmd.Flags().Int32Var(&port, "port", 8080, "Custom service port")
+	deployServiceCmd.Flags().StringVar(&Image, "from-image", "", "Image to deploy")
+	deployServiceCmd.Flags().StringVar(&Source, "from-source", "", "Git source URL to deploy")
+	deployServiceCmd.Flags().StringVar(&Revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
+	deployServiceCmd.Flags().StringVar(&Path, "from-file", "", "Local file path to deploy")
+	deployServiceCmd.Flags().StringVar(&URL, "from-url", "", "File source URL to deploy")
+	deployServiceCmd.Flags().StringVar(&Buildtemplate, "build-template", "kaniko", "Build template to use with service")
+	deployServiceCmd.Flags().StringVar(&ImageTag, "tag", "latest", "Image tag to build")
+	deployServiceCmd.Flags().StringVar(&PullPolicy, "image-pull-policy", "Always", "Image pull policy")
+	deployServiceCmd.Flags().StringSliceVar(&BuildArgs, "build-argument", []string{}, "Image tag to build")
+	deployServiceCmd.Flags().StringSliceVarP(&Labels, "label", "l", []string{}, "Service labels")
+	deployServiceCmd.Flags().StringSliceVarP(&Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
 
 	return deployServiceCmd
 }
 
 func Service(args []string, clientset *client.ClientSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
-	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s-source", clientset.Registry, clientset.Namespace, args[0]), buildArgs)
+	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s-source", clientset.Registry, clientset.Namespace, args[0]), BuildArgs)
 
 	switch {
-	case len(image) != 0:
+	case len(Image) != 0:
 		configuration = fromImage(args)
-	case len(source) != 0:
+	case len(Source) != 0:
 		if err := createConfigMap(nil, clientset); err != nil {
 			return err
 		}
 		configuration = fromSource(args, clientset.Registry, clientset.Namespace)
-		if err := updateBuildTemplate(buildtemplate, templateParams, clientset); err != nil {
+		if err := updateBuildTemplate(Buildtemplate, templateParams, clientset); err != nil {
 			return err
 		}
 
-		configuration.Build.Template = &buildv1alpha1.TemplateInstantiationSpec{
-			Name:      buildtemplate,
-			Arguments: buildArguments,
+		configuration.Build = &buildv1alpha1.BuildSpec{
+			Template: &buildv1alpha1.TemplateInstantiationSpec{
+				Name:      Buildtemplate,
+				Arguments: buildArguments,
+			},
 		}
-	case len(url) != 0:
+	case len(URL) != 0:
 		configuration = fromURL(args, clientset.Registry, clientset.Namespace)
-	case len(path) != 0:
-		filebody, err := ioutil.ReadFile(path)
+	case len(Path) != 0:
+		filebody, err := ioutil.ReadFile(Path)
 		if err != nil {
 			return err
 		}
@@ -111,11 +118,11 @@ func Service(args []string, clientset *client.ClientSet) error {
 			Value: time.Now().Format("2006-01-02 15:04:05"),
 		},
 	}
-	for k, v := range getArgsFromSlice(env) {
+	for k, v := range getArgsFromSlice(Env) {
 		envVars = append(envVars, corev1.EnvVar{Name: k, Value: v})
 	}
 	configuration.RevisionTemplate.Spec.Container.Env = envVars
-	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(pullPolicy)
+	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(PullPolicy)
 	serviceObject := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -128,7 +135,7 @@ func Service(args []string, clientset *client.ClientSet) error {
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
-			Labels: getArgsFromSlice(labels),
+			Labels: getArgsFromSlice(Labels),
 		},
 
 		Spec: servingv1alpha1.ServiceSpec{
@@ -169,7 +176,7 @@ func fromImage(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: image,
+					Image: Image,
 				},
 			},
 		},
@@ -181,9 +188,12 @@ func fromSource(args []string, registry, namespace string) servingv1alpha1.Confi
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Git: &buildv1alpha1.GitSourceSpec{
-					Url:      source,
-					Revision: revision,
+					Url:      Source,
+					Revision: Revision,
 				},
+			},
+			Template: &buildv1alpha1.TemplateInstantiationSpec{
+				Name: Buildtemplate,
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
@@ -195,7 +205,7 @@ func fromSource(args []string, registry, namespace string) servingv1alpha1.Confi
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-source:%s", registry, namespace, args[0], imageTag),
+					Image: fmt.Sprintf("%s/%s-%s-source:%s", registry, namespace, args[0], ImageTag),
 				},
 			},
 		},
@@ -223,7 +233,7 @@ func fromURL(args []string, registry, namespace string) servingv1alpha1.Configur
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-url:%s", registry, namespace, args[0], imageTag),
+					Image: fmt.Sprintf("%s/%s-%s-url:%s", registry, namespace, args[0], ImageTag),
 				},
 			},
 		},
@@ -251,7 +261,7 @@ func fromFile(args []string, registry, namespace string) servingv1alpha1.Configu
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-file:%s", registry, namespace, args[0], imageTag),
+					Image: fmt.Sprintf("%s/%s-%s-file:%s", registry, namespace, args[0], ImageTag),
 				},
 			},
 		},

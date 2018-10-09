@@ -46,8 +46,8 @@ func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 		},
 	}
 
-	deployBuildTemplateCmd.Flags().StringVar(&url, "from-url", "", "Build template yaml URL")
-	deployBuildTemplateCmd.Flags().StringVar(&path, "from-file", "", "Local file path to deploy")
+	deployBuildTemplateCmd.Flags().StringVar(&URL, "from-url", "", "Build template yaml URL")
+	deployBuildTemplateCmd.Flags().StringVar(&Path, "from-file", "", "Local file path to deploy")
 
 	return deployBuildTemplateCmd
 }
@@ -55,16 +55,16 @@ func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 func BuildTemplate(args []string, clientset *client.ClientSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
-	if len(url) != 0 {
+	if len(URL) != 0 {
 		fmt.Println("Downloading build template definition")
-		if path, err = downloadFile(url); err != nil {
+		if Path, err = downloadFile(URL); err != nil {
 			return err
 		}
 	}
-	if len(path) == 0 {
-		return errors.New("Empty path to buildtemplate yaml file")
+	if len(Path) == 0 {
+		return errors.New("Empty path to buildtemplate yaml file: " + URL + " " + Path)
 	}
-	if bt, err = readYaml(path); err != nil {
+	if bt, err = readYaml(Path); err != nil {
 		return err
 	}
 	// If argument is passed overwrite build template name
