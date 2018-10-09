@@ -51,17 +51,17 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 		},
 	}
 
-	deployServiceCmd.Flags().StringVar(&s.from.image.url, "from-image", "", "Image to deploy")
-	deployServiceCmd.Flags().StringVar(&s.from.source.url, "from-source", "", "Git source URL to deploy")
-	deployServiceCmd.Flags().StringVar(&s.from.source.revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
-	deployServiceCmd.Flags().StringVar(&s.from.path, "from-file", "", "Local file path to deploy")
-	deployServiceCmd.Flags().StringVar(&s.from.url, "from-url", "", "File source URL to deploy")
-	deployServiceCmd.Flags().StringVar(&s.buildtemplate, "build-template", "kaniko", "Build template to use with service")
-	deployServiceCmd.Flags().StringVar(&s.resultImageTag, "tag", "latest", "Image tag to build")
-	deployServiceCmd.Flags().StringVar(&s.pullPolicy, "image-pull-policy", "Always", "Image pull policy")
-	deployServiceCmd.Flags().StringSliceVar(&s.buildArgs, "build-argument", []string{}, "Image tag to build")
-	deployServiceCmd.Flags().StringSliceVarP(&s.labels, "label", "l", []string{}, "Service labels")
-	deployServiceCmd.Flags().StringSliceVarP(&s.env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
+	deployServiceCmd.Flags().StringVar(&s.From.Image.URL, "from-image", "", "Image to deploy")
+	deployServiceCmd.Flags().StringVar(&s.From.Source.URL, "from-source", "", "Git source URL to deploy")
+	deployServiceCmd.Flags().StringVar(&s.From.Source.Revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
+	deployServiceCmd.Flags().StringVar(&s.From.Path, "from-file", "", "Local file path to deploy")
+	deployServiceCmd.Flags().StringVar(&s.From.URL, "from-url", "", "File source URL to deploy")
+	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "kaniko", "Build template to use with service")
+	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
+	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
+	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Image tag to build")
+	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
+	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
 
 	return deployServiceCmd
 }
@@ -79,8 +79,8 @@ func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 		},
 	}
 
-	deployBuildTemplateCmd.Flags().StringVar(&b.url, "from-url", "", "Build template yaml URL")
-	deployBuildTemplateCmd.Flags().StringVar(&b.path, "from-file", "", "Local file path to deploy")
+	deployBuildTemplateCmd.Flags().StringVar(&b.URL, "from-url", "", "Build template yaml URL")
+	deployBuildTemplateCmd.Flags().StringVar(&b.Path, "from-file", "", "Local file path to deploy")
 
 	return deployBuildTemplateCmd
 }

@@ -33,34 +33,27 @@ import (
 )
 
 type Buildtemplate struct {
-	url  string
-	path string
+	URL  string
+	Path string
 }
 
 const (
 	tmpPath = "/tmp"
 )
 
-func NewBuildTemplate(url, path string) Buildtemplate {
-	return Buildtemplate{
-		url:  url,
-		path: path,
-	}
-}
-
 func (b *Buildtemplate) DeployBuildTemplate(args []string, clientset *client.ClientSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
-	if len(b.url) != 0 {
+	if len(b.URL) != 0 {
 		fmt.Println("Downloading build template definition")
-		if b.path, err = downloadFile(b.url); err != nil {
+		if b.Path, err = downloadFile(b.URL); err != nil {
 			return err
 		}
 	}
-	if len(b.path) == 0 {
+	if len(b.Path) == 0 {
 		return errors.New("Empty path to buildtemplate yaml file")
 	}
-	if bt, err = readYaml(b.path); err != nil {
+	if bt, err = readYaml(b.Path); err != nil {
 		return err
 	}
 	// If argument is passed overwrite build template name

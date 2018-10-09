@@ -31,25 +31,25 @@ import (
 )
 
 type Options struct {
-	pullPolicy     string
-	resultImageTag string
-	buildtemplate  string
-	env            []string
-	labels         []string
-	buildArgs      []string
+	PullPolicy     string
+	ResultImageTag string
+	Buildtemplate  string
+	Env            []string
+	Labels         []string
+	BuildArgs      []string
 }
 
 type Image struct {
-	from struct {
-		image struct {
-			url string
+	From struct {
+		Image struct {
+			URL string
 		}
-		source struct {
-			url      string
-			revision string
+		Source struct {
+			URL      string
+			Revision string
 		}
-		url  string
-		path string
+		URL  string
+		Path string
 	}
 }
 
@@ -58,39 +58,32 @@ type Service struct {
 	Options
 }
 
-func NewService(image Image, options Options) Service {
-	return Service{
-		Image:   image,
-		Options: options,
-	}
-}
-
 func (s *Service) DeployService(args []string, clientset *client.ClientSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
-	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s-source", clientset.Registry, clientset.Namespace, args[0]), s.buildArgs)
+	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s-source", clientset.Registry, clientset.Namespace, args[0]), s.BuildArgs)
 
 	switch {
-	case len(s.from.image.url) != 0:
+	case len(s.From.Image.URL) != 0:
 		configuration = s.fromImage(args)
-	case len(s.from.source.url) != 0:
+	case len(s.From.Source.URL) != 0:
 		if err := createConfigMap(nil, clientset); err != nil {
 			return err
 		}
 		configuration = s.fromSource(args, clientset)
-		if err := updateBuildTemplate(s.buildtemplate, templateParams, clientset); err != nil {
+		if err := updateBuildTemplate(s.Buildtemplate, templateParams, clientset); err != nil {
 			return err
 		}
 
 		configuration.Build = &buildv1alpha1.BuildSpec{
 			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name:      s.buildtemplate,
+				Name:      s.Buildtemplate,
 				Arguments: buildArguments,
 			},
 		}
-	case len(s.from.url) != 0:
+	case len(s.From.URL) != 0:
 		configuration = s.fromURL(args, clientset)
-	case len(s.from.path) != 0:
-		filebody, err := ioutil.ReadFile(s.from.path)
+	case len(s.From.Path) != 0:
+		filebody, err := ioutil.ReadFile(s.From.Path)
 		if err != nil {
 			return err
 		}
@@ -108,11 +101,11 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 			Value: time.Now().Format("2006-01-02 15:04:05"),
 		},
 	}
-	for k, v := range getArgsFromSlice(s.env) {
+	for k, v := range getArgsFromSlice(s.Env) {
 		envVars = append(envVars, corev1.EnvVar{Name: k, Value: v})
 	}
 	configuration.RevisionTemplate.Spec.Container.Env = envVars
-	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(s.pullPolicy)
+	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
 	serviceObject := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -125,7 +118,7 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
-			Labels: getArgsFromSlice(s.labels),
+			Labels: getArgsFromSlice(s.Labels),
 		},
 
 		Spec: servingv1alpha1.ServiceSpec{
@@ -166,7 +159,7 @@ func (s *Service) fromImage(args []string) servingv1alpha1.ConfigurationSpec {
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: s.from.image.url,
+					Image: s.From.Image.URL,
 				},
 			},
 		},
@@ -178,12 +171,12 @@ func (s *Service) fromSource(args []string, clientset *client.ClientSet) serving
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Git: &buildv1alpha1.GitSourceSpec{
-					Url:      s.from.source.url,
-					Revision: s.from.source.revision,
+					Url:      s.From.Source.URL,
+					Revision: s.From.Source.Revision,
 				},
 			},
 			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name: s.buildtemplate,
+				Name: s.Buildtemplate,
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
@@ -195,7 +188,7 @@ func (s *Service) fromSource(args []string, clientset *client.ClientSet) serving
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-source:%s", clientset.Registry, clientset.Namespace, args[0], s.resultImageTag),
+					Image: fmt.Sprintf("%s/%s-%s-source:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
 				},
 			},
 		},
@@ -223,7 +216,7 @@ func (s *Service) fromURL(args []string, clientset *client.ClientSet) servingv1a
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-url:%s", clientset.Registry, clientset.Namespace, args[0], s.resultImageTag),
+					Image: fmt.Sprintf("%s/%s-%s-url:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
 				},
 			},
 		},
@@ -251,7 +244,7 @@ func (s *Service) fromFile(args []string, clientset *client.ClientSet) servingv1
 			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-file:%s", clientset.Registry, clientset.Namespace, args[0], s.resultImageTag),
+					Image: fmt.Sprintf("%s/%s-%s-file:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
 				},
 			},
 		},
