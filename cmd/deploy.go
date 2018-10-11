@@ -172,11 +172,9 @@ func deployService(args []string) error {
 			return err
 		}
 
-		configuration.Build = &buildv1alpha1.BuildSpec{
-			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name:      buildtemplate,
-				Arguments: buildArguments,
-			},
+		configuration.Build.Template = &buildv1alpha1.TemplateInstantiationSpec{
+			Name:      buildtemplate,
+			Arguments: buildArguments,
 		}
 	case len(url) != 0:
 		configuration = fromURL(args)
@@ -275,9 +273,6 @@ func fromSource(args []string) servingv1alpha1.ConfigurationSpec {
 					Url:      source,
 					Revision: revision,
 				},
-			},
-			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name: buildtemplate,
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
