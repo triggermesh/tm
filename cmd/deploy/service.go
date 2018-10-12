@@ -76,11 +76,9 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 			return err
 		}
 
-		configuration.Build = &buildv1alpha1.BuildSpec{
-			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name:      s.Buildtemplate,
-				Arguments: buildArguments,
-			},
+		configuration.Build.Template = &buildv1alpha1.TemplateInstantiationSpec{
+			Name:      s.Buildtemplate,
+			Arguments: buildArguments,
 		}
 	case len(s.From.URL) != 0:
 		configuration = s.fromURL(args, clientset)
@@ -176,9 +174,6 @@ func (s *Service) fromSource(args []string, clientset *client.ClientSet) serving
 					Url:      s.From.Repository.URL,
 					Revision: s.From.Repository.Revision,
 				},
-			},
-			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name: s.Buildtemplate,
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
