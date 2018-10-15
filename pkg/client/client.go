@@ -97,7 +97,9 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 	}
 
 	if len(cfgFile) == 0 {
-		cfgFile = homeDir + confPath
+		if cfgFile = os.Getenv("KUBECONFIG"); len(cfgFile) == 0 {
+			cfgFile = homeDir + confPath
+		}
 	}
 
 	config, err := rest.InClusterConfig()
@@ -109,8 +111,7 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 			cfgFile = homeDir + "/.kube/config"
 		}
 		if len(namespace) == 0 {
-			c.Namespace, err = username(cfgFile)
-			if err != nil {
+			if c.Namespace, err = username(cfgFile); err != nil {
 				return c, err
 			}
 		}
