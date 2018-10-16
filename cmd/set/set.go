@@ -18,45 +18,17 @@ package set
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
-	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	revisions, configs []string
-)
-
-// setCmd represents the set command
-var setCmd = &cobra.Command{
-	Use:   "set",
-	Short: "Set resource parameters",
-}
-
-func cmdSetRoutes(clientset *client.ClientSet) *cobra.Command {
-	return &cobra.Command{
-		Use:   "route",
-		Short: "Configure service route",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			if err := setPercentage(args, clientset); err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Println("Routes successfully updated")
-		},
-	}
-}
-
-func NewSetCmd(clientset *client.ClientSet) *cobra.Command {
-	setCmd.AddCommand(cmdSetRoutes(clientset))
-	setCmd.Flags().StringSliceVarP(&revisions, "revisions", "r", []string{}, "Set traffic percentage for revision")
-	setCmd.Flags().StringSliceVarP(&configs, "configs", "c", []string{}, "Set traffic percentage for configuration")
-	return setCmd
+type Route struct {
+	Revisions []string
+	Configs   []string
 }
 
 func split(slice []string) map[string]int {
@@ -77,23 +49,23 @@ func split(slice []string) map[string]int {
 	return m
 }
 
-func setPercentage(args []string, clientset *client.ClientSet) error {
+func (r *Route) SetPercentage(args []string, clientset *client.ClientSet) error {
 	targets := []servingv1alpha1.TrafficTarget{}
 	// TODO: add named target support
-	for revision, percent := range split(revisions) {
+	for revision, percent := range split(r.Revisions) {
 		targets = append(targets, servingv1alpha1.TrafficTarget{
 			RevisionName: revision,
 			Percent:      percent,
 		})
 	}
-	for config, percent := range split(configs) {
+	for config, percent := range split(r.Configs) {
 		targets = append(targets, servingv1alpha1.TrafficTarget{
 			ConfigurationName: config,
 			Percent:           percent,
 		})
 	}
 
-	r, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+	routeOld, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(args[0], metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -112,7 +84,7 @@ func setPercentage(args []string, clientset *client.ClientSet) error {
 			},
 		},
 	}
-	route.ObjectMeta.ResourceVersion = r.ObjectMeta.ResourceVersion
+	route.ObjectMeta.ResourceVersion = routeOld.ObjectMeta.ResourceVersion
 	route.Spec.Traffic = targets
 	if _, err = clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Update(&route); err != nil {
 		return err
