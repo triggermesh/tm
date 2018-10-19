@@ -34,6 +34,7 @@ type Options struct {
 	PullPolicy     string
 	ResultImageTag string
 	Buildtemplate  string
+	RunRevision    string
 	Env            []string
 	Labels         []string
 	BuildArgs      []string
@@ -106,6 +107,22 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	}
 	configuration.RevisionTemplate.Spec.Container.Env = envVars
 	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
+
+	spec := servingv1alpha1.ServiceSpec{
+		RunLatest: &servingv1alpha1.RunLatestType{
+			Configuration: configuration,
+		},
+	}
+
+	if s.RunRevision != "" {
+		spec = servingv1alpha1.ServiceSpec{
+			Pinned: &servingv1alpha1.PinnedType{
+				RevisionName:  s.RunRevision,
+				Configuration: configuration,
+			},
+		}
+	}
+
 	serviceObject := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -121,11 +138,7 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 			Labels: getArgsFromSlice(s.Labels),
 		},
 
-		Spec: servingv1alpha1.ServiceSpec{
-			RunLatest: &servingv1alpha1.RunLatestType{
-				Configuration: configuration,
-			},
-		},
+		Spec: spec,
 	}
 
 	oldService, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(args[0], metav1.GetOptions{})

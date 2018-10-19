@@ -16,8 +16,13 @@ var setCmd = &cobra.Command{
 	Short: "Set resource parameters",
 }
 
+func NewSetCmd(clientset *client.ClientSet) *cobra.Command {
+	setCmd.AddCommand(cmdSetRoutes(clientset))
+	return setCmd
+}
+
 func cmdSetRoutes(clientset *client.ClientSet) *cobra.Command {
-	return &cobra.Command{
+	setRoutesCmd := &cobra.Command{
 		Use:   "route",
 		Short: "Configure service route",
 		Args:  cobra.ExactArgs(1),
@@ -28,11 +33,8 @@ func cmdSetRoutes(clientset *client.ClientSet) *cobra.Command {
 			fmt.Println("Routes successfully updated")
 		},
 	}
-}
 
-func NewSetCmd(clientset *client.ClientSet) *cobra.Command {
-	setCmd.AddCommand(cmdSetRoutes(clientset))
-	setCmd.Flags().StringSliceVarP(&r.Revisions, "revisions", "r", []string{}, "Set traffic percentage for revision")
-	setCmd.Flags().StringSliceVarP(&r.Configs, "configs", "c", []string{}, "Set traffic percentage for configuration")
-	return setCmd
+	setRoutesCmd.Flags().StringSliceVarP(&r.Revisions, "revisions", "r", []string{}, "Set traffic percentage for revision")
+	setRoutesCmd.Flags().StringSliceVarP(&r.Configs, "configurations", "c", []string{}, "Set traffic percentage for configuration")
+	return setRoutesCmd
 }

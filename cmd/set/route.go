@@ -84,10 +84,14 @@ func (r *Route) SetPercentage(args []string, clientset *client.ClientSet) error 
 			},
 		},
 	}
+	fmt.Printf("%+v\n", route)
 	route.ObjectMeta.ResourceVersion = routeOld.ObjectMeta.ResourceVersion
 	route.Spec.Traffic = targets
-	if _, err = clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Update(&route); err != nil {
+	if r, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Update(&route); err != nil {
 		return err
+	} else {
+		fmt.Printf("\n%+v\n", r)
 	}
+
 	return nil
 }

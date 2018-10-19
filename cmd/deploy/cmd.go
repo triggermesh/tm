@@ -61,6 +61,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "kaniko", "Build template to use with service")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
+	deployServiceCmd.Flags().StringVar(&s.RunRevision, "run-revision", "", "Revision name to run service on")
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Image tag to build")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
