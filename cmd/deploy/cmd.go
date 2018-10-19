@@ -24,7 +24,8 @@ import (
 )
 
 var s Service
-var b Buildtemplate
+var b Build
+var bt Buildtemplate
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
@@ -33,6 +34,7 @@ var deployCmd = &cobra.Command{
 
 func NewDeployCmd(clientset *client.ClientSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployService(clientset))
+	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
 	return deployCmd
 }
@@ -69,18 +71,44 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 	deployBuildTemplateCmd := &cobra.Command{
 		Use:     "buildtemplate",
-		Aliases: []string{"buildtempalte", "bldtmpl"},
+		Aliases: []string{"buildtemplates", "bldtmpl"},
 		Short:   "Deploy knative build template",
 		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := b.DeployBuildTemplate(args, clientset); err != nil {
+			if err := bt.DeployBuildTemplate(args, clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
 
-	deployBuildTemplateCmd.Flags().StringVar(&b.URL, "from-url", "", "Build template yaml URL")
-	deployBuildTemplateCmd.Flags().StringVar(&b.Path, "from-file", "", "Local file path to deploy")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.URL, "from-url", "", "Build template yaml URL")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.Path, "from-file", "", "Local file path to deploy")
 
 	return deployBuildTemplateCmd
+}
+
+func cmdDeployBuild(clientset *client.ClientSet) *cobra.Command {
+	deployBuildCmd := &cobra.Command{
+		Use:     "build",
+		Aliases: []string{"builds"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "Deploy knative build",
+		Example: "tm deploy build foo-builder --source git-repo --buildtemplate kaniko --args IMAGE=knative-local-registry:5000/foo-image",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := b.DeployBuild(args, clientset); err != nil {
+				log.Fatal(err)
+			}
+		},
+	}
+
+	deployBuildCmd.Flags().StringVar(&b.Source, "source", "", "Git URL to get sources from")
+	deployBuildCmd.Flags().StringVar(&b.Revision, "revision", "master", "Git source revision")
+	deployBuildCmd.Flags().StringVar(&b.Buildtemplate, "buildtemplate", "", "Buildtemplate name to use with build")
+	deployBuildCmd.Flags().StringVar(&b.Step, "step", "", "Build step (container) to run on provided source")
+	deployBuildCmd.Flags().StringVar(&b.Image, "image", "", "Image for build step")
+	deployBuildCmd.Flags().StringSliceVar(&b.Command, "command", []string{}, "Build step (container) command")
+	deployBuildCmd.Flags().StringSliceVar(&b.Args, "args", []string{}, "Build arguments")
+	deployBuildCmd.MarkFlagRequired("source")
+
+	return deployBuildCmd
 }
