@@ -96,24 +96,29 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 		}
 	}
 
-	if len(cfgFile) == 0 {
-		if cfgFile = os.Getenv("KUBECONFIG"); len(cfgFile) == 0 {
-			cfgFile = homeDir + confPath
-		}
+	var err error
+	var config *rest.Config
+	if len(cfgFile) != 0 {
+		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
+	} else if cfgFile = os.Getenv("KUBECONFIG"); len(cfgFile) != 0 {
+		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
+	} else if _, err = os.Stat(homeDir + "/.tm/config.json"); !os.IsNotExist(err) {
+		cfgFile = homeDir + "/.tm/config.json"
+		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
+	} else if _, err = os.Stat(homeDir + "/.kube/config"); !os.IsNotExist(err) {
+		cfgFile = homeDir + "/.kube/config"
+		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
+	} else {
+		config, err = rest.InClusterConfig()
 	}
 
-	config, err := rest.InClusterConfig()
 	if err != nil {
-		if config, err = clientcmd.BuildConfigFromFlags("", cfgFile); err != nil {
-			if config, err = clientcmd.BuildConfigFromFlags("", homeDir+"/.kube/config"); err != nil {
-				log.Fatalln("Can't read config file")
-			}
-			cfgFile = homeDir + "/.kube/config"
-		}
-		if len(namespace) == 0 {
-			if c.Namespace, err = username(cfgFile); err != nil {
-				return c, err
-			}
+		log.Fatalln("Can't read config file")
+	}
+
+	if len(namespace) == 0 {
+		if c.Namespace, err = username(cfgFile); err != nil {
+			return c, err
 		}
 	}
 
