@@ -97,7 +97,7 @@ func (b *Buildtemplate) setEnvConfig(template *buildv1alpha1.BuildTemplate) {
 	for i, step := range template.Spec.Steps {
 		envs := append(step.Env, corev1.EnvVar{
 			Name:  "DOCKER_CONFIG",
-			Value: b.Credentials,
+			Value: "/" + b.Credentials,
 		})
 		template.Spec.Steps[i].Env = envs
 	}
