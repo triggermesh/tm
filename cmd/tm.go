@@ -56,7 +56,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	tmCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "k8s config file")
 	tmCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
-	tmCmd.PersistentFlags().StringVar(&registry, "registry-host", "registry.munu.io", "User namespace")
+	tmCmd.PersistentFlags().StringVar(&registry, "registry-host", "unauthenticated.registry.svc.cluster.local", "User namespace")
 	tmCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
 
 	tmCmd.AddCommand(set.NewSetCmd(&clientset))
