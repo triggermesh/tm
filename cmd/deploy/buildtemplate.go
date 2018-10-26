@@ -86,7 +86,7 @@ func (b *Buildtemplate) addSecretVolume(template *buildv1alpha1.BuildTemplate) {
 	for i, step := range template.Spec.Steps {
 		mounts := append(step.VolumeMounts, corev1.VolumeMount{
 			Name:      b.Credentials,
-			MountPath: b.Credentials,
+			MountPath: "/" + b.Credentials,
 			ReadOnly:  true,
 		})
 		template.Spec.Steps[i].VolumeMounts = mounts
