@@ -84,6 +84,7 @@ func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 
 	deployBuildTemplateCmd.Flags().StringVar(&bt.URL, "from-url", "", "Build template yaml URL")
 	deployBuildTemplateCmd.Flags().StringVar(&bt.Path, "from-file", "", "Local file path to deploy")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.Credentials, "credentials", "", "Name of secret to use in buildtemplate")
 
 	return deployBuildTemplateCmd
 }
