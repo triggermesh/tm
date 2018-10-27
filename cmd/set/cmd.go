@@ -19,7 +19,7 @@ var setCmd = &cobra.Command{
 
 func NewSetCmd(clientset *client.ClientSet) *cobra.Command {
 	setCmd.AddCommand(cmdSetRoutes(clientset))
-	setCmd.AddCommand(cmdSetCredentials(clientset))
+	setCmd.AddCommand(cmdSetRegistryCreds(clientset))
 	return setCmd
 }
 
@@ -41,21 +41,21 @@ func cmdSetRoutes(clientset *client.ClientSet) *cobra.Command {
 	return setRoutesCmd
 }
 
-func cmdSetCredentials(clientset *client.ClientSet) *cobra.Command {
-	setCredentialsCmd := &cobra.Command{
-		Use:   "credentials",
-		Short: "Set secret with registry credentials",
+func cmdSetRegistryCreds(clientset *client.ClientSet) *cobra.Command {
+	setRegistryCredsCmd := &cobra.Command{
+		Use:   "registry-creds",
+		Short: "Create secret with registry credentials",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.SetCredentials(args, clientset); err != nil {
+			if err := c.SetRegistryCreds(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Routes successfully updated")
+			fmt.Println("Registry credentials set")
 		},
 	}
 
-	setCredentialsCmd.Flags().StringVar(&c.Host, "registry", "", "Registry host address")
-	setCredentialsCmd.Flags().StringVar(&c.Username, "username", "", "Registry username")
-	setCredentialsCmd.Flags().StringVar(&c.Password, "password", "", "Registry password")
-	return setCredentialsCmd
+	setRegistryCredsCmd.Flags().StringVar(&c.Host, "registry", "", "Registry host address")
+	setRegistryCredsCmd.Flags().StringVar(&c.Username, "username", "", "Registry username")
+	setRegistryCredsCmd.Flags().StringVar(&c.Password, "password", "", "Registry password")
+	return setRegistryCredsCmd
 }

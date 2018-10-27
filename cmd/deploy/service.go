@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"regexp"
@@ -30,17 +31,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Knative build timeout in minutes
+const timeout = 5
+
+type status struct {
+	domain string
+	err    error
+}
+
 type Options struct {
 	PullPolicy     string
 	ResultImageTag string
 	Buildtemplate  string
 	RunRevision    string
+	RegistryCreds  string
 	Env            []string
 	Labels         []string
 	BuildArgs      []string
+	Wait           bool
 }
 
-type Source struct {
+type Repository struct {
 	URL      string
 	Revision string
 }
@@ -50,10 +61,9 @@ type Registry struct {
 }
 
 type Image struct {
-	Repository Source
-	Image      Registry
-	URL        string
-	Path       string
+	Source Repository
+	Image  Registry
+	Path   string
 }
 
 type Service struct {
@@ -63,12 +73,12 @@ type Service struct {
 
 func (s *Service) DeployService(args []string, clientset *client.ClientSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
-	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s-source", clientset.Registry, clientset.Namespace, args[0]), s.BuildArgs)
+	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, args[0]), s.BuildArgs)
 
 	switch {
 	case len(s.From.Image.URL) != 0:
 		configuration = s.fromImage(args)
-	case len(s.From.Repository.URL) != 0:
+	case len(s.From.Source.URL) != 0:
 		if err := createConfigMap(nil, clientset); err != nil {
 			return err
 		}
@@ -81,8 +91,6 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 			Name:      s.Buildtemplate,
 			Arguments: buildArguments,
 		}
-	case len(s.From.URL) != 0:
-		configuration = s.fromURL(args, clientset)
 	case len(s.From.Path) != 0:
 		filebody, err := ioutil.ReadFile(s.From.Path)
 		if err != nil {
@@ -94,6 +102,18 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 			return err
 		}
 		configuration = s.fromFile(args, clientset)
+	}
+
+	configuration.RevisionTemplate.ObjectMeta = metav1.ObjectMeta{
+		Name: args[0],
+		Annotations: map[string]string{
+			"sidecar.istio.io/inject": "true",
+		},
+	}
+
+	if len(s.RegistryCreds) != 0 {
+		s.addSecretVolume(configuration.Build)
+		s.setEnvConfig(configuration.Build)
 	}
 
 	envVars := []corev1.EnvVar{
@@ -141,35 +161,36 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 		Spec: spec,
 	}
 
-	oldService, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(args[0], metav1.GetOptions{})
-	if err == nil {
-		serviceObject.ObjectMeta.ResourceVersion = oldService.ObjectMeta.ResourceVersion
-		oldService, err = clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Update(&serviceObject)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Service update started. Run \"tm -n %s get revisions\" to see available revisions\n", clientset.Namespace)
-	} else if k8sErrors.IsNotFound(err) {
-		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, service.Name)
-	} else {
+	if err := s.createOrUpdateObject(serviceObject, clientset); err != nil {
 		return err
 	}
+
+	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, args[0])
+
+	if s.Wait {
+		fmt.Println("Waiting for ready state")
+		domain, err := waitService(args[0], clientset)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Service domain: %s\n", domain)
+	}
+
 	return nil
+}
+
+func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, clientset *client.ClientSet) error {
+	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
+	if k8sErrors.IsAlreadyExists(err) {
+		serviceObject.ObjectMeta.ResourceVersion = service.GetResourceVersion()
+		service, err = clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Update(&serviceObject)
+	}
+	return err
 }
 
 func (s *Service) fromImage(args []string) servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					"sidecar.istio.io/inject": "true",
-				},
-				Name: args[0],
-			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
 					Image: s.From.Image.URL,
@@ -184,55 +205,22 @@ func (s *Service) fromSource(args []string, clientset *client.ClientSet) serving
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Git: &buildv1alpha1.GitSourceSpec{
-					Url:      s.From.Repository.URL,
-					Revision: s.From.Repository.Revision,
+					Url:      s.From.Source.URL,
+					Revision: s.From.Source.Revision,
 				},
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					"sidecar.istio.io/inject": "true",
-				},
-				Name: args[0],
-			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-source:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
+					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
 				},
 			},
 		},
 	}
 }
 
-func (s *Service) fromURL(args []string, clientset *client.ClientSet) servingv1alpha1.ConfigurationSpec {
-	return servingv1alpha1.ConfigurationSpec{
-		Build: &buildv1alpha1.BuildSpec{
-			Source: &buildv1alpha1.SourceSpec{
-				Custom: &corev1.Container{
-					Image: "registry.hub.docker.com/library/busybox",
-				},
-			},
-			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name: "getandbuild",
-			},
-		},
-		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					"sidecar.istio.io/inject": "true",
-				},
-				Name: args[0],
-			},
-			Spec: servingv1alpha1.RevisionSpec{
-				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-url:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
-				},
-			},
-		},
-	}
-}
-
+// TODO replace with `from-path` option
 func (s *Service) fromFile(args []string, clientset *client.ClientSet) servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
 		Build: &buildv1alpha1.BuildSpec{
@@ -246,18 +234,40 @@ func (s *Service) fromFile(args []string, clientset *client.ClientSet) servingv1
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: args[0],
-				Annotations: map[string]string{
-					"sidecar.istio.io/inject": "true",
-				},
-			},
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s-file:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
+					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
 				},
 			},
 		},
+	}
+}
+
+func (s *Service) addSecretVolume(build *buildv1alpha1.BuildSpec) {
+	build.Volumes = append(build.Volumes, corev1.Volume{
+		Name: s.RegistryCreds,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: s.RegistryCreds,
+			},
+		},
+	})
+	for i, step := range build.Steps {
+		mounts := append(step.VolumeMounts, corev1.VolumeMount{
+			Name:      s.RegistryCreds,
+			MountPath: "/" + s.RegistryCreds,
+			ReadOnly:  true,
+		})
+		build.Steps[i].VolumeMounts = mounts
+	}
+}
+
+func (s *Service) setEnvConfig(build *buildv1alpha1.BuildSpec) {
+	for i := range build.Steps {
+		build.Steps[i].Env = append(build.Steps[i].Env, corev1.EnvVar{
+			Name:  "DOCKER_CONFIG",
+			Value: "/" + s.RegistryCreds,
+		})
 	}
 }
 
@@ -324,4 +334,34 @@ func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clie
 	}
 
 	return err
+}
+
+func waitService(name string, clientset *client.ClientSet) (string, error) {
+	quit := time.After(timeout * time.Minute)
+	tick := time.Tick(5 * time.Second)
+	for {
+		select {
+		case <-quit:
+			return "", errors.New("Service status wait timeout")
+		case <-tick:
+			domain, err := readyDomain(name, clientset)
+			if err != nil {
+				return "", err
+			} else if domain != "" {
+				return domain, nil
+			}
+		}
+	}
+	return "", nil
+}
+
+func readyDomain(name string, clientset *client.ClientSet) (string, error) {
+	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	if service.Status.IsReady() {
+		return service.Status.Domain, nil
+	}
+	return "", nil
 }

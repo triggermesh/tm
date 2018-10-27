@@ -29,7 +29,7 @@ type Credentials struct {
 	Password string
 }
 
-func (c *Credentials) SetCredentials(args []string, clientset *client.ClientSet) error {
+func (c *Credentials) SetRegistryCreds(args []string, clientset *client.ClientSet) error {
 	secret := make(map[string]string)
 	secret["config.json"] = fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
 	newSecret := corev1.Secret{
