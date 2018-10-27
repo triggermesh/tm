@@ -32,7 +32,7 @@ import (
 )
 
 // Knative build timeout in minutes
-const timeout = 5
+const timeout = 10
 
 type status struct {
 	domain string
@@ -168,22 +168,27 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, args[0])
 
 	if s.Wait {
-		fmt.Println("Waiting for ready state")
+		fmt.Print("Waiting for ready state")
 		domain, err := waitService(args[0], clientset)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Service domain: %s\n", domain)
+		fmt.Printf("\nService domain: %s\n", domain)
 	}
 
 	return nil
 }
 
 func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, clientset *client.ClientSet) error {
-	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
+	_, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
 	if k8sErrors.IsAlreadyExists(err) {
+		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 		serviceObject.ObjectMeta.ResourceVersion = service.GetResourceVersion()
 		service, err = clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Update(&serviceObject)
+		return err
 	}
 	return err
 }
@@ -344,6 +349,7 @@ func waitService(name string, clientset *client.ClientSet) (string, error) {
 		case <-quit:
 			return "", errors.New("Service status wait timeout")
 		case <-tick:
+			fmt.Print(".")
 			domain, err := readyDomain(name, clientset)
 			if err != nil {
 				return "", err
@@ -359,6 +365,11 @@ func readyDomain(name string, clientset *client.ClientSet) (string, error) {
 	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
+	}
+	for _, v := range service.Status.Conditions {
+		if v.Status == corev1.ConditionFalse {
+			return "", errors.New(v.Message)
+		}
 	}
 	if service.Status.IsReady() {
 		return service.Status.Domain, nil
