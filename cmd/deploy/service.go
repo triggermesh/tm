@@ -44,7 +44,6 @@ type Options struct {
 	ResultImageTag string
 	Buildtemplate  string
 	RunRevision    string
-	RegistryCreds  string
 	Env            []string
 	Labels         []string
 	BuildArgs      []string
@@ -109,11 +108,6 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 		Annotations: map[string]string{
 			"sidecar.istio.io/inject": "true",
 		},
-	}
-
-	if len(s.RegistryCreds) != 0 {
-		s.addSecretVolume(configuration.Build)
-		s.setEnvConfig(configuration.Build)
 	}
 
 	envVars := []corev1.EnvVar{
@@ -245,34 +239,6 @@ func (s *Service) fromFile(args []string, clientset *client.ClientSet) servingv1
 				},
 			},
 		},
-	}
-}
-
-func (s *Service) addSecretVolume(build *buildv1alpha1.BuildSpec) {
-	build.Volumes = append(build.Volumes, corev1.Volume{
-		Name: s.RegistryCreds,
-		VolumeSource: corev1.VolumeSource{
-			Secret: &corev1.SecretVolumeSource{
-				SecretName: s.RegistryCreds,
-			},
-		},
-	})
-	for i, step := range build.Steps {
-		mounts := append(step.VolumeMounts, corev1.VolumeMount{
-			Name:      s.RegistryCreds,
-			MountPath: "/" + s.RegistryCreds,
-			ReadOnly:  true,
-		})
-		build.Steps[i].VolumeMounts = mounts
-	}
-}
-
-func (s *Service) setEnvConfig(build *buildv1alpha1.BuildSpec) {
-	for i := range build.Steps {
-		build.Steps[i].Env = append(build.Steps[i].Env, corev1.EnvVar{
-			Name:  "DOCKER_CONFIG",
-			Value: "/" + s.RegistryCreds,
-		})
 	}
 }
 

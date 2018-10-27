@@ -28,14 +28,15 @@ import (
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Buildtemplate struct {
-	URL         string
-	Path        string
-	Credentials string
+	URL           string
+	Path          string
+	RegistryCreds string
 }
 
 const (
@@ -63,7 +64,43 @@ func (b *Buildtemplate) DeployBuildTemplate(args []string, clientset *client.Cli
 	}
 	fmt.Printf("Creating \"%s\" build template\n", bt.ObjectMeta.Name)
 
+	if len(b.RegistryCreds) != 0 {
+		b.addSecretVolume(&bt)
+		b.setEnvConfig(&bt)
+	}
+
 	return createBuildTemplate(bt, clientset)
+}
+
+func (b *Buildtemplate) addSecretVolume(template *buildv1alpha1.BuildTemplate) {
+	template.Spec.Volumes = []corev1.Volume{
+		corev1.Volume{
+			Name: b.RegistryCreds,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: b.RegistryCreds,
+				},
+			},
+		},
+	}
+	for i, step := range template.Spec.Steps {
+		mounts := append(step.VolumeMounts, corev1.VolumeMount{
+			Name:      b.RegistryCreds,
+			MountPath: "/" + b.RegistryCreds,
+			ReadOnly:  true,
+		})
+		template.Spec.Steps[i].VolumeMounts = mounts
+	}
+}
+
+func (b *Buildtemplate) setEnvConfig(template *buildv1alpha1.BuildTemplate) {
+	for i, step := range template.Spec.Steps {
+		envs := append(step.Env, corev1.EnvVar{
+			Name:  "DOCKER_CONFIG",
+			Value: "/" + b.RegistryCreds,
+		})
+		template.Spec.Steps[i].Env = envs
+	}
 }
 
 func readYaml(path string) (buildv1alpha1.BuildTemplate, error) {

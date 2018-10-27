@@ -43,7 +43,7 @@ func cmdSetRoutes(clientset *client.ClientSet) *cobra.Command {
 
 func cmdSetRegistryCreds(clientset *client.ClientSet) *cobra.Command {
 	setRegistryCredsCmd := &cobra.Command{
-		Use:   "registry-creds",
+		Use:   "registry-auth",
 		Short: "Create secret with registry credentials",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
