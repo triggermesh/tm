@@ -44,7 +44,7 @@ var (
 var tmCmd = &cobra.Command{
 	Use:     "tm",
 	Short:   "Triggermesh CLI",
-	Version: "0.0.3",
+	Version: "0.0.4",
 }
 
 func Execute() {
