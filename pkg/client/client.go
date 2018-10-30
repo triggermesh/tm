@@ -26,6 +26,7 @@ import (
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
 	servingApi "github.com/knative/serving/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -35,9 +36,12 @@ const (
 )
 
 type ClientSet struct {
-	Core      *kubernetes.Clientset
-	Build     *buildApi.Clientset
-	Serving   *servingApi.Clientset
+	Core    *kubernetes.Clientset
+	Build   *buildApi.Clientset
+	Serving *servingApi.Clientset
+
+	Config *rest.Config
+
 	Namespace string
 	Registry  string
 }
@@ -81,10 +85,6 @@ func username(cfgFile string) (string, error) {
 }
 
 func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
-	c := ClientSet{
-		Namespace: namespace,
-		Registry:  registry,
-	}
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {
 		homeDir = dir
@@ -100,10 +100,10 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 	var config *rest.Config
 	if len(cfgFile) != 0 {
 		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
-	} else if cfgFile = os.Getenv("KUBECONFIG"); len(cfgFile) != 0 {
-		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
 	} else if _, err = os.Stat(homeDir + "/.tm/config.json"); !os.IsNotExist(err) {
 		cfgFile = homeDir + "/.tm/config.json"
+		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
+	} else if cfgFile = os.Getenv("KUBECONFIG"); len(cfgFile) != 0 {
 		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
 	} else if _, err = os.Stat(homeDir + "/.kube/config"); !os.IsNotExist(err) {
 		cfgFile = homeDir + "/.kube/config"
@@ -117,9 +117,15 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 	}
 
 	if len(namespace) == 0 {
-		if c.Namespace, err = username(cfgFile); err != nil {
-			return c, err
+		if namespace, err = username(cfgFile); err != nil {
+			return ClientSet{}, err
 		}
+	}
+
+	c := ClientSet{
+		Namespace: namespace,
+		Registry:  registry,
+		Config:    config,
 	}
 
 	if c.Build, err = buildApi.NewForConfig(config); err != nil {

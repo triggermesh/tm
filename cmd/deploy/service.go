@@ -19,7 +19,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"path"
 	"regexp"
 	"time"
 
@@ -78,29 +78,20 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	case len(s.From.Image.URL) != 0:
 		configuration = s.fromImage(args)
 	case len(s.From.Source.URL) != 0:
-		if err := createConfigMap(nil, clientset); err != nil {
-			return err
-		}
 		configuration = s.fromSource(args, clientset)
 		if err := updateBuildTemplate(s.Buildtemplate, templateParams, clientset); err != nil {
 			return err
 		}
-
 		configuration.Build.Template = &buildv1alpha1.TemplateInstantiationSpec{
 			Name:      s.Buildtemplate,
 			Arguments: buildArguments,
 		}
 	case len(s.From.Path) != 0:
-		filebody, err := ioutil.ReadFile(s.From.Path)
-		if err != nil {
-			return err
+		configuration = s.fromPath(args, clientset)
+		configuration.Build.Template = &buildv1alpha1.TemplateInstantiationSpec{
+			Name:      s.Buildtemplate,
+			Arguments: buildArguments,
 		}
-		data := make(map[string]string)
-		data[args[0]] = string(filebody)
-		if err := createConfigMap(data, clientset); err != nil {
-			return err
-		}
-		configuration = s.fromFile(args, clientset)
 	}
 
 	configuration.RevisionTemplate.ObjectMeta = metav1.ObjectMeta{
@@ -157,6 +148,13 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 
 	if err := s.createOrUpdateObject(serviceObject, clientset); err != nil {
 		return err
+	}
+
+	if len(s.From.Path) != 0 {
+		fmt.Println("Uploading sources")
+		if err := injectSources(args, s.From.Path, clientset); err != nil {
+			return err
+		}
 	}
 
 	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, args[0])
@@ -219,17 +217,15 @@ func (s *Service) fromSource(args []string, clientset *client.ClientSet) serving
 	}
 }
 
-// TODO replace with `from-path` option
-func (s *Service) fromFile(args []string, clientset *client.ClientSet) servingv1alpha1.ConfigurationSpec {
+func (s *Service) fromPath(args []string, clientset *client.ClientSet) servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Custom: &corev1.Container{
-					Image: "registry.hub.docker.com/library/busybox",
+					Image:   "library/busybox",
+					Command: []string{"sh"},
+					Args:    []string{"-c", "while [ -z \"$(ln /workspace)\" ]; do sleep 1; done; sleep 1"},
 				},
-			},
-			Template: &buildv1alpha1.TemplateInstantiationSpec{
-				Name: "kaniko",
 			},
 		},
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
@@ -240,30 +236,6 @@ func (s *Service) fromFile(args []string, clientset *client.ClientSet) servingv1
 			},
 		},
 	}
-}
-
-func createConfigMap(data map[string]string, clientset *client.ClientSet) error {
-	newmap := corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "dockerfile",
-			Namespace: clientset.Namespace,
-		},
-		Data: data,
-	}
-	cm, err := clientset.Core.CoreV1().ConfigMaps(clientset.Namespace).Get("dockerfile", metav1.GetOptions{})
-	if err == nil {
-		newmap.ObjectMeta.ResourceVersion = cm.ObjectMeta.ResourceVersion
-		_, err = clientset.Core.CoreV1().ConfigMaps(clientset.Namespace).Update(&newmap)
-		return err
-	} else if k8sErrors.IsNotFound(err) {
-		_, err = clientset.Core.CoreV1().ConfigMaps(clientset.Namespace).Create(&newmap)
-		return err
-	}
-	return err
 }
 
 func getArgsFromSlice(slice []string) map[string]string {
@@ -305,6 +277,63 @@ func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clie
 	}
 
 	return err
+}
+
+func injectSources(args []string, filepath string, clientset *client.ClientSet) error {
+	var latestRevision string
+	for latestRevision == "" {
+		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		latestRevision = service.Status.LatestCreatedRevisionName
+		time.Sleep(2 * time.Second)
+	}
+
+	var buildPod string
+	for buildPod == "" {
+		build, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(latestRevision, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		if build.Status.Cluster != nil {
+			buildPod = build.Status.Cluster.PodName
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	var sourceContainer string
+	for sourceContainer == "" {
+		pod, err := clientset.Core.CoreV1().Pods(clientset.Namespace).Get(buildPod, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		for _, v := range pod.Status.InitContainerStatuses {
+			if v.Name == "build-step-custom-source" && v.State.Running != nil {
+				sourceContainer = v.Name
+				break
+			}
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	c := Copy{
+		Pod:         buildPod,
+		Container:   sourceContainer,
+		Source:      filepath,
+		Destination: "/home",
+	}
+
+	if err := c.Upload(clientset); err != nil {
+		return err
+	}
+
+	if _, _, err := c.RemoteExec(clientset, fmt.Sprintf("ln -s /home/%s/* /workspace", path.Base(s.From.Path)), nil); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func waitService(name string, clientset *client.ClientSet) (string, error) {

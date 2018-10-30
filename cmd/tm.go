@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -59,11 +60,20 @@ func init() {
 	tmCmd.PersistentFlags().StringVar(&registry, "registry-host", "unauthenticated.registry.svc.cluster.local", "User namespace")
 	tmCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
 
+	tmCmd.AddCommand(versionCmd)
 	tmCmd.AddCommand(set.NewSetCmd(&clientset))
 	tmCmd.AddCommand(deploy.NewDeployCmd(&clientset))
 	tmCmd.AddCommand(delete.NewDeleteCmd(&clientset))
 	tmCmd.AddCommand(get.NewGetCmd(&clientset))
 	tmCmd.AddCommand(describe.NewDescribeCmd(&clientset))
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version number of tm CLI",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("%s, version %s\n", tmCmd.Short, tmCmd.Version)
+	},
 }
 
 func initConfig() {

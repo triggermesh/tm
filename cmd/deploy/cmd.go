@@ -26,6 +26,7 @@ import (
 var s Service
 var b Build
 var bt Buildtemplate
+var c Copy
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
@@ -36,6 +37,7 @@ func NewDeployCmd(clientset *client.ClientSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
+	deployCmd.AddCommand(cmdCopy(clientset))
 	return deployCmd
 }
 
@@ -57,7 +59,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.From.Image.URL, "from-image", "", "Image to deploy")
 	deployServiceCmd.Flags().StringVar(&s.From.Source.URL, "from-source", "", "Git source URL to deploy")
 	deployServiceCmd.Flags().StringVar(&s.From.Source.Revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
-	deployServiceCmd.Flags().StringVar(&s.From.Path, "from-file", "", "Local file path to deploy")
+	deployServiceCmd.Flags().StringVar(&s.From.Path, "from-path", "", "Local file path to deploy")
 	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "kaniko", "Build template to use with service")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
@@ -113,4 +115,21 @@ func cmdDeployBuild(clientset *client.ClientSet) *cobra.Command {
 	deployBuildCmd.MarkFlagRequired("source")
 
 	return deployBuildCmd
+}
+
+func cmdCopy(clientset *client.ClientSet) *cobra.Command {
+	copyCmd := &cobra.Command{
+		Use: "copy",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := c.Upload(clientset); err != nil {
+				log.Fatal(err)
+			}
+		},
+	}
+	copyCmd.Flags().StringVar(&c.Pod, "pod", "", "Pod container name")
+	copyCmd.Flags().StringVar(&c.Container, "container", "", "Pod container name")
+	copyCmd.Flags().StringVar(&c.Source, "src", "", "Local path to copy")
+	copyCmd.Flags().StringVar(&c.Destination, "dst", "", "Local path to copy")
+
+	return copyCmd
 }
