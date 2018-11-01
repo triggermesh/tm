@@ -223,7 +223,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "bc7917b19d8f099105de72dc62898400be07c984"
+  revision = "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06"
 
 [[projects]]
   branch = "master"
@@ -248,7 +248,7 @@
     "jws",
     "jwt"
   ]
-  revision = "9dcd33a902f40452422c2367fefcb95b54f9f8f8"
+  revision = "8527f56f71077909d6ead7facfe18fbf05ebdf83"
 
 [[projects]]
   branch = "master"
@@ -257,7 +257,7 @@
     "unix",
     "windows"
   ]
-  revision = "d69651ed3497faee15a5363a89578e9991f6d5e2"
+  revision = "9b800f95dbbc54abff0acf7ee32d88ba4e328c89"
 
 [[projects]]
   name = "golang.org/x/text"

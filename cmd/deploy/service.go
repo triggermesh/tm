@@ -224,7 +224,7 @@ func (s *Service) fromPath(args []string, clientset *client.ClientSet) servingv1
 				Custom: &corev1.Container{
 					Image:   "library/busybox",
 					Command: []string{"sh"},
-					Args:    []string{"-c", "while [ -z \"$(ln /workspace)\" ]; do sleep 1; done; sleep 1"},
+					Args:    []string{"-c", "while [ -z \"$(ls /workspace)\" ]; do sleep 1; done; sleep 1"},
 				},
 			},
 		},
