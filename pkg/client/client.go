@@ -108,19 +108,17 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
-	if err != nil {
+	if err == nil && len(namespace) == 0 {
+		if namespace, err = username(cfgFile); err != nil {
+			return ClientSet{}, err
+		}
+	} else if err != nil {
 		log.Printf("%s, falling back to in-cluster configuration\n", err)
 		config, err = rest.InClusterConfig()
 	}
 
 	if err != nil {
 		log.Fatalln("Can't read config file")
-	}
-
-	if len(namespace) == 0 {
-		if namespace, err = username(cfgFile); err != nil {
-			return ClientSet{}, err
-		}
 	}
 
 	c := ClientSet{

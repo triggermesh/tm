@@ -61,7 +61,6 @@ func (c *Copy) Upload(clientset *client.ClientSet) error {
 		return err
 	}
 
-	// fmt.Printf("Remote stdout: %s\n", output)
 	return nil
 }
 
