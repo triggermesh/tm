@@ -96,19 +96,20 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 		}
 	}
 
-	var err error
-	var config *rest.Config
+	kubeconfig := os.Getenv("KUBECONFIG")
 	if len(cfgFile) != 0 {
-		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
-	} else if _, err = os.Stat(homeDir + "/.tm/config.json"); !os.IsNotExist(err) {
+		// using config file passed with --config argument
+	} else if _, err := os.Stat(homeDir + "/.tm/config.json"); err == nil {
 		cfgFile = homeDir + "/.tm/config.json"
-		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
-	} else if cfgFile = os.Getenv("KUBECONFIG"); len(cfgFile) != 0 {
-		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
-	} else if _, err = os.Stat(homeDir + "/.kube/config"); !os.IsNotExist(err) {
-		cfgFile = homeDir + "/.kube/config"
-		config, err = clientcmd.BuildConfigFromFlags("", cfgFile)
+	} else if _, err := os.Stat(kubeconfig); err == nil {
+		cfgFile = kubeconfig
 	} else {
+		cfgFile = homeDir + "/.kube/config"
+	}
+
+	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
+	if err != nil {
+		log.Printf("%s, falling back to in-cluster configuration\n", err)
 		config, err = rest.InClusterConfig()
 	}
 
