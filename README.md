@@ -23,7 +23,7 @@ Or head to the GitHub [release page](https://github.com/triggermesh/tm/releases)
 Examples:
 
 ```
-tm deploy foo --from-image=gcr.io/google-samples/echo-python
+tm deploy service foo --from-image=gcr.io/google-samples/echo-python
 ```
 
 **On your own knative cluster:**
