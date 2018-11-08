@@ -26,7 +26,7 @@ import (
 )
 
 // deleteServiceCmd represents the builds command
-func cmdDeleteService(clientset *client.ClientSet) *cobra.Command {
+func cmdDeleteService(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "service",
 		Short:   "Delete knative service resource",
@@ -42,6 +42,6 @@ func cmdDeleteService(clientset *client.ClientSet) *cobra.Command {
 }
 
 // Service remove knative service object
-func Service(args []string, clientset *client.ClientSet) error {
+func Service(args []string, clientset *client.ConfigSet) error {
 	return clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

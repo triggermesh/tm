@@ -51,7 +51,7 @@ func split(slice []string) map[string]int {
 }
 
 // SetPercentage changes traffic distribution between service revisions
-func (r *Route) SetPercentage(args []string, clientset *client.ClientSet) error {
+func (r *Route) SetPercentage(args []string, clientset *client.ConfigSet) error {
 	targets := []servingv1alpha1.TrafficTarget{}
 	// TODO: add named target support
 	for revision, percent := range split(r.Revisions) {
@@ -89,10 +89,8 @@ func (r *Route) SetPercentage(args []string, clientset *client.ClientSet) error 
 	fmt.Printf("%+v\n", route)
 	route.ObjectMeta.ResourceVersion = routeOld.ObjectMeta.ResourceVersion
 	route.Spec.Traffic = targets
-	if r, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Update(&route); err != nil {
+	if _, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Update(&route); err != nil {
 		return err
-	} else {
-		fmt.Printf("\n%+v\n", r)
 	}
 
 	return nil

@@ -26,17 +26,19 @@ import (
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
 	servingApi "github.com/knative/serving/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	// gcp package is required for kubectl configs with GCP auth providers
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 const (
 	confPath = "/.tm/config.json"
 )
 
-// ClientSet contains different information that may be needed by underlying functions
-type ClientSet struct {
+// ConfigSet contains different information that may be needed by underlying functions
+type ConfigSet struct {
 	Core    *kubernetes.Clientset
 	Build   *buildApi.Clientset
 	Serving *servingApi.Clientset
@@ -85,8 +87,8 @@ func username(cfgFile string) (string, error) {
 	return "default", nil
 }
 
-// NewClient returns Clientset created from available configuration file or from in-cluster environment
-func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
+// NewClient returns ConfigSet created from available configuration file or from in-cluster environment
+func NewClient(cfgFile, namespace, registry string) (ConfigSet, error) {
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {
 		homeDir = dir
@@ -112,7 +114,7 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
 	if err == nil && len(namespace) == 0 {
 		if namespace, err = username(cfgFile); err != nil {
-			return ClientSet{}, err
+			return ConfigSet{}, err
 		}
 	} else if err != nil {
 		log.Printf("%s, falling back to in-cluster configuration\n", err)
@@ -123,7 +125,7 @@ func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 		log.Fatalln("Can't read config file")
 	}
 
-	c := ClientSet{
+	c := ConfigSet{
 		Namespace: namespace,
 		Registry:  registry,
 		Config:    config,

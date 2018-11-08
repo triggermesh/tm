@@ -33,14 +33,14 @@ var deployCmd = &cobra.Command{
 }
 
 // NewDeployCmd returns deploy cobra command and its subcommands
-func NewDeployCmd(clientset *client.ClientSet) *cobra.Command {
+func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
 	return deployCmd
 }
 
-func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
+func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd := &cobra.Command{
 		Use:     "service",
 		Aliases: []string{"services", "svc"},
@@ -72,7 +72,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 	return deployServiceCmd
 }
 
-func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
+func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	deployBuildTemplateCmd := &cobra.Command{
 		Use:     "buildtemplate",
 		Aliases: []string{"buildtemplates", "bldtmpl"},
@@ -92,7 +92,7 @@ func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 	return deployBuildTemplateCmd
 }
 
-func cmdDeployBuild(clientset *client.ClientSet) *cobra.Command {
+func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 	deployBuildCmd := &cobra.Command{
 		Use:     "build",
 		Aliases: []string{"builds"},

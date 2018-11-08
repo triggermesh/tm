@@ -37,7 +37,7 @@ var getCmd = &cobra.Command{
 }
 
 // NewGetCmd returns "Get" cobra CLI command with its subcommands
-func NewGetCmd(clientset *client.ClientSet) *cobra.Command {
+func NewGetCmd(clientset *client.ConfigSet) *cobra.Command {
 	getCmd.AddCommand(cmdListBuild(clientset))
 	getCmd.AddCommand(cmdListBuildTemplates(clientset))
 	getCmd.AddCommand(cmdListConfigurations(clientset))
@@ -52,6 +52,7 @@ func NewGetCmd(clientset *client.ClientSet) *cobra.Command {
 	return getCmd
 }
 
+// Format sets Get command output format
 func Format(encode *string) {
 	if encode == nil || string(*encode) == "json" {
 		output = "json"

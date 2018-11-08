@@ -37,7 +37,7 @@ var (
 	namespace string
 	registry  string
 	output    string
-	clientset client.ClientSet
+	clientset client.ConfigSet
 )
 
 // tmCmd represents the base command when called without any subcommands

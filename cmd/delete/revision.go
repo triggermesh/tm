@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDeleteRevision(clientset *client.ClientSet) *cobra.Command {
+func cmdDeleteRevision(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "revision",
 		Short:   "Delete knative revision resource",
@@ -41,6 +41,6 @@ func cmdDeleteRevision(clientset *client.ClientSet) *cobra.Command {
 }
 
 // Revision remove knative revision object
-func Revision(args []string, clientset *client.ClientSet) error {
+func Revision(args []string, clientset *client.ConfigSet) error {
 	return clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

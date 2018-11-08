@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDeleteBuild(clientset *client.ClientSet) *cobra.Command {
+func cmdDeleteBuild(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "build",
 		Aliases: []string{"builds"},
@@ -41,6 +41,6 @@ func cmdDeleteBuild(clientset *client.ClientSet) *cobra.Command {
 }
 
 // Build removes knative build object
-func Build(args []string, clientset *client.ClientSet) error {
+func Build(args []string, clientset *client.ConfigSet) error {
 	return clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

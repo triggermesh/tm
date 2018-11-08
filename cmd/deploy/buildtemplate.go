@@ -46,7 +46,7 @@ const (
 )
 
 // DeployBuildTemplate deploys knative buildtemplate either from local file or by its URL
-func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ClientSet) error {
+func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 	if len(b.URL) != 0 {
@@ -116,7 +116,7 @@ func readYaml(path string) (buildv1alpha1.BuildTemplate, error) {
 	return res, err
 }
 
-func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client.ClientSet) error {
+func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) error {
 	if template.TypeMeta.Kind != "BuildTemplate" {
 		return errors.New("Can't create object, only BuildTemplate is allowed")
 	}

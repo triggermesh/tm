@@ -27,7 +27,7 @@ var deleteCmd = &cobra.Command{
 }
 
 // NewDeleteCmd returns cobra Command with set of resource deletion subcommands
-func NewDeleteCmd(clientset *client.ClientSet) *cobra.Command {
+func NewDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 	deleteCmd.AddCommand(cmdDeleteConfiguration(clientset))
 	deleteCmd.AddCommand(cmdDeleteBuildTemplate(clientset))
 	deleteCmd.AddCommand(cmdDeleteRevision(clientset))

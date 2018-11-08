@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDescribeRoute(clientset *client.ClientSet) *cobra.Command {
+func cmdDescribeRoute(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "route",
 		Aliases: []string{"routes"},
@@ -47,7 +47,7 @@ func cmdDescribeRoute(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func listRoutes(clientset *client.ClientSet) ([]string, error) {
+func listRoutes(clientset *client.ConfigSet) ([]string, error) {
 	var routes []string
 	list, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -60,7 +60,7 @@ func listRoutes(clientset *client.ClientSet) ([]string, error) {
 }
 
 // Route dedscribes knative route object
-func Route(name string, clientset *client.ClientSet) ([]byte, error) {
+func Route(name string, clientset *client.ConfigSet) ([]byte, error) {
 	routes, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err

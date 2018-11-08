@@ -18,13 +18,13 @@ var setCmd = &cobra.Command{
 }
 
 // NewSetCmd returns "Set" cobra CLI command with its subcommands
-func NewSetCmd(clientset *client.ClientSet) *cobra.Command {
+func NewSetCmd(clientset *client.ConfigSet) *cobra.Command {
 	setCmd.AddCommand(cmdSetRoutes(clientset))
 	setCmd.AddCommand(cmdSetRegistryCreds(clientset))
 	return setCmd
 }
 
-func cmdSetRoutes(clientset *client.ClientSet) *cobra.Command {
+func cmdSetRoutes(clientset *client.ConfigSet) *cobra.Command {
 	setRoutesCmd := &cobra.Command{
 		Use:   "route",
 		Short: "Configure service route",
@@ -42,7 +42,7 @@ func cmdSetRoutes(clientset *client.ClientSet) *cobra.Command {
 	return setRoutesCmd
 }
 
-func cmdSetRegistryCreds(clientset *client.ClientSet) *cobra.Command {
+func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
 	setRegistryCredsCmd := &cobra.Command{
 		Use:   "registry-auth",
 		Short: "Create secret with registry credentials",

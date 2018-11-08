@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdListRevision(clientset *client.ClientSet) *cobra.Command {
+func cmdListRevision(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "revision",
 		Aliases: []string{"revisions"},
@@ -50,7 +50,7 @@ func cmdListRevision(clientset *client.ClientSet) *cobra.Command {
 }
 
 // Revisions returns list of knative revision objects
-func Revisions(clientset *client.ClientSet) (string, error) {
+func Revisions(clientset *client.ConfigSet) (string, error) {
 	list, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return "", err

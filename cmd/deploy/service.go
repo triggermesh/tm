@@ -86,7 +86,7 @@ type Service struct {
 }
 
 // DeployService receives Service structure and generate knative/service object to deploy it in knative cluster
-func (s *Service) DeployService(clientset *client.ClientSet) error {
+func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs)
 
@@ -217,7 +217,7 @@ func (s *Service) DeployService(clientset *client.ClientSet) error {
 	return nil
 }
 
-func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, clientset *client.ClientSet) error {
+func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
 	_, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
 	if k8sErrors.IsAlreadyExists(err) {
 		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
@@ -299,7 +299,7 @@ func getArgsFromSlice(slice []string) map[string]string {
 	return m
 }
 
-func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clientset *client.ClientSet) error {
+func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clientset *client.ConfigSet) error {
 	buildTemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -327,7 +327,7 @@ func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clie
 	return err
 }
 
-func injectSources(name string, filepath string, clientset *client.ClientSet) error {
+func injectSources(name string, filepath string, clientset *client.ConfigSet) error {
 	var latestRevision string
 	for latestRevision == "" {
 		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
@@ -384,7 +384,7 @@ func injectSources(name string, filepath string, clientset *client.ClientSet) er
 	return nil
 }
 
-func waitService(name string, clientset *client.ClientSet) (string, error) {
+func waitService(name string, clientset *client.ConfigSet) (string, error) {
 	quit := time.After(timeout * time.Minute)
 	tick := time.Tick(5 * time.Second)
 	for {
@@ -403,7 +403,7 @@ func waitService(name string, clientset *client.ClientSet) (string, error) {
 	}
 }
 
-func readyDomain(name string, clientset *client.ClientSet) (string, error) {
+func readyDomain(name string, clientset *client.ConfigSet) (string, error) {
 	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return "", err

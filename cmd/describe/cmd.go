@@ -35,7 +35,7 @@ var describeCmd = &cobra.Command{
 }
 
 // NewDescribeCmd returns "describe" cobra CLI command with its subcommands
-func NewDescribeCmd(clientset *client.ClientSet) *cobra.Command {
+func NewDescribeCmd(clientset *client.ConfigSet) *cobra.Command {
 	describeCmd.AddCommand(cmdDescribeBuild(clientset))
 	describeCmd.AddCommand(cmdDescribeBuildTemplate(clientset))
 	describeCmd.AddCommand(cmdDescribeConfiguration(clientset))
