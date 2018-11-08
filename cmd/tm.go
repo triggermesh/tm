@@ -57,7 +57,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	tmCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "k8s config file")
 	tmCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
-	tmCmd.PersistentFlags().StringVar(&registry, "registry-host", "unauthenticated.registry.svc.cluster.local", "User namespace")
+	tmCmd.PersistentFlags().StringVar(&registry, "registry-host", "knative.registry.svc.cluster.local", "Docker registry host address")
 	tmCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
 
 	tmCmd.AddCommand(versionCmd)

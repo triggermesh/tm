@@ -45,7 +45,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 		Aliases: []string{"services", "svc"},
 		Short:   "Deploy knative service",
 		Args:    cobra.ExactArgs(1),
-		Example: "tm -n default deploy service foo --build-template kaniko --build-argument SKIP_TLS_VERIFY=true --from-image gcr.io/google-samples/hello-app:1.0",
+		Example: "tm -n default deploy service foo --build-template kaniko --from-image gcr.io/google-samples/hello-app:1.0",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := s.DeployService(args, clientset); err != nil {
 				log.Fatal(err)
@@ -62,7 +62,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployServiceCmd.Flags().StringVar(&s.RunRevision, "run-revision", "", "Revision name to run service on")
-	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Image tag to build")
+	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
 
@@ -84,7 +84,7 @@ func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 
 	deployBuildTemplateCmd.Flags().StringVar(&bt.URL, "from-url", "", "Build template yaml URL")
 	deployBuildTemplateCmd.Flags().StringVar(&bt.Path, "from-file", "", "Local file path to deploy")
-	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistryCreds, "credentials", "", "Name of registry crededntials to use in buildtemplate")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistryCreds, "credentials", "", "Name of registry credentials to use in buildtemplate")
 
 	return deployBuildTemplateCmd
 }
