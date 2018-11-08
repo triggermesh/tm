@@ -19,9 +19,12 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"regexp"
 	"time"
+
+	"github.com/triggermesh/tm/cmd/describe"
 
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
@@ -76,6 +79,10 @@ type Service struct {
 func (s *Service) DeployService(args []string, clientset *client.ClientSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, args[0]), s.BuildArgs)
+
+	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); err != nil {
+		return err
+	}
 
 	switch {
 	case len(s.From.Image.URL) != 0:
@@ -154,6 +161,9 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	}
 
 	if len(s.From.Path) != 0 {
+		if _, err := os.Stat(s.From.Path); err != nil {
+			return err
+		}
 		fmt.Println("Uploading sources")
 		if err := injectSources(args, s.From.Path, clientset); err != nil {
 			return err
