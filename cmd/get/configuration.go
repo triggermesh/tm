@@ -49,6 +49,7 @@ func cmdListConfigurations(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// Configurations returns list of knative configuration objects
 func Configurations(clientset *client.ClientSet) (string, error) {
 	list, err := clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {

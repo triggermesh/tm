@@ -59,6 +59,7 @@ func listBuildTemplates(clientset *client.ClientSet) ([]string, error) {
 	return buildtemplates, nil
 }
 
+// BuildTemplate describes knative buildtemplate
 func BuildTemplate(name string, clientset *client.ClientSet) ([]byte, error) {
 	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {

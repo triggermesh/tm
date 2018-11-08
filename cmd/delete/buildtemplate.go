@@ -40,6 +40,7 @@ func cmdDeleteBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// BuildTemplate removes knative buildtemplate
 func BuildTemplate(args []string, clientset *client.ClientSet) error {
 	return clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

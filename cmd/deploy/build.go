@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Build structure represents knative build object
 type Build struct {
 	Name          string
 	Source        string
@@ -38,6 +39,7 @@ type Build struct {
 	Image         string
 }
 
+// DeployBuild uses Build structure to generate and deploy knative build
 func (b *Build) DeployBuild(clientset *client.ClientSet) error {
 	build := buildv1alpha1.Build{
 		TypeMeta: metav1.TypeMeta{

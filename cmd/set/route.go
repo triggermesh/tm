@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Route contains set of knative revisions/configurations to distribute traffic between them
 type Route struct {
 	Revisions []string
 	Configs   []string
@@ -49,6 +50,7 @@ func split(slice []string) map[string]int {
 	return m
 }
 
+// SetPercentage changes traffic distribution between service revisions
 func (r *Route) SetPercentage(args []string, clientset *client.ClientSet) error {
 	targets := []servingv1alpha1.TrafficTarget{}
 	// TODO: add named target support

@@ -59,6 +59,7 @@ func listRoutes(clientset *client.ClientSet) ([]string, error) {
 	return routes, nil
 }
 
+// Route dedscribes knative route object
 func Route(name string, clientset *client.ClientSet) ([]byte, error) {
 	routes, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {

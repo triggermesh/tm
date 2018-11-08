@@ -59,6 +59,7 @@ func listConfigurations(clientset *client.ClientSet) ([]string, error) {
 	return configurations, nil
 }
 
+// Configuration describes knative configuration object
 func Configuration(name string, clientset *client.ClientSet) ([]byte, error) {
 	configuration, err := clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {

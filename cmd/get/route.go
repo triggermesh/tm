@@ -49,6 +49,7 @@ func cmdListRoute(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// Routes returns list of knative route objects
 func Routes(clientset *client.ClientSet) (string, error) {
 	list, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {

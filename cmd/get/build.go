@@ -49,6 +49,7 @@ func cmdListBuild(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// Builds return list of knative build objects
 func Builds(clientset *client.ClientSet) (string, error) {
 	list, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {

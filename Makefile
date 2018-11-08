@@ -29,7 +29,7 @@ run:
 	./$(BINARY_NAME)
 
 validation:	
-	./script/validate-vet
+	#./script/validate-vet
 	./script/validate-lint
 	./script/validate-gofmt
 	./script/validate-git-marks

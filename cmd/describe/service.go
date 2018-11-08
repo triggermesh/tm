@@ -61,6 +61,7 @@ func listService(clientset *client.ClientSet) ([]string, error) {
 	return services, nil
 }
 
+// Service describes knative service object
 func Service(name string, clientset *client.ClientSet) ([]byte, error) {
 	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {

@@ -23,12 +23,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Credentials contains docker registry credentials
 type Credentials struct {
 	Host     string
 	Username string
 	Password string
 }
 
+// SetRegistryCreds creates Secret with docker registry credentials json which later can be mounted as config.json file
 func (c *Credentials) SetRegistryCreds(args []string, clientset *client.ClientSet) error {
 	secret := make(map[string]string)
 	secret["config.json"] = fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)

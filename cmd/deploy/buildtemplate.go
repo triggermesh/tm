@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Buildtemplate contains information about knative buildtemplate definition
 type Buildtemplate struct {
 	Name          string
 	URL           string
@@ -44,6 +45,7 @@ const (
 	tmpPath = "/tmp"
 )
 
+// DeployBuildTemplate deploys knative buildtemplate either from local file or by its URL
 func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ClientSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
@@ -75,7 +77,7 @@ func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ClientSet) error {
 
 func (b *Buildtemplate) addSecretVolume(template *buildv1alpha1.BuildTemplate) {
 	template.Spec.Volumes = []corev1.Volume{
-		corev1.Volume{
+		{
 			Name: b.RegistryCreds,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{

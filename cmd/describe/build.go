@@ -59,6 +59,7 @@ func listBuilds(clientset *client.ClientSet) ([]string, error) {
 	return builds, nil
 }
 
+// Build describes knative build object
 func Build(name string, clientset *client.ClientSet) ([]byte, error) {
 	build, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {

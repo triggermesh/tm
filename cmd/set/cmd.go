@@ -17,6 +17,7 @@ var setCmd = &cobra.Command{
 	Short: "Set resource parameters",
 }
 
+// NewSetCmd returns "Set" cobra CLI command with its subcommands
 func NewSetCmd(clientset *client.ClientSet) *cobra.Command {
 	setCmd.AddCommand(cmdSetRoutes(clientset))
 	setCmd.AddCommand(cmdSetRegistryCreds(clientset))

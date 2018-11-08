@@ -35,6 +35,7 @@ const (
 	confPath = "/.tm/config.json"
 )
 
+// ClientSet contains different information that may be needed by underlying functions
 type ClientSet struct {
 	Core    *kubernetes.Clientset
 	Build   *buildApi.Clientset
@@ -84,6 +85,7 @@ func username(cfgFile string) (string, error) {
 	return "default", nil
 }
 
+// NewClient returns Clientset created from available configuration file or from in-cluster environment
 func NewClient(cfgFile, namespace, registry string) (ClientSet, error) {
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {

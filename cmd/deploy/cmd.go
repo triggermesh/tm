@@ -32,6 +32,7 @@ var deployCmd = &cobra.Command{
 	Short: "Deploy knative resource",
 }
 
+// NewDeployCmd returns deploy cobra command and its subcommands
 func NewDeployCmd(clientset *client.ClientSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))

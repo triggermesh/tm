@@ -49,6 +49,7 @@ func cmdListService(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// Services returns list of knative service objects
 func Services(clientset *client.ClientSet) (string, error) {
 	list, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {

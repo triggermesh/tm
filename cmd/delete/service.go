@@ -41,6 +41,7 @@ func cmdDeleteService(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// Service remove knative service object
 func Service(args []string, clientset *client.ClientSet) error {
 	return clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

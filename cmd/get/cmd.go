@@ -36,6 +36,7 @@ var getCmd = &cobra.Command{
 	Short: "Retrieve resources from k8s cluster",
 }
 
+// NewGetCmd returns "Get" cobra CLI command with its subcommands
 func NewGetCmd(clientset *client.ClientSet) *cobra.Command {
 	getCmd.AddCommand(cmdListBuild(clientset))
 	getCmd.AddCommand(cmdListBuildTemplates(clientset))

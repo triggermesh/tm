@@ -40,6 +40,7 @@ func cmdDeleteBuild(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// Build removes knative build object
 func Build(args []string, clientset *client.ClientSet) error {
 	return clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

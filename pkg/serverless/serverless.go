@@ -8,6 +8,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// File represents serverless.yaml file structure
 type File struct {
 	Service  string
 	Provider struct {
@@ -21,12 +22,14 @@ type File struct {
 	Functions  map[string]Function
 }
 
+// Function describes function definition in serverless format
 type Function struct {
 	Handler string
 	Port    int
 	Events  []map[string]interface{}
 }
 
+// Parse accepts files path and returns decoded structure
 func Parse(path string) (File, error) {
 	var f File
 	if _, err := os.Stat(path); err != nil {

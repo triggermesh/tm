@@ -49,6 +49,7 @@ func cmdListBuildTemplates(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// BuildTemplates returns list of knative buildtemplate objects
 func BuildTemplates(clientset *client.ClientSet) (string, error) {
 	list, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {

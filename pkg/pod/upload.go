@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
+// Copy contains information to copy local path to remote destination
 type Copy struct {
 	Pod         string
 	Container   string
@@ -41,6 +42,7 @@ var (
 	command   = "tar -xvf -"
 )
 
+// Upload receives Copy structure, creates tarball of local source path and uploads it to active (un)tar process on remote pod
 func (c *Copy) Upload(clientset *client.ClientSet) error {
 	if err := archiver.Tar.Make(sourceTar, []string{c.Source}); err != nil {
 		return err
@@ -64,6 +66,7 @@ func (c *Copy) Upload(clientset *client.ClientSet) error {
 	return nil
 }
 
+// RemoteExec executes command on remote pod and returns stdout and stderr output
 func (c *Copy) RemoteExec(clientset *client.ClientSet, command string, file io.Reader) (string, string, error) {
 	var commandLine string
 	for _, v := range strings.Fields(command) {

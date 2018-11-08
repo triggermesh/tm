@@ -59,6 +59,7 @@ func listRevisions(clientset *client.ClientSet) ([]string, error) {
 	return revisions, nil
 }
 
+// Revision describes knative revision object
 func Revision(name string, clientset *client.ClientSet) ([]byte, error) {
 	revisions, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {

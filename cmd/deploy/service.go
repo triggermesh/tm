@@ -47,6 +47,7 @@ type status struct {
 	err    error
 }
 
+// Options structure represents knative service deployment options
 type Options struct {
 	Name           string
 	Definition     string
@@ -60,26 +61,31 @@ type Options struct {
 	Wait           bool
 }
 
+// Repository contains information about source code git storage
 type Repository struct {
 	URL      string
 	Revision string
 }
 
+// Registry contains service container image URL
 type Registry struct {
 	URL string
 }
 
+// Image describes knative services image with different source options
 type Image struct {
 	Source Repository
 	Image  Registry
 	Path   string
 }
 
+// Service represents knative service structure
 type Service struct {
 	From Image
 	Options
 }
 
+// DeployService receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) DeployService(clientset *client.ClientSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs)
@@ -138,7 +144,7 @@ func (s *Service) DeployService(clientset *client.ClientSet) error {
 	}
 
 	envVars := []corev1.EnvVar{
-		corev1.EnvVar{
+		{
 			Name:  "timestamp",
 			Value: time.Now().Format("2006-01-02 15:04:05"),
 		},
@@ -395,7 +401,6 @@ func waitService(name string, clientset *client.ClientSet) (string, error) {
 			}
 		}
 	}
-	return "", nil
 }
 
 func readyDomain(name string, clientset *client.ClientSet) (string, error) {

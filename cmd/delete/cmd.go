@@ -26,6 +26,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete knative resource",
 }
 
+// NewDeleteCmd returns cobra Command with set of resource deletion subcommands
 func NewDeleteCmd(clientset *client.ClientSet) *cobra.Command {
 	deleteCmd.AddCommand(cmdDeleteConfiguration(clientset))
 	deleteCmd.AddCommand(cmdDeleteBuildTemplate(clientset))

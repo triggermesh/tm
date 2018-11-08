@@ -40,6 +40,7 @@ func cmdDeleteConfiguration(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
+// Configuration removes knative configuration object
 func Configuration(args []string, clientset *client.ClientSet) error {
 	return clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }
