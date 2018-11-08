@@ -58,7 +58,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.From.Source.URL, "from-source", "", "Git source URL to deploy")
 	deployServiceCmd.Flags().StringVar(&s.From.Source.Revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
 	deployServiceCmd.Flags().StringVar(&s.From.Path, "from-path", "", "Local file path to deploy")
-	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "kaniko", "Build template to use with service")
+	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Build template to use with service")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployServiceCmd.Flags().StringVar(&s.RunRevision, "run-revision", "", "Revision name to run service on")

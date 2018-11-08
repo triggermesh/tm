@@ -86,18 +86,27 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 
 	switch {
 	case len(s.From.Image.URL) != 0:
-		configuration = s.fromImage(args)
+		configuration = s.fromImage()
 	case len(s.From.Source.URL) != 0:
-		configuration = s.fromSource(args, clientset)
+		configuration = s.fromSource()
+	case len(s.From.Path) != 0:
+		configuration = s.fromPath()
+	}
+
+	if len(s.From.Image.URL) == 0 {
+		configuration.RevisionTemplate = servingv1alpha1.RevisionTemplateSpec{
+			Spec: servingv1alpha1.RevisionSpec{
+				Container: corev1.Container{
+					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
+				},
+			},
+		}
+	}
+
+	if len(s.Buildtemplate) != 0 {
 		if err := updateBuildTemplate(s.Buildtemplate, templateParams, clientset); err != nil {
 			return err
 		}
-		configuration.Build.Template = &buildv1alpha1.TemplateInstantiationSpec{
-			Name:      s.Buildtemplate,
-			Arguments: buildArguments,
-		}
-	case len(s.From.Path) != 0:
-		configuration = s.fromPath(args, clientset)
 		configuration.Build.Template = &buildv1alpha1.TemplateInstantiationSpec{
 			Name:      s.Buildtemplate,
 			Arguments: buildArguments,
@@ -120,6 +129,7 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	for k, v := range getArgsFromSlice(s.Env) {
 		envVars = append(envVars, corev1.EnvVar{Name: k, Value: v})
 	}
+
 	configuration.RevisionTemplate.Spec.Container.Env = envVars
 	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
 
@@ -198,7 +208,7 @@ func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, cl
 	return err
 }
 
-func (s *Service) fromImage(args []string) servingv1alpha1.ConfigurationSpec {
+func (s *Service) fromImage() servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
@@ -210,7 +220,7 @@ func (s *Service) fromImage(args []string) servingv1alpha1.ConfigurationSpec {
 	}
 }
 
-func (s *Service) fromSource(args []string, clientset *client.ClientSet) servingv1alpha1.ConfigurationSpec {
+func (s *Service) fromSource() servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
@@ -220,31 +230,17 @@ func (s *Service) fromSource(args []string, clientset *client.ClientSet) serving
 				},
 			},
 		},
-		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
-			Spec: servingv1alpha1.RevisionSpec{
-				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
-				},
-			},
-		},
 	}
 }
 
-func (s *Service) fromPath(args []string, clientset *client.ClientSet) servingv1alpha1.ConfigurationSpec {
+func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Custom: &corev1.Container{
 					Image:   "library/busybox",
 					Command: []string{"sh"},
-					Args:    []string{"-c", "while [ -z \"$(ls " + uploadDoneTrigger + ")\" ]; do sleep 1; done; sync; mv /home/" + path.Base(s.From.Path) + "/* /workspace; sync"},
-				},
-			},
-		},
-		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
-			Spec: servingv1alpha1.RevisionSpec{
-				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
+					Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(s.From.Path))},
 				},
 			},
 		},
