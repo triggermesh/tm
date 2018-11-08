@@ -47,7 +47,8 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		Example: "tm -n default deploy service foo --build-template kaniko --from-image gcr.io/google-samples/hello-app:1.0",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := s.DeployService(args, clientset); err != nil {
+			s.Name = args[0]
+			if err := s.DeployService(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
@@ -62,6 +63,7 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployServiceCmd.Flags().StringVar(&s.RunRevision, "run-revision", "", "Revision name to run service on")
+	deployServiceCmd.Flags().StringVar(&s.Definition, "definition", "", "Path to function definition yaml file (serverless framework format)")
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
@@ -76,7 +78,7 @@ func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 		Short:   "Deploy knative build template",
 		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := bt.DeployBuildTemplate(args, clientset); err != nil {
+			if err := bt.DeployBuildTemplate(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
@@ -97,7 +99,8 @@ func cmdDeployBuild(clientset *client.ClientSet) *cobra.Command {
 		Short:   "Deploy knative build",
 		Example: "tm deploy build foo-builder --source git-repo --buildtemplate kaniko --args IMAGE=knative-local-registry:5000/foo-image",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := b.DeployBuild(args, clientset); err != nil {
+			b.Name = args[0]
+			if err := b.DeployBuild(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},

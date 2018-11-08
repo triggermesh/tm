@@ -34,6 +34,7 @@ import (
 )
 
 type Buildtemplate struct {
+	Name          string
 	URL           string
 	Path          string
 	RegistryCreds string
@@ -43,7 +44,7 @@ const (
 	tmpPath = "/tmp"
 )
 
-func (b *Buildtemplate) DeployBuildTemplate(args []string, clientset *client.ClientSet) error {
+func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ClientSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 	if len(b.URL) != 0 {
@@ -59,8 +60,8 @@ func (b *Buildtemplate) DeployBuildTemplate(args []string, clientset *client.Cli
 		return err
 	}
 	// If argument is passed overwrite build template name
-	if len(args) != 0 {
-		bt.ObjectMeta.Name = args[0]
+	if len(b.Name) != 0 {
+		bt.ObjectMeta.Name = b.Name
 	}
 	fmt.Printf("Creating \"%s\" build template\n", bt.ObjectMeta.Name)
 

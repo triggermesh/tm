@@ -29,6 +29,8 @@ import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/pod"
+	"github.com/triggermesh/tm/pkg/serverless"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +48,8 @@ type status struct {
 }
 
 type Options struct {
+	Name           string
+	Definition     string
 	PullPolicy     string
 	ResultImageTag string
 	Buildtemplate  string
@@ -76,9 +80,9 @@ type Service struct {
 	Options
 }
 
-func (s *Service) DeployService(args []string, clientset *client.ClientSet) error {
+func (s *Service) DeployService(clientset *client.ClientSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
-	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, args[0]), s.BuildArgs)
+	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs)
 
 	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); err != nil {
 		return err
@@ -91,13 +95,26 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 		configuration = s.fromSource()
 	case len(s.From.Path) != 0:
 		configuration = s.fromPath()
+	case len(s.Definition) != 0:
+		definition, err := serverless.Parse(s.Definition)
+		if err != nil {
+			return err
+		}
+		for _, service := range s.newServices(definition) {
+			if err := service.DeployService(clientset); err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		return errors.New("Service image, source or definition is required")
 	}
 
 	if len(s.From.Image.URL) == 0 {
 		configuration.RevisionTemplate = servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
+					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, s.Name, s.ResultImageTag),
 				},
 			},
 		}
@@ -114,7 +131,7 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	}
 
 	configuration.RevisionTemplate.ObjectMeta = metav1.ObjectMeta{
-		Name: args[0],
+		Name: s.Name,
 		Annotations: map[string]string{
 			"sidecar.istio.io/inject": "true",
 		},
@@ -155,7 +172,7 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      args[0],
+			Name:      s.Name,
 			Namespace: clientset.Namespace,
 			CreationTimestamp: metav1.Time{
 				time.Now(),
@@ -175,16 +192,16 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 			return err
 		}
 		fmt.Println("Uploading sources")
-		if err := injectSources(args, s.From.Path, clientset); err != nil {
+		if err := injectSources(s.Name, s.From.Path, clientset); err != nil {
 			return err
 		}
 	}
 
-	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, args[0])
+	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, s.Name)
 
 	if s.Wait {
 		fmt.Print("Waiting for ready state")
-		domain, err := waitService(args[0], clientset)
+		domain, err := waitService(s.Name, clientset)
 		if err != nil {
 			return err
 		}
@@ -247,6 +264,22 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 	}
 }
 
+func (s *Service) newServices(definition serverless.File) []Service {
+	var services []Service
+	for name := range definition.Functions {
+		var service Service
+		service.Name = fmt.Sprintf("%s-%s", definition.Service, name)
+		service.Buildtemplate = definition.Provider.Runtime
+		service.From.Path = path.Dir(s.Definition)
+		service.Wait = s.Wait
+		for k, v := range definition.Provider.Environment {
+			service.BuildArgs = append(service.BuildArgs, k+":"+v)
+		}
+		services = append(services, service)
+	}
+	return services
+}
+
 func getArgsFromSlice(slice []string) map[string]string {
 	m := make(map[string]string)
 	for _, s := range slice {
@@ -288,10 +321,10 @@ func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clie
 	return err
 }
 
-func injectSources(args []string, filepath string, clientset *client.ClientSet) error {
+func injectSources(name string, filepath string, clientset *client.ClientSet) error {
 	var latestRevision string
 	for latestRevision == "" {
-		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -327,7 +360,7 @@ func injectSources(args []string, filepath string, clientset *client.ClientSet) 
 		time.Sleep(2 * time.Second)
 	}
 
-	c := Copy{
+	c := pod.Copy{
 		Pod:         buildPod,
 		Container:   sourceContainer,
 		Source:      filepath,

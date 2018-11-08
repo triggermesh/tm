@@ -28,6 +28,7 @@ import (
 )
 
 type Build struct {
+	Name          string
 	Source        string
 	Revision      string
 	Step          string
@@ -37,14 +38,14 @@ type Build struct {
 	Image         string
 }
 
-func (b *Build) DeployBuild(args []string, clientset *client.ClientSet) error {
+func (b *Build) DeployBuild(clientset *client.ClientSet) error {
 	build := buildv1alpha1.Build{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Build",
 			APIVersion: "build.knative.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      args[0],
+			Name:      b.Name,
 			Namespace: clientset.Namespace,
 			CreationTimestamp: metav1.Time{
 				time.Now(),
@@ -56,7 +57,7 @@ func (b *Build) DeployBuild(args []string, clientset *client.ClientSet) error {
 		build.Spec = b.fromBuildtemplate(b.Buildtemplate, getArgsFromSlice(b.Args))
 	case len(b.Step) != 0:
 		steps := build.Spec.Steps
-		existingBuild, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+		existingBuild, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(b.Name, metav1.GetOptions{})
 		if err == nil {
 			steps = existingBuild.Spec.Steps
 		}
