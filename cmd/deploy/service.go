@@ -80,10 +80,6 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, args[0]), s.BuildArgs)
 
-	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); err != nil {
-		return err
-	}
-
 	switch {
 	case len(s.From.Image.URL) != 0:
 		configuration = s.fromImage()
@@ -91,6 +87,10 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 		configuration = s.fromSource()
 	case len(s.From.Path) != 0:
 		configuration = s.fromPath()
+	}
+
+	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); len(s.Buildtemplate) != 0 && err != nil {
+		return err
 	}
 
 	if len(s.From.Image.URL) == 0 {
