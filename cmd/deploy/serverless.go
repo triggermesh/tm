@@ -17,9 +17,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
-	"strings"
 
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/serverless"
@@ -76,32 +74,4 @@ func newServices(definition serverless.File) ([]Service, error) {
 		services = append(services, service)
 	}
 	return services, nil
-}
-
-func isLocal(path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		return false
-	}
-	return true
-}
-
-func isGit(path string) bool {
-	if strings.HasSuffix(path, ".git") {
-		return true
-	}
-	if resp, err := http.Get(path); err == nil {
-		if resp.StatusCode == 200 || resp.StatusCode == 302 || resp.StatusCode == 401 {
-			return true
-		}
-	}
-	return false
-}
-
-func isRegistry(path string) bool {
-	if resp, err := http.Get(path); err == nil {
-		if resp.StatusCode == 405 {
-			return true
-		}
-	}
-	return false
 }

@@ -69,7 +69,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.Source, "from-image", "", "Image to deploy")
 	deployServiceCmd.Flags().StringVar(&s.Source, "from-source", "", "Git source URL to deploy")
 
-	deployServiceCmd.Flags().StringVar(&s.Source, "source", "s", "Service source to deploy: local folder with sources, git repository or docker image")
+	deployServiceCmd.Flags().StringVarP(&s.Source, "source", "s", "", "Service source to deploy: local folder with sources, git repository or docker image")
 	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
 	deployServiceCmd.Flags().BoolVar(&s.Wait, "wait", false, "Wait for successful service deployment")
 	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Build template to use with service")
@@ -91,7 +91,7 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Deploy knative build template",
 		Example: "tm -n default deploy buildtemplate -f https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := bt.DeployBuildTemplate(clientset); err != nil {
+			if _, err := bt.DeployBuildTemplate(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},

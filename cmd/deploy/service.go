@@ -19,8 +19,11 @@ package deploy
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 	"path"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/triggermesh/tm/cmd/describe"
@@ -67,14 +70,10 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs)
 
 	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); len(s.Buildtemplate) != 0 && err != nil {
-		if k8sErrors.IsNotFound(err) {
-			b := Buildtemplate{
-				File: s.Buildtemplate,
-			}
-			if err = b.DeployBuildTemplate(clientset); err != nil {
-				return err
-			}
-		} else {
+		b := Buildtemplate{
+			File: s.Buildtemplate,
+		}
+		if s.Buildtemplate, err = b.DeployBuildTemplate(clientset); err != nil {
 			return err
 		}
 	}
@@ -174,7 +173,6 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 			return err
 		}
 	}
-
 	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, s.Name)
 
 	if s.Wait {
@@ -373,4 +371,32 @@ func readyDomain(name string, clientset *client.ConfigSet) (string, error) {
 		return service.Status.Domain, nil
 	}
 	return "", nil
+}
+
+func isLocal(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		return false
+	}
+	return true
+}
+
+func isGit(path string) bool {
+	if strings.HasSuffix(path, ".git") {
+		return true
+	}
+	if resp, err := http.Get(path); err == nil {
+		if resp.StatusCode == 200 || resp.StatusCode == 302 || resp.StatusCode == 401 {
+			return true
+		}
+	}
+	return false
+}
+
+func isRegistry(path string) bool {
+	if resp, err := http.Get(path); err == nil {
+		if resp.StatusCode == 405 {
+			return true
+		}
+	}
+	return false
 }

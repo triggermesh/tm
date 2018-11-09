@@ -45,18 +45,18 @@ const (
 )
 
 // DeployBuildTemplate deploys knative buildtemplate either from local file or by its URL
-func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) error {
+func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string, error) {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 
 	if !isLocal(b.File) {
 		if b.File, err = downloadFile(b.File); err != nil {
-			return errors.New("Buildtemplate not found")
+			return "", errors.New("Buildtemplate not found")
 		}
 	}
 
 	if bt, err = readYAML(b.File); err != nil {
-		return err
+		return "", err
 	}
 	// If argument is passed overwrite build template name
 	if len(b.Name) != 0 {
@@ -69,7 +69,7 @@ func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) error {
 		b.setEnvConfig(&bt)
 	}
 
-	return createBuildTemplate(bt, clientset)
+	return bt.ObjectMeta.Name, createBuildTemplate(bt, clientset)
 }
 
 func (b *Buildtemplate) addSecretVolume(template *buildv1alpha1.BuildTemplate) {
