@@ -12,21 +12,20 @@ import (
 type File struct {
 	Service  string
 	Provider struct {
-		Name                 string
-		Runtime              string
-		DefaultDNSResolution string
-		Environment          map[string]string
+		Name        string
+		Runtime     string
+		Environment map[string]string
+		MemorySize  int
 	}
-	Plugins    []string
 	Repository string
 	Functions  map[string]Function
 }
 
 // Function describes function definition in serverless format
 type Function struct {
-	Handler string
-	Port    int
-	Events  []map[string]interface{}
+	Handler     string
+	Runtime     string
+	Environment map[string]string
 }
 
 // Parse accepts files path and returns decoded structure

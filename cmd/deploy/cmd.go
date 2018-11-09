@@ -27,16 +27,25 @@ var s Service
 var b Build
 var bt Buildtemplate
 
-var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Deploy knative resource",
-}
-
 // NewDeployCmd returns deploy cobra command and its subcommands
 func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
+	var file string
+	deployCmd := &cobra.Command{
+		Use:   "deploy",
+		Short: "Deploy knative resource",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := fromYAML(file, clientset); err != nil {
+				log.Fatal(err)
+			}
+		},
+	}
+
+	deployCmd.Flags().StringVarP(&file, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
+
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
+
 	return deployCmd
 }
 
@@ -55,11 +64,14 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 		},
 	}
 
+	// kept for back compatibility
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-path", "", "Local file path to deploy")
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-image", "", "Image to deploy")
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-source", "", "Git source URL to deploy")
+
+	deployServiceCmd.Flags().StringVar(&s.Source, "source", "s", "Service source to deploy: local folder with sources, git repository or docker image")
+	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
 	deployServiceCmd.Flags().BoolVar(&s.Wait, "wait", false, "Wait for successful service deployment")
-	deployServiceCmd.Flags().StringVar(&s.From.Image.URL, "from-image", "", "Image to deploy")
-	deployServiceCmd.Flags().StringVar(&s.From.Source.URL, "from-source", "", "Git source URL to deploy")
-	deployServiceCmd.Flags().StringVar(&s.From.Source.Revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
-	deployServiceCmd.Flags().StringVar(&s.From.Path, "from-path", "", "Local file path to deploy")
 	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Build template to use with service")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
@@ -77,7 +89,7 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 		Use:     "buildtemplate",
 		Aliases: []string{"buildtemplates", "bldtmpl"},
 		Short:   "Deploy knative build template",
-		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
+		Example: "tm -n default deploy buildtemplate -f https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := bt.DeployBuildTemplate(clientset); err != nil {
 				log.Fatal(err)
@@ -85,8 +97,11 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 		},
 	}
 
-	deployBuildTemplateCmd.Flags().StringVar(&bt.URL, "from-url", "", "Build template yaml URL")
-	deployBuildTemplateCmd.Flags().StringVar(&bt.Path, "from-file", "", "Local file path to deploy")
+	// kept for back compatibility
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-url", "", "Build template yaml URL")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-file", "", "Local file path to deploy")
+
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "file", "f", "Build template yaml URL")
 	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistryCreds, "credentials", "", "Name of registry credentials to use in buildtemplate")
 
 	return deployBuildTemplateCmd

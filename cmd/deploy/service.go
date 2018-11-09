@@ -19,7 +19,6 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"regexp"
 	"time"
@@ -30,7 +29,6 @@ import (
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/pod"
-	"github.com/triggermesh/tm/pkg/serverless"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,9 +45,11 @@ type status struct {
 	err    error
 }
 
-// Options structure represents knative service deployment options
-type Options struct {
+// Service represents knative service structure
+type Service struct {
 	Name           string
+	Source         string
+	Revision       string
 	Definition     string
 	PullPolicy     string
 	ResultImageTag string
@@ -61,70 +61,36 @@ type Options struct {
 	Wait           bool
 }
 
-// Repository contains information about source code git storage
-type Repository struct {
-	URL      string
-	Revision string
-}
-
-// Registry contains service container image URL
-type Registry struct {
-	URL string
-}
-
-// Image describes knative services image with different source options
-type Image struct {
-	Source Repository
-	Image  Registry
-	Path   string
-}
-
-// Service represents knative service structure
-type Service struct {
-	From Image
-	Options
-}
-
 // DeployService receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs)
 
-	switch {
-	case len(s.From.Image.URL) != 0:
-		configuration = s.fromImage()
-	case len(s.From.Source.URL) != 0:
-		configuration = s.fromSource()
-	case len(s.From.Path) != 0:
-		configuration = s.fromPath()
-	case len(s.Definition) != 0:
-		definition, err := serverless.Parse(s.Definition)
-		if err != nil {
-			return err
-		}
-		if definition.Provider.Name != "triggermesh" {
-			return errors.New("Provider not supported")
-		}
-		if definition.Provider.Runtime != "openfaas-go-runtime" {
-			return errors.New("Runtime is not yet supported")
-		}
-		for _, service := range s.newServices(definition) {
-			service.Name = fmt.Sprintf("%s-%s", s.Name, service.Name)
-			fmt.Println(service)
-			if err := service.DeployService(clientset); err != nil {
+	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); len(s.Buildtemplate) != 0 && err != nil {
+		if k8sErrors.IsNotFound(err) {
+			b := Buildtemplate{
+				File: s.Buildtemplate,
+			}
+			if err = b.DeployBuildTemplate(clientset); err != nil {
 				return err
 			}
+		} else {
+			return err
 		}
-		return nil
+	}
+
+	switch {
+	case isRegistry(s.Source):
+		configuration = s.fromImage()
+	case isGit(s.Source):
+		configuration = s.fromSource()
+	case isLocal(s.Source):
+		configuration = s.fromPath()
 	default:
-		return errors.New("Service image, source or definition is required")
+		return fmt.Errorf("Can't recognize source type %s", s.Source)
 	}
 
-	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); err != nil {
-		return err
-	}
-
-	if len(s.From.Image.URL) == 0 {
+	if configuration.Build != nil {
 		configuration.RevisionTemplate = servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
@@ -202,12 +168,9 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 		return err
 	}
 
-	if len(s.From.Path) != 0 {
-		if _, err := os.Stat(s.From.Path); err != nil {
-			return err
-		}
+	if isLocal(s.Source) {
 		fmt.Println("Uploading sources")
-		if err := injectSources(s.Name, s.From.Path, clientset); err != nil {
+		if err := injectSources(s.Name, s.Source, clientset); err != nil {
 			return err
 		}
 	}
@@ -245,7 +208,7 @@ func (s *Service) fromImage() servingv1alpha1.ConfigurationSpec {
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: s.From.Image.URL,
+					Image: s.Source,
 				},
 			},
 		},
@@ -257,8 +220,8 @@ func (s *Service) fromSource() servingv1alpha1.ConfigurationSpec {
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Git: &buildv1alpha1.GitSourceSpec{
-					Url:      s.From.Source.URL,
-					Revision: s.From.Source.Revision,
+					Url:      s.Source,
+					Revision: s.Revision,
 				},
 			},
 		},
@@ -272,30 +235,11 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 				Custom: &corev1.Container{
 					Image:   "library/busybox",
 					Command: []string{"sh"},
-					Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(s.From.Path))},
+					Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(s.Source))},
 				},
 			},
 		},
 	}
-}
-
-func (s *Service) newServices(definition serverless.File) []Service {
-	var services []Service
-	for name, function := range definition.Functions {
-		var service Service
-		service.Name = fmt.Sprintf("%s-%s", definition.Service, name)
-		service.Buildtemplate = definition.Provider.Runtime
-		service.From.Path = path.Dir(s.Definition)
-		service.Wait = s.Wait
-		if len(function.Handler) != 0 {
-			service.From.Path = path.Join(service.From.Path, path.Dir(function.Handler))
-		}
-		for k, v := range definition.Provider.Environment {
-			service.Env = append(service.Env, k+":"+v)
-		}
-		services = append(services, service)
-	}
-	return services
 }
 
 func getArgsFromSlice(slice []string) map[string]string {

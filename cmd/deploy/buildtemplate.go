@@ -36,8 +36,7 @@ import (
 // Buildtemplate contains information about knative buildtemplate definition
 type Buildtemplate struct {
 	Name          string
-	URL           string
-	Path          string
+	File          string
 	RegistryCreds string
 }
 
@@ -49,16 +48,14 @@ const (
 func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) error {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
-	if len(b.URL) != 0 {
-		fmt.Println("Downloading build template definition")
-		if b.Path, err = downloadFile(b.URL); err != nil {
-			return err
+
+	if !isLocal(b.File) {
+		if b.File, err = downloadFile(b.File); err != nil {
+			return errors.New("Buildtemplate not found")
 		}
 	}
-	if len(b.Path) == 0 {
-		return errors.New("Empty path to buildtemplate yaml file")
-	}
-	if bt, err = readYaml(b.Path); err != nil {
+
+	if bt, err = readYAML(b.File); err != nil {
 		return err
 	}
 	// If argument is passed overwrite build template name
@@ -106,7 +103,7 @@ func (b *Buildtemplate) setEnvConfig(template *buildv1alpha1.BuildTemplate) {
 	}
 }
 
-func readYaml(path string) (buildv1alpha1.BuildTemplate, error) {
+func readYAML(path string) (buildv1alpha1.BuildTemplate, error) {
 	var res buildv1alpha1.BuildTemplate
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {

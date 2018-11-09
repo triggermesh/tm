@@ -27,6 +27,8 @@ import (
 	"github.com/triggermesh/tm/cmd/get"
 	"github.com/triggermesh/tm/cmd/set"
 	"github.com/triggermesh/tm/pkg/client"
+
+	// Required for configs with gcp auth provider
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -47,6 +49,7 @@ var tmCmd = &cobra.Command{
 	Version: "0.0.4",
 }
 
+// Execute runs cobra CLI commands
 func Execute() {
 	if err := tmCmd.Execute(); err != nil {
 		log.Fatalln(err)
