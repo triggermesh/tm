@@ -90,10 +90,6 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs)
 
-	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); err != nil {
-		return err
-	}
-
 	switch {
 	case len(s.From.Image.URL) != 0:
 		configuration = s.fromImage()
@@ -106,7 +102,15 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 		if err != nil {
 			return err
 		}
+		if definition.Provider.Name != "triggermesh" {
+			return errors.New("Provider not supported")
+		}
+		if definition.Provider.Runtime != "openfaas-go-runtime" {
+			return errors.New("Runtime is not yet supported")
+		}
 		for _, service := range s.newServices(definition) {
+			service.Name = fmt.Sprintf("%s-%s", s.Name, service.Name)
+			fmt.Println(service)
 			if err := service.DeployService(clientset); err != nil {
 				return err
 			}
@@ -114,6 +118,10 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 		return nil
 	default:
 		return errors.New("Service image, source or definition is required")
+	}
+
+	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); err != nil {
+		return err
 	}
 
 	if len(s.From.Image.URL) == 0 {
@@ -137,7 +145,8 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	}
 
 	configuration.RevisionTemplate.ObjectMeta = metav1.ObjectMeta{
-		Name: s.Name,
+		Name:              s.Name,
+		CreationTimestamp: metav1.Time{time.Now()},
 		Annotations: map[string]string{
 			"sidecar.istio.io/inject": "true",
 		},
@@ -272,14 +281,17 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 
 func (s *Service) newServices(definition serverless.File) []Service {
 	var services []Service
-	for name := range definition.Functions {
+	for name, function := range definition.Functions {
 		var service Service
 		service.Name = fmt.Sprintf("%s-%s", definition.Service, name)
 		service.Buildtemplate = definition.Provider.Runtime
 		service.From.Path = path.Dir(s.Definition)
 		service.Wait = s.Wait
+		if len(function.Handler) != 0 {
+			service.From.Path = path.Join(service.From.Path, path.Dir(function.Handler))
+		}
 		for k, v := range definition.Provider.Environment {
-			service.BuildArgs = append(service.BuildArgs, k+":"+v)
+			service.Env = append(service.Env, k+":"+v)
 		}
 		services = append(services, service)
 	}

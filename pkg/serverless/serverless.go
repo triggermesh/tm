@@ -40,7 +40,7 @@ func Parse(path string) (File, error) {
 		return f, err
 	}
 	f.Repository = filepath.Base(filepath.Dir(path))
-	err = yaml.Unmarshal(data, f)
+	err = yaml.Unmarshal(data, &f)
 
 	return f, err
 }
