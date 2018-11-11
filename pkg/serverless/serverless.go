@@ -25,6 +25,8 @@ type File struct {
 type Function struct {
 	Handler     string
 	Runtime     string
+	Description string
+	Labels      []string
 	Environment map[string]string
 }
 

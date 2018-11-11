@@ -58,12 +58,16 @@ func newServices(definition serverless.File) ([]Service, error) {
 		service.Source = function.Handler
 		service.Wait = s.Wait
 		service.Name = name
+		service.Labels = function.Labels
 		if len(definition.Service) != 0 {
 			service.Name = fmt.Sprintf("%s-%s", definition.Service, service.Name)
 		}
 		service.Buildtemplate = definition.Provider.Runtime
 		if len(function.Runtime) != 0 {
 			service.Buildtemplate = function.Runtime
+		}
+		if len(function.Description) != 0 {
+			service.Annotations["Description"] = function.Description
 		}
 		for k, v := range definition.Provider.Environment {
 			service.Env = append(service.Env, k+":"+v)

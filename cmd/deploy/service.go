@@ -53,12 +53,13 @@ type Service struct {
 	Name           string
 	Source         string
 	Revision       string
-	Definition     string
+	YAML           string
 	PullPolicy     string
 	ResultImageTag string
 	Buildtemplate  string
 	RunRevision    string
 	Env            []string
+	Annotations    map[string]string
 	Labels         []string
 	BuildArgs      []string
 	Wait           bool
@@ -157,7 +158,8 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
-			Labels: getArgsFromSlice(s.Labels),
+			Annotations: s.Annotations,
+			Labels:      getArgsFromSlice(s.Labels),
 		},
 
 		Spec: spec,
