@@ -33,6 +33,9 @@ func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(s.YAML) == 0 {
+				s.YAML = "serverless.yaml"
+			}
 			if err := s.fromYAML(clientset); err != nil {
 				log.Fatal(err)
 			}
