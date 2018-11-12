@@ -19,11 +19,8 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"net/http"
-	"os"
 	"path"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/triggermesh/tm/cmd/describe"
@@ -31,6 +28,7 @@ import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/pod"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -80,12 +78,15 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	}
 
 	switch {
-	case isRegistry(s.Source):
-		configuration = s.fromImage()
-	case isGit(s.Source):
-		configuration = s.fromSource()
-	case isLocal(s.Source):
+	case file.Local(s.Source):
 		configuration = s.fromPath()
+	case file.Registry(s.Source):
+		configuration = s.fromImage()
+	case file.Git(s.Source):
+		if len(s.Revision) == 0 {
+			s.Revision = "master"
+		}
+		configuration = s.fromSource()
 	default:
 		return fmt.Errorf("Can't recognize source type %s", s.Source)
 	}
@@ -169,9 +170,9 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 		return err
 	}
 
-	if isLocal(s.Source) {
-		fmt.Println("Uploading sources")
-		if err := injectSources(s.Name, s.Source, clientset); err != nil {
+	if file.Local(s.Source) {
+		fmt.Printf("Uploading %s\n", path.Dir(s.Source))
+		if err := injectSources(s.Name, path.Dir(s.Source), clientset); err != nil {
 			return err
 		}
 	}
@@ -235,7 +236,7 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 				Custom: &corev1.Container{
 					Image:   "library/busybox",
 					Command: []string{"sh"},
-					Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(s.Source))},
+					Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(path.Dir(s.Source)))},
 				},
 			},
 		},
@@ -373,32 +374,4 @@ func readyDomain(name string, clientset *client.ConfigSet) (string, error) {
 		return service.Status.Domain, nil
 	}
 	return "", nil
-}
-
-func isLocal(path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		return false
-	}
-	return true
-}
-
-func isGit(path string) bool {
-	if strings.HasSuffix(path, ".git") {
-		return true
-	}
-	if resp, err := http.Get(path); err == nil {
-		if resp.StatusCode == 200 || resp.StatusCode == 302 || resp.StatusCode == 401 {
-			return true
-		}
-	}
-	return false
-}
-
-func isRegistry(path string) bool {
-	if resp, err := http.Get(path); err == nil {
-		if resp.StatusCode == 405 {
-			return true
-		}
-	}
-	return false
 }

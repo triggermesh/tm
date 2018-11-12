@@ -29,18 +29,18 @@ var bt Buildtemplate
 
 // NewDeployCmd returns deploy cobra command and its subcommands
 func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
-	var file string
 	deployCmd := &cobra.Command{
 		Use:   "deploy",
 		Short: "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := fromYAML(file, clientset); err != nil {
+			if err := s.fromYAML(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
 
-	deployCmd.Flags().StringVarP(&file, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
+	deployCmd.Flags().StringVarP(&s.YAML, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
+	deployCmd.Flags().BoolVarP(&s.Wait, "wait", "w", false, "Wait for each function deployment")
 
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))

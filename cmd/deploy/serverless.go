@@ -17,57 +17,84 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"os"
+	p "path"
 
 	"github.com/triggermesh/tm/pkg/client"
-	"github.com/triggermesh/tm/pkg/serverless"
+	"github.com/triggermesh/tm/pkg/file"
 )
 
-func fromYAML(path string, clientset *client.ConfigSet) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if path, err = downloadFile(path); err != nil {
+// YAML deploys functions defined in serverless.yaml file
+func (s *Service) fromYAML(clientset *client.ConfigSet) (err error) {
+	if !file.Local(s.YAML) {
+		if s.YAML, err = file.Download(s.YAML); err != nil {
 			return errors.New("Can't get YAML file")
 		}
-	} else {
+	} else if err != nil {
 		return err
 	}
-	definition, err := serverless.Parse(path)
+	definition, err := file.ParseServerlessYAML(s.YAML)
 	if err != nil {
 		return err
 	}
-	if definition.Provider.Name != "triggermesh" {
+	if len(definition.Provider.Name) != 0 && definition.Provider.Name != "triggermesh" {
 		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)
 	}
-	services, err := newServices(definition)
+
+	if len(definition.Service) != 0 {
+		s.Name = definition.Service
+	}
+	if len(definition.Provider.Runtime) != 0 {
+		s.Buildtemplate = definition.Provider.Runtime
+	}
+	workdir := p.Dir(s.YAML)
+	services, err := s.newServices(definition, workdir)
 	if err != nil {
 		return err
 	}
+
 	for _, service := range services {
 		if err := service.DeployService(clientset); err != nil {
+			return err
+		}
+	}
+
+	for _, include := range definition.Include {
+		s.YAML = workdir + "/" + include
+		if err := s.fromYAML(clientset); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func newServices(definition serverless.File) ([]Service, error) {
+func (s *Service) newServices(definition file.YAML, path string) ([]Service, error) {
 	var services []Service
 	for name, function := range definition.Functions {
 		var service Service
 
 		service.Source = function.Handler
+		if path != "." && path != "./." && !file.Remote(service.Source) {
+			service.Source = fmt.Sprintf("%s/%s", path, service.Source)
+		}
 		service.Wait = s.Wait
 		service.Name = name
+		service.ResultImageTag = "latest"
 		service.Labels = function.Labels
-		if len(definition.Service) != 0 {
-			service.Name = fmt.Sprintf("%s-%s", definition.Service, service.Name)
+		if len(s.Name) != 0 {
+			service.Name = fmt.Sprintf("%s-%s", s.Name, service.Name)
 		}
-		service.Buildtemplate = definition.Provider.Runtime
 		if len(function.Runtime) != 0 {
 			service.Buildtemplate = function.Runtime
+		} else if len(definition.Provider.Runtime) != 0 {
+			service.Buildtemplate = definition.Provider.Runtime
+		} else if len(s.Buildtemplate) != 0 {
+			service.Buildtemplate = s.Buildtemplate
 		}
+		service.Annotations = make(map[string]string)
 		if len(function.Description) != 0 {
 			service.Annotations["Description"] = function.Description
+		} else if len(definition.Description) != 0 {
+			service.Annotations["Description"] = definition.Description
 		}
 		for k, v := range definition.Provider.Environment {
 			service.Env = append(service.Env, k+":"+v)

@@ -19,15 +19,12 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"net/http"
-	"os"
-	"time"
 
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/file"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,17 +37,13 @@ type Buildtemplate struct {
 	RegistryCreds string
 }
 
-const (
-	tmpPath = "/tmp"
-)
-
 // DeployBuildTemplate deploys knative buildtemplate either from local file or by its URL
 func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string, error) {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 
-	if !isLocal(b.File) {
-		if b.File, err = downloadFile(b.File); err != nil {
+	if !file.Local(b.File) {
+		if b.File, err = file.Download(b.File); err != nil {
 			return "", errors.New("Buildtemplate not found")
 		}
 	}
@@ -163,26 +156,4 @@ func getBuildArguments(image string, buildArgs []string) ([]buildv1alpha1.Argume
 		})
 	}
 	return args, params
-}
-
-func downloadFile(url string) (string, error) {
-	path := tmpPath + "/" + time.Now().Format(time.RFC850)
-	out, err := os.Create(path)
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
 }

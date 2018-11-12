@@ -1,4 +1,4 @@
-package serverless
+package file
 
 import (
 	"io/ioutil"
@@ -9,9 +9,10 @@ import (
 )
 
 // File represents serverless.yaml file structure
-type File struct {
-	Service  string
-	Provider struct {
+type YAML struct {
+	Service     string
+	Description string
+	Provider    struct {
 		Name        string
 		Runtime     string
 		Environment map[string]string
@@ -19,6 +20,7 @@ type File struct {
 	}
 	Repository string
 	Functions  map[string]Function
+	Include    []string
 }
 
 // Function describes function definition in serverless format
@@ -30,9 +32,9 @@ type Function struct {
 	Environment map[string]string
 }
 
-// Parse accepts files path and returns decoded structure
-func Parse(path string) (File, error) {
-	var f File
+// ParseServerlessYAML accepts serverless yaml file path and returns decoded structure
+func ParseServerlessYAML(path string) (YAML, error) {
+	var f YAML
 	if _, err := os.Stat(path); err != nil {
 		return f, err
 	}
