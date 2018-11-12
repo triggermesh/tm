@@ -25,7 +25,7 @@ import (
 
 // YAML removes functions defined in serverless.yaml file
 func YAML(path string, clientset *client.ConfigSet) (err error) {
-	if !file.Local(path) {
+	if !file.IsLocal(path) {
 		if path, err = file.Download(path); err != nil {
 			return errors.New("Can't get YAML file")
 		}

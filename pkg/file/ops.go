@@ -17,6 +17,7 @@ package file
 import (
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -27,30 +28,37 @@ const (
 )
 
 // Local return true if path is local filesystem
-func Local(path string) bool {
+func IsLocal(path string) bool {
 	if _, err := os.Stat(path); err != nil {
 		return false
 	}
 	return true
 }
 
-// Remote return true if path is URL
-func Remote(path string) bool {
-	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+// IsRemote return true if path is URL
+func IsRemote(path string) bool {
+	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "git@") {
 		return true
 	}
-	if _, err := http.Get(path); err == nil {
+	if _, err := http.Head("https://" + path); err == nil {
 		return true
 	}
 	return false
 }
 
-// Git most likely return true if path is URL to git repository
-func Git(path string) bool {
-	if strings.HasSuffix(path, ".git") {
+// IsGit most likely return true if path is URL to git repository
+func IsGit(path string) bool {
+	if strings.HasSuffix(path, ".git") || strings.HasPrefix(path, "git@") {
 		return true
 	}
-	if resp, err := http.Get(path); err == nil {
+	url, err := url.Parse(path)
+	if err != nil {
+		return false
+	}
+	if url.Scheme == "" {
+		url.Scheme = "https"
+	}
+	if resp, err := http.Head(url.String()); err == nil {
 		if resp.StatusCode == 200 || resp.StatusCode == 302 || resp.StatusCode == 401 {
 			return true
 		}
@@ -58,9 +66,17 @@ func Git(path string) bool {
 	return false
 }
 
-// Registry return true if path "behaves" like URL to docker registry
-func Registry(path string) bool {
-	if resp, err := http.Get(path); err == nil {
+// IsRegistry return true if path "behaves" like URL to docker registry
+func IsRegistry(path string) bool {
+	url, err := url.Parse(path)
+	if err != nil {
+		return false
+	}
+	if url.Scheme == "" {
+		url.Scheme = "https"
+	}
+	resp, err := http.Head(url.String())
+	if err == nil {
 		if resp.StatusCode == 405 {
 			return true
 		}

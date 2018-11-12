@@ -23,9 +23,11 @@ import (
 	"github.com/triggermesh/tm/pkg/file"
 )
 
+// TODO Cleanup and simplify
+
 // YAML deploys functions defined in serverless.yaml file
 func (s *Service) fromYAML(clientset *client.ConfigSet) (err error) {
-	if !file.Local(s.YAML) {
+	if !file.IsLocal(s.YAML) {
 		if s.YAML, err = file.Download(s.YAML); err != nil {
 			return errors.New("Can't get YAML file")
 		}
@@ -73,7 +75,7 @@ func (s *Service) newServices(definition file.YAML, path string) ([]Service, err
 		var service Service
 
 		service.Source = function.Handler
-		if path != "." && path != "./." && !file.Remote(service.Source) {
+		if path != "." && path != "./." && !file.IsRemote(service.Source) {
 			service.Source = fmt.Sprintf("%s/%s", path, service.Source)
 		}
 		service.Wait = s.Wait

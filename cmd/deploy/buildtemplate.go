@@ -42,7 +42,7 @@ func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 
-	if !file.Local(b.File) {
+	if !file.IsLocal(b.File) {
 		if b.File, err = file.Download(b.File); err != nil {
 			return "", errors.New("Buildtemplate not found")
 		}

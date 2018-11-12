@@ -78,11 +78,11 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	}
 
 	switch {
-	case file.Local(s.Source):
+	case file.IsLocal(s.Source):
 		configuration = s.fromPath()
-	case file.Registry(s.Source):
+	case file.IsRegistry(s.Source):
 		configuration = s.fromImage()
-	case file.Git(s.Source):
+	case file.IsGit(s.Source):
 		if len(s.Revision) == 0 {
 			s.Revision = "master"
 		}
@@ -170,7 +170,7 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 		return err
 	}
 
-	if file.Local(s.Source) {
+	if file.IsLocal(s.Source) {
 		fmt.Printf("Uploading %s\n", path.Dir(s.Source))
 		if err := injectSources(s.Name, path.Dir(s.Source), clientset); err != nil {
 			return err
