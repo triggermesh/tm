@@ -27,7 +27,7 @@ import (
 
 var err error
 
-func cmdDescribeService(clientset *client.ClientSet) *cobra.Command {
+func cmdDescribeService(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "service",
 		Aliases: []string{"services"},
@@ -49,7 +49,7 @@ func cmdDescribeService(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func listService(clientset *client.ClientSet) ([]string, error) {
+func listService(clientset *client.ConfigSet) ([]string, error) {
 	var services []string
 	list, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -61,7 +61,8 @@ func listService(clientset *client.ClientSet) ([]string, error) {
 	return services, nil
 }
 
-func Service(name string, clientset *client.ClientSet) ([]byte, error) {
+// Service describes knative service object
+func Service(name string, clientset *client.ConfigSet) ([]byte, error) {
 	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err

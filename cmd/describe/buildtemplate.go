@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDescribeBuildTemplate(clientset *client.ClientSet) *cobra.Command {
+func cmdDescribeBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "buildtemplate",
 		Aliases: []string{"buildtemplates"},
@@ -47,7 +47,7 @@ func cmdDescribeBuildTemplate(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func listBuildTemplates(clientset *client.ClientSet) ([]string, error) {
+func listBuildTemplates(clientset *client.ConfigSet) ([]string, error) {
 	var buildtemplates []string
 	list, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -59,7 +59,8 @@ func listBuildTemplates(clientset *client.ClientSet) ([]string, error) {
 	return buildtemplates, nil
 }
 
-func BuildTemplate(name string, clientset *client.ClientSet) ([]byte, error) {
+// BuildTemplate describes knative buildtemplate
+func BuildTemplate(name string, clientset *client.ConfigSet) ([]byte, error) {
 	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err

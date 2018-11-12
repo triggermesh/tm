@@ -19,48 +19,41 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"net/http"
-	"os"
-	"time"
 
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/file"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Buildtemplate contains information about knative buildtemplate definition
 type Buildtemplate struct {
-	URL           string
-	Path          string
+	Name          string
+	File          string
 	RegistryCreds string
 }
 
-const (
-	tmpPath = "/tmp"
-)
-
-func (b *Buildtemplate) DeployBuildTemplate(args []string, clientset *client.ClientSet) error {
+// DeployBuildTemplate deploys knative buildtemplate either from local file or by its URL
+func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string, error) {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
-	if len(b.URL) != 0 {
-		fmt.Println("Downloading build template definition")
-		if b.Path, err = downloadFile(b.URL); err != nil {
-			return err
+
+	if !file.IsLocal(b.File) {
+		if b.File, err = file.Download(b.File); err != nil {
+			return "", errors.New("Buildtemplate not found")
 		}
 	}
-	if len(b.Path) == 0 {
-		return errors.New("Empty path to buildtemplate yaml file")
-	}
-	if bt, err = readYaml(b.Path); err != nil {
-		return err
+
+	if bt, err = readYAML(b.File); err != nil {
+		return "", err
 	}
 	// If argument is passed overwrite build template name
-	if len(args) != 0 {
-		bt.ObjectMeta.Name = args[0]
+	if len(b.Name) != 0 {
+		bt.ObjectMeta.Name = b.Name
 	}
 	fmt.Printf("Creating \"%s\" build template\n", bt.ObjectMeta.Name)
 
@@ -69,12 +62,12 @@ func (b *Buildtemplate) DeployBuildTemplate(args []string, clientset *client.Cli
 		b.setEnvConfig(&bt)
 	}
 
-	return createBuildTemplate(bt, clientset)
+	return bt.ObjectMeta.Name, createBuildTemplate(bt, clientset)
 }
 
 func (b *Buildtemplate) addSecretVolume(template *buildv1alpha1.BuildTemplate) {
 	template.Spec.Volumes = []corev1.Volume{
-		corev1.Volume{
+		{
 			Name: b.RegistryCreds,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
@@ -103,7 +96,7 @@ func (b *Buildtemplate) setEnvConfig(template *buildv1alpha1.BuildTemplate) {
 	}
 }
 
-func readYaml(path string) (buildv1alpha1.BuildTemplate, error) {
+func readYAML(path string) (buildv1alpha1.BuildTemplate, error) {
 	var res buildv1alpha1.BuildTemplate
 	yamlFile, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -113,7 +106,7 @@ func readYaml(path string) (buildv1alpha1.BuildTemplate, error) {
 	return res, err
 }
 
-func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client.ClientSet) error {
+func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) error {
 	if template.TypeMeta.Kind != "BuildTemplate" {
 		return errors.New("Can't create object, only BuildTemplate is allowed")
 	}
@@ -163,26 +156,4 @@ func getBuildArguments(image string, buildArgs []string) ([]buildv1alpha1.Argume
 		})
 	}
 	return args, params
-}
-
-func downloadFile(url string) (string, error) {
-	path := tmpPath + "/" + time.Now().Format(time.RFC850)
-	out, err := os.Create(path)
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
 }

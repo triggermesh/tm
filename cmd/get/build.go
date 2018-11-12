@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdListBuild(clientset *client.ClientSet) *cobra.Command {
+func cmdListBuild(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "build",
 		Aliases: []string{"builds"},
@@ -49,7 +49,8 @@ func cmdListBuild(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Builds(clientset *client.ClientSet) (string, error) {
+// Builds returns list of knative build objects
+func Builds(clientset *client.ConfigSet) (string, error) {
 	list, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return "", err

@@ -17,16 +17,27 @@ limitations under the License.
 package delete
 
 import (
+	"log"
+
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 )
 
-var deleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete knative resource",
-}
+// NewDeleteCmd returns cobra Command with set of resource deletion subcommands
+func NewDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
+	var file string
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete knative resource",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := YAML(file, clientset); err != nil {
+				log.Fatal(err)
+			}
+		},
+	}
 
-func NewDeleteCmd(clientset *client.ClientSet) *cobra.Command {
+	deleteCmd.Flags().StringVarP(&file, "file", "f", "serverless.yaml", "Delete functions defined in yaml")
+
 	deleteCmd.AddCommand(cmdDeleteConfiguration(clientset))
 	deleteCmd.AddCommand(cmdDeleteBuildTemplate(clientset))
 	deleteCmd.AddCommand(cmdDeleteRevision(clientset))

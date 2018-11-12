@@ -34,7 +34,8 @@ var describeCmd = &cobra.Command{
 	Short: "Details of knative resources",
 }
 
-func NewDescribeCmd(clientset *client.ClientSet) *cobra.Command {
+// NewDescribeCmd returns "describe" cobra CLI command with its subcommands
+func NewDescribeCmd(clientset *client.ConfigSet) *cobra.Command {
 	describeCmd.AddCommand(cmdDescribeBuild(clientset))
 	describeCmd.AddCommand(cmdDescribeBuildTemplate(clientset))
 	describeCmd.AddCommand(cmdDescribeConfiguration(clientset))
@@ -44,6 +45,7 @@ func NewDescribeCmd(clientset *client.ClientSet) *cobra.Command {
 	return describeCmd
 }
 
+// Format sets describe output format
 func Format(encode *string) {
 	if encode == nil || string(*encode) == "json" {
 		output = "json"

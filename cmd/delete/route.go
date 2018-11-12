@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDeleteRoute(clientset *client.ClientSet) *cobra.Command {
+func cmdDeleteRoute(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "route",
 		Short:   "Delete knative route resource",
@@ -40,6 +40,7 @@ func cmdDeleteRoute(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Route(args []string, clientset *client.ClientSet) error {
+// Route removes knative route object
+func Route(args []string, clientset *client.ConfigSet) error {
 	return clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdListConfigurations(clientset *client.ClientSet) *cobra.Command {
+func cmdListConfigurations(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "configuration",
 		Aliases: []string{"configurations"},
@@ -49,7 +49,8 @@ func cmdListConfigurations(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Configurations(clientset *client.ClientSet) (string, error) {
+// Configurations returns list of knative configuration objects
+func Configurations(clientset *client.ConfigSet) (string, error) {
 	list, err := clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return "", err

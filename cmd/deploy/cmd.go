@@ -27,19 +27,32 @@ var s Service
 var b Build
 var bt Buildtemplate
 
-var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Deploy knative resource",
-}
+// NewDeployCmd returns deploy cobra command and its subcommands
+func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
+	deployCmd := &cobra.Command{
+		Use:   "deploy",
+		Short: "Deploy knative resource",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(s.YAML) == 0 {
+				s.YAML = "serverless.yaml"
+			}
+			if err := s.fromYAML(clientset); err != nil {
+				log.Fatal(err)
+			}
+		},
+	}
 
-func NewDeployCmd(clientset *client.ClientSet) *cobra.Command {
+	deployCmd.Flags().StringVarP(&s.YAML, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
+	deployCmd.Flags().BoolVarP(&s.Wait, "wait", "w", false, "Wait for each function deployment")
+
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
+
 	return deployCmd
 }
 
-func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
+func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd := &cobra.Command{
 		Use:     "service",
 		Aliases: []string{"services", "svc"},
@@ -47,21 +60,26 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		Example: "tm -n default deploy service foo --build-template kaniko --from-image gcr.io/google-samples/hello-app:1.0",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := s.DeployService(args, clientset); err != nil {
+			s.Name = args[0]
+			if err := s.DeployService(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
 
+	// kept for back compatibility
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-path", "", "Local file path to deploy")
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-image", "", "Image to deploy")
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-source", "", "Git source URL to deploy")
+
+	deployServiceCmd.Flags().StringVarP(&s.Source, "from", "f", "", "Service source to deploy: local folder with sources, git repository or docker image")
+	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
 	deployServiceCmd.Flags().BoolVar(&s.Wait, "wait", false, "Wait for successful service deployment")
-	deployServiceCmd.Flags().StringVar(&s.From.Image.URL, "from-image", "", "Image to deploy")
-	deployServiceCmd.Flags().StringVar(&s.From.Source.URL, "from-source", "", "Git source URL to deploy")
-	deployServiceCmd.Flags().StringVar(&s.From.Source.Revision, "revision", "master", "May be used with \"--from-source\" flag: git revision (branch, tag, commit SHA or ref) to clone")
-	deployServiceCmd.Flags().StringVar(&s.From.Path, "from-path", "", "Local file path to deploy")
 	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Build template to use with service")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployServiceCmd.Flags().StringVar(&s.RunRevision, "run-revision", "", "Revision name to run service on")
+	deployServiceCmd.Flags().StringVar(&s.YAML, "definition", "", "Path to function definition yaml file (serverless framework format)")
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
@@ -69,27 +87,30 @@ func cmdDeployService(clientset *client.ClientSet) *cobra.Command {
 	return deployServiceCmd
 }
 
-func cmdDeployBuildTemplate(clientset *client.ClientSet) *cobra.Command {
+func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	deployBuildTemplateCmd := &cobra.Command{
 		Use:     "buildtemplate",
 		Aliases: []string{"buildtemplates", "bldtmpl"},
 		Short:   "Deploy knative build template",
-		Example: "tm -n default deploy buildtemplate --from-url https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
+		Example: "tm -n default deploy buildtemplate -f https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := bt.DeployBuildTemplate(args, clientset); err != nil {
+			if _, err := bt.DeployBuildTemplate(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
 
-	deployBuildTemplateCmd.Flags().StringVar(&bt.URL, "from-url", "", "Build template yaml URL")
-	deployBuildTemplateCmd.Flags().StringVar(&bt.Path, "from-file", "", "Local file path to deploy")
+	// kept for back compatibility
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-url", "", "Build template yaml URL")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-file", "", "Local file path to deploy")
+
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "file", "f", "Build template yaml URL")
 	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistryCreds, "credentials", "", "Name of registry credentials to use in buildtemplate")
 
 	return deployBuildTemplateCmd
 }
 
-func cmdDeployBuild(clientset *client.ClientSet) *cobra.Command {
+func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 	deployBuildCmd := &cobra.Command{
 		Use:     "build",
 		Aliases: []string{"builds"},
@@ -97,7 +118,8 @@ func cmdDeployBuild(clientset *client.ClientSet) *cobra.Command {
 		Short:   "Deploy knative build",
 		Example: "tm deploy build foo-builder --source git-repo --buildtemplate kaniko --args IMAGE=knative-local-registry:5000/foo-image",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := b.DeployBuild(args, clientset); err != nil {
+			b.Name = args[0]
+			if err := b.DeployBuild(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},

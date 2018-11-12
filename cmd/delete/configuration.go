@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func cmdDeleteConfiguration(clientset *client.ClientSet) *cobra.Command {
+func cmdDeleteConfiguration(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "configuration",
 		Short:   "Delete knative configuration resource",
@@ -40,6 +40,7 @@ func cmdDeleteConfiguration(clientset *client.ClientSet) *cobra.Command {
 	}
 }
 
-func Configuration(args []string, clientset *client.ClientSet) error {
+// Configuration removes knative configuration object
+func Configuration(args []string, clientset *client.ConfigSet) error {
 	return clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }
