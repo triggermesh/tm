@@ -19,7 +19,6 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"regexp"
 	"time"
@@ -29,6 +28,8 @@ import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/file"
+	"github.com/triggermesh/tm/pkg/pod"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,59 +46,56 @@ type status struct {
 	err    error
 }
 
-type Options struct {
+// Service represents knative service structure
+type Service struct {
+	Name           string
+	Source         string
+	Revision       string
+	YAML           string
 	PullPolicy     string
 	ResultImageTag string
 	Buildtemplate  string
 	RunRevision    string
 	Env            []string
+	Annotations    map[string]string
 	Labels         []string
 	BuildArgs      []string
 	Wait           bool
 }
 
-type Repository struct {
-	URL      string
-	Revision string
-}
-
-type Registry struct {
-	URL string
-}
-
-type Image struct {
-	Source Repository
-	Image  Registry
-	Path   string
-}
-
-type Service struct {
-	From Image
-	Options
-}
-
-func (s *Service) DeployService(args []string, clientset *client.ClientSet) error {
+// DeployService receives Service structure and generate knative/service object to deploy it in knative cluster
+func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
-	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, args[0]), s.BuildArgs)
-
-	switch {
-	case len(s.From.Image.URL) != 0:
-		configuration = s.fromImage()
-	case len(s.From.Source.URL) != 0:
-		configuration = s.fromSource()
-	case len(s.From.Path) != 0:
-		configuration = s.fromPath()
-	}
+	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs)
 
 	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); len(s.Buildtemplate) != 0 && err != nil {
-		return err
+		b := Buildtemplate{
+			File: s.Buildtemplate,
+		}
+		if s.Buildtemplate, err = b.DeployBuildTemplate(clientset); err != nil {
+			return err
+		}
 	}
 
-	if len(s.From.Image.URL) == 0 {
+	switch {
+	case file.IsLocal(s.Source):
+		configuration = s.fromPath()
+	case file.IsRegistry(s.Source):
+		configuration = s.fromImage()
+	case file.IsGit(s.Source):
+		if len(s.Revision) == 0 {
+			s.Revision = "master"
+		}
+		configuration = s.fromSource()
+	default:
+		return fmt.Errorf("Can't recognize source type %s", s.Source)
+	}
+
+	if configuration.Build != nil {
 		configuration.RevisionTemplate = servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, args[0], s.ResultImageTag),
+					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, s.Name, s.ResultImageTag),
 				},
 			},
 		}
@@ -114,14 +112,15 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	}
 
 	configuration.RevisionTemplate.ObjectMeta = metav1.ObjectMeta{
-		Name: args[0],
+		Name:              s.Name,
+		CreationTimestamp: metav1.Time{time.Now()},
 		Annotations: map[string]string{
 			"sidecar.istio.io/inject": "true",
 		},
 	}
 
 	envVars := []corev1.EnvVar{
-		corev1.EnvVar{
+		{
 			Name:  "timestamp",
 			Value: time.Now().Format("2006-01-02 15:04:05"),
 		},
@@ -155,12 +154,13 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      args[0],
+			Name:      s.Name,
 			Namespace: clientset.Namespace,
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
-			Labels: getArgsFromSlice(s.Labels),
+			Annotations: s.Annotations,
+			Labels:      getArgsFromSlice(s.Labels),
 		},
 
 		Spec: spec,
@@ -170,21 +170,17 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 		return err
 	}
 
-	if len(s.From.Path) != 0 {
-		if _, err := os.Stat(s.From.Path); err != nil {
-			return err
-		}
-		fmt.Println("Uploading sources")
-		if err := injectSources(args, s.From.Path, clientset); err != nil {
+	if file.IsLocal(s.Source) {
+		fmt.Printf("Uploading %s\n", path.Dir(s.Source))
+		if err := injectSources(s.Name, path.Dir(s.Source), clientset); err != nil {
 			return err
 		}
 	}
-
-	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, args[0])
+	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, s.Name)
 
 	if s.Wait {
 		fmt.Print("Waiting for ready state")
-		domain, err := waitService(args[0], clientset)
+		domain, err := waitService(s.Name, clientset)
 		if err != nil {
 			return err
 		}
@@ -194,7 +190,7 @@ func (s *Service) DeployService(args []string, clientset *client.ClientSet) erro
 	return nil
 }
 
-func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, clientset *client.ClientSet) error {
+func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
 	_, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
 	if k8sErrors.IsAlreadyExists(err) {
 		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
@@ -213,7 +209,7 @@ func (s *Service) fromImage() servingv1alpha1.ConfigurationSpec {
 		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: s.From.Image.URL,
+					Image: s.Source,
 				},
 			},
 		},
@@ -225,8 +221,8 @@ func (s *Service) fromSource() servingv1alpha1.ConfigurationSpec {
 		Build: &buildv1alpha1.BuildSpec{
 			Source: &buildv1alpha1.SourceSpec{
 				Git: &buildv1alpha1.GitSourceSpec{
-					Url:      s.From.Source.URL,
-					Revision: s.From.Source.Revision,
+					Url:      s.Source,
+					Revision: s.Revision,
 				},
 			},
 		},
@@ -240,7 +236,7 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 				Custom: &corev1.Container{
 					Image:   "library/busybox",
 					Command: []string{"sh"},
-					Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(s.From.Path))},
+					Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(path.Dir(s.Source)))},
 				},
 			},
 		},
@@ -260,7 +256,7 @@ func getArgsFromSlice(slice []string) map[string]string {
 	return m
 }
 
-func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clientset *client.ClientSet) error {
+func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clientset *client.ConfigSet) error {
 	buildTemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -288,10 +284,10 @@ func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clie
 	return err
 }
 
-func injectSources(args []string, filepath string, clientset *client.ClientSet) error {
+func injectSources(name string, filepath string, clientset *client.ConfigSet) error {
 	var latestRevision string
 	for latestRevision == "" {
-		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -327,7 +323,7 @@ func injectSources(args []string, filepath string, clientset *client.ClientSet) 
 		time.Sleep(2 * time.Second)
 	}
 
-	c := Copy{
+	c := pod.Copy{
 		Pod:         buildPod,
 		Container:   sourceContainer,
 		Source:      filepath,
@@ -345,7 +341,7 @@ func injectSources(args []string, filepath string, clientset *client.ClientSet) 
 	return nil
 }
 
-func waitService(name string, clientset *client.ClientSet) (string, error) {
+func waitService(name string, clientset *client.ConfigSet) (string, error) {
 	quit := time.After(timeout * time.Minute)
 	tick := time.Tick(5 * time.Second)
 	for {
@@ -362,10 +358,9 @@ func waitService(name string, clientset *client.ClientSet) (string, error) {
 			}
 		}
 	}
-	return "", nil
 }
 
-func readyDomain(name string, clientset *client.ClientSet) (string, error) {
+func readyDomain(name string, clientset *client.ConfigSet) (string, error) {
 	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
