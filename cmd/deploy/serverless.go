@@ -15,7 +15,6 @@
 package deploy
 
 import (
-	"errors"
 	"fmt"
 	p "path"
 
@@ -27,12 +26,16 @@ import (
 
 // YAML deploys functions defined in serverless.yaml file
 func (s *Service) fromYAML(clientset *client.ConfigSet) (err error) {
-	if !file.IsLocal(s.YAML) {
-		if s.YAML, err = file.Download(s.YAML); err != nil {
-			return errors.New("Can't get YAML file")
+	if file.IsGit(s.YAML) {
+		fmt.Printf("Cloning %s\n", s.YAML)
+		path, err := file.Clone(s.YAML)
+		if err != nil {
+			return err
 		}
-	} else if err != nil {
-		return err
+		s.YAML = path + "/serverless.yaml"
+	}
+	if !file.IsLocal(s.YAML) {
+		return fmt.Errorf("Can't read %s", s.YAML)
 	}
 	definition, err := file.ParseServerlessYAML(s.YAML)
 	if err != nil {
@@ -62,6 +65,9 @@ func (s *Service) fromYAML(clientset *client.ConfigSet) (err error) {
 
 	for _, include := range definition.Include {
 		s.YAML = workdir + "/" + include
+		if file.IsRemote(include) {
+			s.YAML = include
+		}
 		if err := s.fromYAML(clientset); err != nil {
 			return err
 		}
@@ -92,6 +98,7 @@ func (s *Service) newServices(definition file.YAML, path string) ([]Service, err
 		} else if len(s.Buildtemplate) != 0 {
 			service.Buildtemplate = s.Buildtemplate
 		}
+		service.BuildArgs = function.Buildargs
 		service.Annotations = make(map[string]string)
 		if len(function.Description) != 0 {
 			service.Annotations["Description"] = function.Description

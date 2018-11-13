@@ -25,10 +25,15 @@ import (
 
 // YAML removes functions defined in serverless.yaml file
 func YAML(path string, clientset *client.ConfigSet) (err error) {
-	if !file.IsLocal(path) {
-		if path, err = file.Download(path); err != nil {
-			return errors.New("Can't get YAML file")
+	if file.IsGit(path) {
+		fmt.Printf("Cloning %s\n", path)
+		if path, err = file.Clone(path); err != nil {
+			return err
 		}
+		path = path + "/serverless.yaml"
+	}
+	if !file.IsLocal(path) {
+		return errors.New("Can't get YAML file")
 	}
 	definition, err := file.ParseServerlessYAML(path)
 	if err != nil {
@@ -49,12 +54,21 @@ func YAML(path string, clientset *client.ConfigSet) (err error) {
 		}
 	}
 	for _, include := range definition.Include {
-		definition, err := file.ParseServerlessYAML(p.Dir(path) + "/" + include)
+		path = p.Dir(path) + "/" + include
+		if file.IsRemote(include) {
+			if path, err = file.Clone(include); err != nil {
+				return err
+			}
+			path = path + "/serverless.yaml"
+		}
+		definition, err := file.ParseServerlessYAML(path)
 		if err != nil {
 			return err
 		}
 		for serviceName := range definition.Functions {
-			if len(rootServiceName) != 0 {
+			if len(definition.Service) != 0 {
+				serviceName = fmt.Sprintf("%s-%s", definition.Service, serviceName)
+			} else if len(rootServiceName) != 0 {
 				serviceName = fmt.Sprintf("%s-%s", rootServiceName, serviceName)
 			}
 			fmt.Printf("Deleting %s\n", serviceName)
