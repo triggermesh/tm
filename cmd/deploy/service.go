@@ -171,7 +171,7 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	}
 
 	if file.IsLocal(s.Source) {
-		fmt.Printf("Uploading %s\n", path.Dir(s.Source))
+		fmt.Printf("Uploading %s sources\n", s.Name)
 		if err := injectSources(s.Name, path.Dir(s.Source), clientset); err != nil {
 			return err
 		}
@@ -285,6 +285,8 @@ func updateBuildTemplate(name string, params []buildv1alpha1.ParameterSpec, clie
 }
 
 func injectSources(name string, filepath string, clientset *client.ConfigSet) error {
+	// Temporary fix for retrieving latest service revision
+begin:
 	var latestRevision string
 	for latestRevision == "" {
 		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
@@ -315,9 +317,15 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 			return err
 		}
 		for _, v := range pod.Status.InitContainerStatuses {
-			if v.Name == "build-step-custom-source" && v.State.Running != nil {
-				sourceContainer = v.Name
-				break
+			if v.Name == "build-step-custom-source" {
+				if v.State.Terminated != nil {
+					// TODO get rid of goto
+					goto begin
+				}
+				if v.State.Running != nil {
+					sourceContainer = v.Name
+					break
+				}
 			}
 		}
 		time.Sleep(2 * time.Second)
