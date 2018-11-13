@@ -22,9 +22,34 @@ Or head to the GitHub [release page](https://github.com/triggermesh/tm/releases)
 
 Examples:
 
+Deploy service from Docker image
 ```
-tm deploy service foo --from-image=gcr.io/google-samples/hello-app:1.0
+tm deploy service foo -f gcr.io/google-samples/hello-app:1.0 --wait
 ```
+
+If you have Dockerfile for your service, you can use kaniko buildtemplate to deploy it
+```
+tm deploy service foobar \
+    -f https://github.com/knative/docs \ 
+    --build-template https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml \
+    --build-argument DIRECTORY=serving/samples/helloworld-go \
+    --wait
+```
+
+or deploy service straight from Go source using Openfaas runtime
+```
+tm deploy service bar \
+    -f https://github.com/golang/example \
+    --build-template https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/go/openfaas-go-runtime.yaml \
+    --build-argument DIRECTORY=hello \
+    --wait
+```
+
+Moreover, for more complex deployments, tm CLI supports function definition parsing from [YAML](https://github.com/tzununbekov/serverless/blob/master/serverless.yaml) file and ability to combine multiple functions, runtimes and repositories
+```
+tm deploy -f https://github.com/tzununbekov/serverless
+```  
+
 
 **On your own knative cluster:**
 

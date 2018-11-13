@@ -43,9 +43,11 @@ func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string
 	var err error
 
 	if !file.IsLocal(b.File) {
-		if b.File, err = file.Download(b.File); err != nil {
-			return "", errors.New("Buildtemplate not found")
+		path, err := file.Download(b.File)
+		if err != nil {
+			return "", fmt.Errorf("Buildtemplate %s: %s", b.File, err)
 		}
+		b.File = path
 	}
 
 	if bt, err = readYAML(b.File); err != nil {

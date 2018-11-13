@@ -27,6 +27,7 @@ type YAML struct {
 type Function struct {
 	Handler     string
 	Runtime     string
+	Buildargs   []string
 	Description string
 	Labels      []string
 	Environment map[string]string

@@ -15,19 +15,22 @@
 package file
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	git "gopkg.in/src-d/go-git.v4"
 )
 
 const (
-	tmpPath = "/tmp"
+	tmpPath = "/tmp/tm/"
 )
 
-// Local return true if path is local filesystem
+// IsLocal return true if path is local filesystem
 func IsLocal(path string) bool {
 	if _, err := os.Stat(path); err != nil {
 		return false
@@ -40,10 +43,10 @@ func IsRemote(path string) bool {
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "git@") {
 		return true
 	}
-	if _, err := http.Head("https://" + path); err == nil {
-		return true
+	if _, err := http.Head("https://" + path); err != nil {
+		return false
 	}
-	return false
+	return true
 }
 
 // IsGit most likely return true if path is URL to git repository
@@ -58,10 +61,12 @@ func IsGit(path string) bool {
 	if url.Scheme == "" {
 		url.Scheme = "https"
 	}
-	if resp, err := http.Head(url.String()); err == nil {
-		if resp.StatusCode == 200 || resp.StatusCode == 302 || resp.StatusCode == 401 {
-			return true
-		}
+	resp, err := http.Head(url.String())
+	if err != nil {
+		return false
+	}
+	if resp.StatusCode == 200 || resp.StatusCode == 302 || resp.StatusCode == 401 {
+		return true
 	}
 	return false
 }
@@ -76,17 +81,22 @@ func IsRegistry(path string) bool {
 		url.Scheme = "https"
 	}
 	resp, err := http.Head(url.String())
-	if err == nil {
-		if resp.StatusCode == 405 {
-			return true
-		}
+	if err != nil {
+		return false
+	}
+	if resp.StatusCode == 405 {
+		return true
 	}
 	return false
 }
 
 // Download receives URL and return path to saved file
 func Download(url string) (string, error) {
-	path := tmpPath + "/" + time.Now().Format(time.RFC850)
+	path := fmt.Sprintf("%s/download", tmpPath)
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		return "", err
+	}
+	path = fmt.Sprintf("%s/%d", path, time.Now().Unix())
 	out, err := os.Create(path)
 	if err != nil {
 		return "", err
@@ -105,4 +115,16 @@ func Download(url string) (string, error) {
 	}
 
 	return path, nil
+}
+
+// Clone runs `git clone` operation for specified URL and returns local path to repository root directory
+func Clone(url string) (string, error) {
+	path := fmt.Sprintf("%s/git/%d", tmpPath, time.Now().Unix())
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		return "", err
+	}
+	_, err := git.PlainClone(path, false, &git.CloneOptions{
+		URL: url,
+	})
+	return path, err
 }
