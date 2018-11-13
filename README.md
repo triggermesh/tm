@@ -47,7 +47,7 @@ tm deploy service bar \
 
 Moreover, for more complex deployments, tm CLI supports function definition parsing from [YAML](https://github.com/tzununbekov/serverless/blob/master/serverless.yaml) file and ability to combine multiple functions, runtimes and repositories
 ```
-tm deploy -f https://github.com/tzununbekov/serverless-include
+tm deploy -f https://github.com/tzununbekov/serverless
 ```  
 
 
