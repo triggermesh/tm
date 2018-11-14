@@ -8,12 +8,14 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// File represents serverless.yaml file structure
+// YAML represents serverless.yaml file structure
 type YAML struct {
 	Service     string
 	Description string
 	Provider    struct {
 		Name        string
+		Registry    string
+		Namespace   string
 		Runtime     string
 		Environment map[string]string
 		MemorySize  int

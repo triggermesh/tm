@@ -44,9 +44,14 @@ func (s *Service) fromYAML(clientset *client.ConfigSet) (err error) {
 	if len(definition.Provider.Name) != 0 && definition.Provider.Name != "triggermesh" {
 		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)
 	}
-
 	if len(definition.Service) != 0 {
 		s.Name = definition.Service
+	}
+	if len(definition.Provider.Registry) != 0 {
+		clientset.Registry = definition.Provider.Registry
+	}
+	if len(definition.Provider.Namespace) != 0 {
+		clientset.Namespace = definition.Provider.Namespace
 	}
 	if len(definition.Provider.Runtime) != 0 {
 		s.Buildtemplate = definition.Provider.Runtime

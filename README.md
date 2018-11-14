@@ -30,7 +30,7 @@ tm deploy service foo -f gcr.io/google-samples/hello-app:1.0 --wait
 If you have Dockerfile for your service, you can use kaniko buildtemplate to deploy it
 ```
 tm deploy service foobar \
-    -f https://github.com/knative/docs \ 
+    -f https://github.com/knative/docs \
     --build-template https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml \
     --build-argument DIRECTORY=serving/samples/helloworld-go \
     --wait

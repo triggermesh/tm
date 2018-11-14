@@ -68,18 +68,17 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	}
 
 	// kept for back compatibility
-	deployServiceCmd.Flags().StringVar(&s.Source, "from-path", "", "Local file path to deploy")
-	deployServiceCmd.Flags().StringVar(&s.Source, "from-image", "", "Image to deploy")
-	deployServiceCmd.Flags().StringVar(&s.Source, "from-source", "", "Git source URL to deploy")
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-path", "", "Deprecated, use `-f` flag instead")
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-image", "", "Deprecated, use `-f` flag instead")
+	deployServiceCmd.Flags().StringVar(&s.Source, "from-source", "", "Deprecated, use `-f` flag instead")
 
 	deployServiceCmd.Flags().StringVarP(&s.Source, "from", "f", "", "Service source to deploy: local folder with sources, git repository or docker image")
 	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
 	deployServiceCmd.Flags().BoolVar(&s.Wait, "wait", false, "Wait for successful service deployment")
-	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Build template to use with service")
+	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployServiceCmd.Flags().StringVar(&s.RunRevision, "run-revision", "", "Revision name to run service on")
-	deployServiceCmd.Flags().StringVar(&s.YAML, "definition", "", "Path to function definition yaml file (serverless framework format)")
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
@@ -101,10 +100,10 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	}
 
 	// kept for back compatibility
-	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-url", "", "Build template yaml URL")
-	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-file", "", "Local file path to deploy")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-url", "", "Deprecated, use `-f` flag instead")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-file", "", "Deprecated, use `-f` flag instead")
 
-	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "file", "f", "Build template yaml URL")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "file", "f", "Local path or URL to buildtemplate yaml file")
 	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistryCreds, "credentials", "", "Name of registry credentials to use in buildtemplate")
 
 	return deployBuildTemplateCmd
