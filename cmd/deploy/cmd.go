@@ -103,7 +103,7 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-url", "", "Deprecated, use `-f` flag instead")
 	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-file", "", "Deprecated, use `-f` flag instead")
 
-	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "file", "f", "Local path or URL to buildtemplate yaml file")
+	deployBuildTemplateCmd.Flags().StringVarP(&bt.File, "from", "f", "", "Local path or URL to buildtemplate yaml file")
 	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistryCreds, "credentials", "", "Name of registry credentials to use in buildtemplate")
 
 	return deployBuildTemplateCmd
