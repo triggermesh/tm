@@ -40,6 +40,10 @@
   name = "k8s.io/client-go"
   version = "7.0.0"
 
+[[constraint]]
+  name = "github.com/mholt/archiver"
+  version = "v2.1.0"
+
 [prune]
   go-tests = true
   unused-packages = true
