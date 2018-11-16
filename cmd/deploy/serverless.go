@@ -24,7 +24,7 @@ import (
 
 // TODO Cleanup and simplify
 
-// YAML deploys functions defined in serverless.yaml file
+// FromYAML deploys functions defined in serverless.yaml file
 func (s *Service) FromYAML(clientset *client.ConfigSet) (err error) {
 	if file.IsGit(s.YAML) {
 		fmt.Printf("Cloning %s\n", s.YAML)

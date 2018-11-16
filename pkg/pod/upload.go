@@ -57,9 +57,9 @@ func (c *Copy) Upload(clientset *client.ConfigSet) error {
 		command = fmt.Sprintf("%s -C %s", command, c.Destination)
 	}
 
-	_, stderr, err := c.RemoteExec(clientset, command, fileReader)
+	stdout, stderr, err := c.RemoteExec(clientset, command, fileReader)
 	if err != nil {
-		fmt.Printf("Remote stderr: %s\n", stderr)
+		fmt.Printf("Stdout: %s\nStderr: %s\nErr: %s\n", stdout, stderr, err)
 		return err
 	}
 
