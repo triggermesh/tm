@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/mholt/archiver"
@@ -38,17 +40,33 @@ type Copy struct {
 }
 
 var (
-	sourceTar = "/tmp/source.tar.gz"
-	command   = "tar -xvf -"
+	uploadPath = "/tmp/tm/upload"
+	command    = "tar -xvf -"
 )
+
+const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randString(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
 
 // Upload receives Copy structure, creates tarball of local source path and uploads it to active (un)tar process on remote pod
 func (c *Copy) Upload(clientset *client.ConfigSet) error {
-	if err := archiver.Tar.Make(sourceTar, []string{c.Source}); err != nil {
+	if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
 		return err
 	}
 
-	fileReader, err := os.Open(sourceTar)
+	tar := path.Join(uploadPath, randString(10)+".tar")
+
+	if err := archiver.Tar.Make(tar, []string{c.Source}); err != nil {
+		return err
+	}
+
+	fileReader, err := os.Open(tar)
 	if err != nil {
 		return err
 	}
@@ -62,7 +80,6 @@ func (c *Copy) Upload(clientset *client.ConfigSet) error {
 		fmt.Printf("Stdout: %s\nStderr: %s\nErr: %s\n", stdout, stderr, err)
 		return err
 	}
-
 	return nil
 }
 
@@ -79,7 +96,12 @@ func (c *Copy) RemoteExec(clientset *client.ConfigSet, command string, file io.R
 	if file != nil {
 		stdin = "true"
 	}
-	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s/exec?stderr=true&stdin=%s&stdout=true%s", clientset.Core.RESTClient().Post().URL().String(), clientset.Namespace, c.Pod, stdin, commandLine)
+	// workaround to form correct URL
+	urlAndParams := strings.Split(clientset.Core.RESTClient().Post().URL().String(), "?")
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s/exec?stderr=true&stdin=%s&stdout=true%s", urlAndParams[0], clientset.Namespace, c.Pod, stdin, commandLine)
+	if len(urlAndParams) == 2 {
+		url = fmt.Sprintf("%s&%s", url, urlAndParams[1])
+	}
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return "", "", err
