@@ -105,7 +105,7 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 		if err := updateBuildTemplate(s.Buildtemplate, templateParams, clientset); err != nil {
 			return err
 		}
-		configuration.Build.Template = &buildv1alpha1.TemplateInstantiationSpec{
+		configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
 			Name:      s.Buildtemplate,
 			Arguments: buildArguments,
 		}
@@ -218,11 +218,13 @@ func (s *Service) fromImage() servingv1alpha1.ConfigurationSpec {
 
 func (s *Service) fromSource() servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
-		Build: &buildv1alpha1.BuildSpec{
-			Source: &buildv1alpha1.SourceSpec{
-				Git: &buildv1alpha1.GitSourceSpec{
-					Url:      s.Source,
-					Revision: s.Revision,
+		Build: &servingv1alpha1.RawExtension{
+			BuildSpec: &buildv1alpha1.BuildSpec{
+				Source: &buildv1alpha1.SourceSpec{
+					Git: &buildv1alpha1.GitSourceSpec{
+						Url:      s.Source,
+						Revision: s.Revision,
+					},
 				},
 			},
 		},
@@ -231,12 +233,14 @@ func (s *Service) fromSource() servingv1alpha1.ConfigurationSpec {
 
 func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
-		Build: &buildv1alpha1.BuildSpec{
-			Source: &buildv1alpha1.SourceSpec{
-				Custom: &corev1.Container{
-					Image:   "library/busybox",
-					Command: []string{"sh"},
-					Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(path.Dir(s.Source)))},
+		Build: &servingv1alpha1.RawExtension{
+			BuildSpec: &buildv1alpha1.BuildSpec{
+				Source: &buildv1alpha1.SourceSpec{
+					Custom: &corev1.Container{
+						Image:   "library/busybox",
+						Command: []string{"sh"},
+						Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(path.Dir(s.Source)))},
+					},
 				},
 			},
 		},
