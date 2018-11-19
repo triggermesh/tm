@@ -114,9 +114,8 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	configuration.RevisionTemplate.ObjectMeta = metav1.ObjectMeta{
 		Name:              s.Name,
 		CreationTimestamp: metav1.Time{time.Now()},
-		Annotations: map[string]string{
-			"sidecar.istio.io/inject": "true",
-		},
+		Annotations:       s.Annotations,
+		Labels:            getArgsFromSlice(s.Labels),
 	}
 
 	envVars := []corev1.EnvVar{
@@ -159,8 +158,6 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
-			Annotations: s.Annotations,
-			Labels:      getArgsFromSlice(s.Labels),
 		},
 
 		Spec: spec,
@@ -198,7 +195,7 @@ func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, cl
 			return err
 		}
 		serviceObject.ObjectMeta.ResourceVersion = service.GetResourceVersion()
-		service, err = clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Update(&serviceObject)
+		_, err = clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Update(&serviceObject)
 		return err
 	}
 	return err

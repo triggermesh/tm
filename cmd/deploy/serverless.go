@@ -15,6 +15,7 @@
 package deploy
 
 import (
+	"errors"
 	"fmt"
 	p "path"
 
@@ -25,7 +26,7 @@ import (
 // TODO Cleanup and simplify
 
 // FromYAML deploys functions defined in serverless.yaml file
-func (s *Service) FromYAML(clientset *client.ConfigSet) (err error) {
+func (s *Service) DeployYAML(clientset *client.ConfigSet) (err error) {
 	if file.IsGit(s.YAML) {
 		fmt.Printf("Cloning %s\n", s.YAML)
 		path, err := file.Clone(s.YAML)
@@ -44,9 +45,14 @@ func (s *Service) FromYAML(clientset *client.ConfigSet) (err error) {
 	if len(definition.Provider.Name) != 0 && definition.Provider.Name != "triggermesh" {
 		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)
 	}
-	if len(definition.Service) != 0 {
+	if len(s.Name) == 0 && len(definition.Service) == 0 {
+		return errors.New("Service name can't be empty")
+	}
+	if len(s.Name) == 0 {
+		// We are in the root service
 		s.Name = definition.Service
 	}
+
 	if len(definition.Provider.Registry) != 0 {
 		clientset.Registry = definition.Provider.Registry
 	}
@@ -73,7 +79,7 @@ func (s *Service) FromYAML(clientset *client.ConfigSet) (err error) {
 		if file.IsRemote(include) {
 			s.YAML = include
 		}
-		if err := s.FromYAML(clientset); err != nil {
+		if err := s.DeployYAML(clientset); err != nil {
 			return err
 		}
 	}
@@ -90,12 +96,14 @@ func (s *Service) newServices(definition file.YAML, path string) ([]Service, err
 			service.Source = fmt.Sprintf("%s/%s", path, service.Source)
 		}
 		service.Wait = s.Wait
-		service.Name = name
 		service.ResultImageTag = "latest"
 		service.Labels = function.Labels
-		if len(s.Name) != 0 {
-			service.Name = fmt.Sprintf("%s-%s", s.Name, service.Name)
+		service.Labels = append(service.Labels, "Service:"+s.Name)
+		if len(definition.Service) != 0 && s.Name != definition.Service {
+			name = fmt.Sprintf("%s-%s", definition.Service, name)
 		}
+		service.Name = fmt.Sprintf("%s-%s", s.Name, name)
+
 		if len(function.Runtime) != 0 {
 			service.Buildtemplate = function.Runtime
 		} else if len(definition.Provider.Runtime) != 0 {

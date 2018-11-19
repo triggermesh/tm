@@ -23,8 +23,13 @@ import (
 	"github.com/triggermesh/tm/pkg/file"
 )
 
-// YAML removes functions defined in serverless.yaml file
-func YAML(path string, clientset *client.ConfigSet) (err error) {
+// Service structure has minimal required set of fields to delete service
+type Service struct {
+	Name string
+}
+
+// DeleteYAML removes functions defined in serverless.yaml file
+func (s *Service) DeleteYAML(path string, clientset *client.ConfigSet) (err error) {
 	if file.IsGit(path) {
 		fmt.Printf("Cloning %s\n", path)
 		if path, err = file.Clone(path); err != nil {
@@ -39,17 +44,25 @@ func YAML(path string, clientset *client.ConfigSet) (err error) {
 	if err != nil {
 		return err
 	}
-	if definition.Provider.Name != "triggermesh" {
+	if len(definition.Provider.Name) != 0 && definition.Provider.Name != "triggermesh" {
 		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)
 	}
-	rootServiceName := definition.Service
+	if len(s.Name) == 0 && len(definition.Service) == 0 {
+		return errors.New("Service name can't be empty")
+	}
+	if len(s.Name) == 0 {
+		s.Name = definition.Service
+	}
+
 	for name := range definition.Functions {
-		serviceName := name
-		if len(rootServiceName) != 0 {
-			serviceName = fmt.Sprintf("%s-%s", rootServiceName, serviceName)
+		if len(definition.Service) != 0 && s.Name != definition.Service {
+			name = fmt.Sprintf("%s-%s", definition.Service, name)
 		}
-		fmt.Printf("Deleting %s\n", serviceName)
-		if err = Service(serviceName, clientset); err != nil {
+		tmp := Service{
+			Name: fmt.Sprintf("%s-%s", s.Name, name),
+		}
+		fmt.Printf("Deleting %s\n", tmp.Name)
+		if err = tmp.DeleteService(clientset); err != nil {
 			fmt.Println(err)
 		}
 	}
@@ -61,20 +74,8 @@ func YAML(path string, clientset *client.ConfigSet) (err error) {
 			}
 			path = path + "/serverless.yaml"
 		}
-		definition, err := file.ParseServerlessYAML(path)
-		if err != nil {
+		if err = s.DeleteYAML(path, clientset); err != nil {
 			return err
-		}
-		for serviceName := range definition.Functions {
-			if len(definition.Service) != 0 {
-				serviceName = fmt.Sprintf("%s-%s", definition.Service, serviceName)
-			} else if len(rootServiceName) != 0 {
-				serviceName = fmt.Sprintf("%s-%s", rootServiceName, serviceName)
-			}
-			fmt.Printf("Deleting %s\n", serviceName)
-			if err = Service(serviceName, clientset); err != nil {
-				fmt.Println(err)
-			}
 		}
 	}
 	return nil

@@ -23,6 +23,8 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 )
 
+var s Service
+
 // NewDeleteCmd returns cobra Command with set of resource deletion subcommands
 func NewDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 	var file string
@@ -30,7 +32,7 @@ func NewDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 		Use:   "delete",
 		Short: "Delete knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := YAML(file, clientset); err != nil {
+			if err := s.DeleteYAML(file, clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
