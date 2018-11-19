@@ -19,37 +19,41 @@ import (
 	"fmt"
 	p "path"
 
+	"github.com/triggermesh/tm/cmd/delete"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // TODO Cleanup and simplify
 
-// FromYAML deploys functions defined in serverless.yaml file
-func (s *Service) DeployYAML(clientset *client.ConfigSet) (err error) {
+// DeployYAML deploys functions defined in serverless.yaml file
+func (s *Service) DeployYAML(clientset *client.ConfigSet) (services []Service, err error) {
+	var root bool
 	if file.IsGit(s.YAML) {
 		fmt.Printf("Cloning %s\n", s.YAML)
 		path, err := file.Clone(s.YAML)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		s.YAML = path + "/serverless.yaml"
 	}
 	if !file.IsLocal(s.YAML) {
-		return fmt.Errorf("Can't read %s", s.YAML)
+		return nil, fmt.Errorf("Can't read %s", s.YAML)
 	}
 	definition, err := file.ParseServerlessYAML(s.YAML)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(definition.Provider.Name) != 0 && definition.Provider.Name != "triggermesh" {
-		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)
+		return nil, fmt.Errorf("%s provider is not supported", definition.Provider.Name)
 	}
 	if len(s.Name) == 0 && len(definition.Service) == 0 {
-		return errors.New("Service name can't be empty")
+		return nil, errors.New("Service name can't be empty")
 	}
 	if len(s.Name) == 0 {
 		// We are in the root service
+		root = true
 		s.Name = definition.Service
 	}
 
@@ -63,14 +67,11 @@ func (s *Service) DeployYAML(clientset *client.ConfigSet) (err error) {
 		s.Buildtemplate = definition.Provider.Runtime
 	}
 	workdir := p.Dir(s.YAML)
-	services, err := s.newServices(definition, workdir)
-	if err != nil {
-		return err
-	}
+	services = s.newServices(definition, workdir)
 
 	for _, service := range services {
 		if err := service.DeployService(clientset); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -79,14 +80,22 @@ func (s *Service) DeployYAML(clientset *client.ConfigSet) (err error) {
 		if file.IsRemote(include) {
 			s.YAML = include
 		}
-		if err := s.DeployYAML(clientset); err != nil {
-			return err
+		subServices, err := s.DeployYAML(clientset)
+		if err != nil {
+			return nil, err
+		}
+		services = append(services, subServices...)
+	}
+
+	if root {
+		if err = removeOrphans(services, clientset); err != nil {
+			return nil, err
 		}
 	}
-	return nil
+	return services, nil
 }
 
-func (s *Service) newServices(definition file.YAML, path string) ([]Service, error) {
+func (s *Service) newServices(definition file.YAML, path string) []Service {
 	var services []Service
 	for name, function := range definition.Functions {
 		var service Service
@@ -98,7 +107,7 @@ func (s *Service) newServices(definition file.YAML, path string) ([]Service, err
 		service.Wait = s.Wait
 		service.ResultImageTag = "latest"
 		service.Labels = function.Labels
-		service.Labels = append(service.Labels, "Service:"+s.Name)
+		service.Labels = append(service.Labels, "service:"+s.Name)
 		if len(definition.Service) != 0 && s.Name != definition.Service {
 			name = fmt.Sprintf("%s-%s", definition.Service, name)
 		}
@@ -126,5 +135,37 @@ func (s *Service) newServices(definition file.YAML, path string) ([]Service, err
 		}
 		services = append(services, service)
 	}
-	return services, nil
+	return services
+}
+
+func removeOrphans(services []Service, clientset *client.ConfigSet) error {
+	list, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).List(metav1.ListOptions{
+		IncludeUninitialized: true,
+		LabelSelector:        "service=" + s.Name,
+	})
+	if err != nil {
+		return err
+	}
+	for _, oldService := range list.Items {
+		if len(oldService.OwnerReferences) != 1 {
+			continue
+		}
+		orphan := true
+		for _, newService := range services {
+			if newService.Name == oldService.OwnerReferences[0].Name {
+				orphan = false
+				break
+			}
+		}
+		if orphan {
+			s := delete.Service{
+				Name: oldService.OwnerReferences[0].Name,
+			}
+			if err = s.DeleteService(clientset); err == nil {
+				fmt.Printf("Removing orphaned service: %s\n", s.Name)
+			}
+		}
+	}
+
+	return nil
 }
