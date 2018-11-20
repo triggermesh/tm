@@ -109,6 +109,7 @@ func (s *Service) newServices(definition file.YAML, path string) []Service {
 		service.Wait = s.Wait
 		service.ResultImageTag = "latest"
 		service.Labels = function.Labels
+		service.RegistrySecret = s.RegistrySecret
 		service.Labels = append(service.Labels, "service:"+s.Name)
 		if len(definition.Service) != 0 && s.Name != definition.Service {
 			name = fmt.Sprintf("%s-%s", definition.Service, name)
