@@ -88,7 +88,7 @@ func (s *Service) DeployYAML(clientset *client.ConfigSet) (services []Service, e
 	}
 
 	if root {
-		if err = removeOrphans(services, clientset); err != nil {
+		if err = s.removeOrphans(services, clientset); err != nil {
 			return nil, err
 		}
 	}
@@ -138,7 +138,7 @@ func (s *Service) newServices(definition file.YAML, path string) []Service {
 	return services
 }
 
-func removeOrphans(services []Service, clientset *client.ConfigSet) error {
+func (s *Service) removeOrphans(services []Service, clientset *client.ConfigSet) error {
 	list, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).List(metav1.ListOptions{
 		IncludeUninitialized: true,
 		LabelSelector:        "service=" + s.Name,
