@@ -13,12 +13,13 @@ type YAML struct {
 	Service     string
 	Description string
 	Provider    struct {
-		Name        string
-		Registry    string
-		Namespace   string
-		Runtime     string
-		Environment map[string]string
-		MemorySize  int
+		Name           string
+		Registry       string
+		RegistrySecret string `json:"registry-secret"`
+		Namespace      string
+		Runtime        string
+		Environment    map[string]string
+		MemorySize     int
 	}
 	Repository string
 	Functions  map[string]Function

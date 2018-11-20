@@ -32,9 +32,9 @@ import (
 
 // Buildtemplate contains information about knative buildtemplate definition
 type Buildtemplate struct {
-	Name          string
-	File          string
-	RegistryCreds string
+	Name           string
+	File           string
+	RegistrySecret string
 }
 
 // DeployBuildTemplate deploys knative buildtemplate either from local file or by its URL
@@ -59,7 +59,7 @@ func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string
 	}
 	fmt.Printf("Creating \"%s\" build template\n", bt.ObjectMeta.Name)
 
-	if len(b.RegistryCreds) != 0 {
+	if len(b.RegistrySecret) != 0 {
 		b.addSecretVolume(&bt)
 		b.setEnvConfig(&bt)
 	}
@@ -70,18 +70,18 @@ func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string
 func (b *Buildtemplate) addSecretVolume(template *buildv1alpha1.BuildTemplate) {
 	template.Spec.Volumes = []corev1.Volume{
 		{
-			Name: b.RegistryCreds,
+			Name: b.RegistrySecret,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: b.RegistryCreds,
+					SecretName: b.RegistrySecret,
 				},
 			},
 		},
 	}
 	for i, step := range template.Spec.Steps {
 		mounts := append(step.VolumeMounts, corev1.VolumeMount{
-			Name:      b.RegistryCreds,
-			MountPath: "/" + b.RegistryCreds,
+			Name:      b.RegistrySecret,
+			MountPath: "/" + b.RegistrySecret,
 			ReadOnly:  true,
 		})
 		template.Spec.Steps[i].VolumeMounts = mounts
@@ -92,7 +92,7 @@ func (b *Buildtemplate) setEnvConfig(template *buildv1alpha1.BuildTemplate) {
 	for i, step := range template.Spec.Steps {
 		envs := append(step.Env, corev1.EnvVar{
 			Name:  "DOCKER_CONFIG",
-			Value: "/" + b.RegistryCreds,
+			Value: "/" + b.RegistrySecret,
 		})
 		template.Spec.Steps[i].Env = envs
 	}

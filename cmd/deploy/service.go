@@ -55,7 +55,7 @@ type Service struct {
 	PullPolicy     string
 	ResultImageTag string
 	Buildtemplate  string
-	RunRevision    string
+	RegistrySecret string
 	Env            []string
 	Annotations    map[string]string
 	Labels         []string
@@ -70,7 +70,8 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 
 	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); len(s.Buildtemplate) != 0 && err != nil {
 		b := Buildtemplate{
-			File: s.Buildtemplate,
+			File:           s.Buildtemplate,
+			RegistrySecret: s.RegistrySecret,
 		}
 		if s.Buildtemplate, err = b.DeployBuildTemplate(clientset); err != nil {
 			return err
@@ -135,15 +136,6 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 		RunLatest: &servingv1alpha1.RunLatestType{
 			Configuration: configuration,
 		},
-	}
-
-	if s.RunRevision != "" {
-		spec = servingv1alpha1.ServiceSpec{
-			Pinned: &servingv1alpha1.PinnedType{
-				RevisionName:  s.RunRevision,
-				Configuration: configuration,
-			},
-		}
 	}
 
 	serviceObject := servingv1alpha1.Service{

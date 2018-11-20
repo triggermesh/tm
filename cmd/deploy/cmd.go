@@ -76,9 +76,9 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
 	deployServiceCmd.Flags().BoolVar(&s.Wait, "wait", false, "Wait for successful service deployment")
 	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
+	deployServiceCmd.Flags().StringVar(&s.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
-	deployServiceCmd.Flags().StringVar(&s.RunRevision, "run-revision", "", "Revision name to run service on")
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
@@ -104,7 +104,7 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	deployBuildTemplateCmd.Flags().StringVar(&bt.File, "from-file", "", "Deprecated, use `-f` flag instead")
 
 	deployBuildTemplateCmd.Flags().StringVarP(&bt.File, "from", "f", "", "Local path or URL to buildtemplate yaml file")
-	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistryCreds, "credentials", "", "Name of registry credentials to use in buildtemplate")
+	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistrySecret, "credentials", "", "Name of k8s secret to use in buildtemplate as registry auth json")
 
 	return deployBuildTemplateCmd
 }
