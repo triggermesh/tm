@@ -15,7 +15,7 @@ type YAML struct {
 	Provider    struct {
 		Name           string
 		Registry       string
-		RegistrySecret string `json:"registry-secret"`
+		RegistrySecret string `yaml:"registry-secret"`
 		Namespace      string
 		Runtime        string
 		Environment    map[string]string
