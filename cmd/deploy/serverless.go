@@ -56,7 +56,9 @@ func (s *Service) DeployYAML(clientset *client.ConfigSet) (services []Service, e
 		root = true
 		s.Name = definition.Service
 	}
-
+	if len(definition.Provider.RegistrySecret) != 0 {
+		s.RegistrySecret = definition.Provider.RegistrySecret
+	}
 	if len(definition.Provider.Registry) != 0 {
 		clientset.Registry = definition.Provider.Registry
 	}
