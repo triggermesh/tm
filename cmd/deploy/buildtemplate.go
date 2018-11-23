@@ -57,7 +57,7 @@ func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string
 	if len(b.Name) != 0 {
 		bt.ObjectMeta.Name = b.Name
 	}
-	fmt.Printf("Creating \"%s\" build template\n", bt.ObjectMeta.Name)
+	// fmt.Printf("Creating \"%s\" build template\n", bt.ObjectMeta.Name)
 
 	if len(b.RegistrySecret) != 0 {
 		b.addSecretVolume(&bt)

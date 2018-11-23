@@ -28,18 +28,10 @@ import (
 // TODO Cleanup and simplify
 
 // DeployYAML deploys functions defined in serverless.yaml file
-func (s *Service) DeployYAML(clientset *client.ConfigSet) (services []Service, err error) {
+func (s *Service) DeployYAML(functions []string, clientset *client.ConfigSet) (services []Service, err error) {
 	var root bool
-	if file.IsGit(s.YAML) {
-		fmt.Printf("Cloning %s\n", s.YAML)
-		path, err := file.Clone(s.YAML)
-		if err != nil {
-			return nil, err
-		}
-		s.YAML = path + "/serverless.yaml"
-	}
-	if !file.IsLocal(s.YAML) {
-		return nil, fmt.Errorf("Can't read %s", s.YAML)
+	if s.YAML, err = getYAML(s.YAML); err != nil {
+		return nil, err
 	}
 	definition, err := file.ParseServerlessYAML(s.YAML)
 	if err != nil {
@@ -52,11 +44,8 @@ func (s *Service) DeployYAML(clientset *client.ConfigSet) (services []Service, e
 		return nil, errors.New("Service name can't be empty")
 	}
 	if len(s.Name) == 0 {
-		// We are in the root service
 		root = true
 		s.Name = definition.Service
-	}
-	if len(definition.Provider.RegistrySecret) != 0 {
 		s.RegistrySecret = definition.Provider.RegistrySecret
 	}
 	if len(definition.Provider.Registry) != 0 {
@@ -69,12 +58,52 @@ func (s *Service) DeployYAML(clientset *client.ConfigSet) (services []Service, e
 		s.Buildtemplate = definition.Provider.Runtime
 	}
 	workdir := p.Dir(s.YAML)
-	services = s.newServices(definition, workdir)
 
-	for _, service := range services {
+	for name, function := range definition.Functions {
+		pass := false
+		for _, v := range functions {
+			if v == name {
+				pass = true
+				break
+			}
+		}
+		if len(functions) != 0 && !pass {
+			continue
+		}
+		service := newService(function)
+		service.Wait = s.Wait
+		service.RegistrySecret = s.RegistrySecret
+		service.Name = name
+		if len(definition.Service) != 0 {
+			service.Name = fmt.Sprintf("%s-%s", definition.Service, service.Name)
+		}
+		if s.Name != definition.Service {
+			service.Name = fmt.Sprintf("%s-%s", s.Name, service.Name)
+		}
+		if workdir != "." && workdir != "./." && !file.IsRemote(service.Source) {
+			service.Source = fmt.Sprintf("%s/%s", workdir, service.Source)
+		}
+		if len(service.Buildtemplate) == 0 {
+			service.Buildtemplate = definition.Provider.Runtime
+		}
+		if len(service.Buildtemplate) == 0 {
+			service.Buildtemplate = s.Buildtemplate
+		}
+		if len(definition.Description) != 0 {
+			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", definition.Description, service.Annotations["Description"])
+		}
+		if len(s.Annotations["Description"]) != 0 {
+			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", s.Annotations["Description"], service.Annotations["Description"])
+		}
+		for k, v := range definition.Provider.Environment {
+			service.Env = append(service.Env, k+":"+v)
+		}
+		service.Env = append(service.Env, s.Env...)
+
 		if err := service.DeployService(clientset); err != nil {
 			return nil, err
 		}
+		services = append(services, service)
 	}
 
 	for _, include := range definition.Include {
@@ -82,14 +111,14 @@ func (s *Service) DeployYAML(clientset *client.ConfigSet) (services []Service, e
 		if file.IsRemote(include) {
 			s.YAML = include
 		}
-		subServices, err := s.DeployYAML(clientset)
+		subServices, err := s.DeployYAML(functions, clientset)
 		if err != nil {
 			return nil, err
 		}
 		services = append(services, subServices...)
 	}
 
-	if root {
+	if root && len(functions) == 0 {
 		if err = s.removeOrphans(services, clientset); err != nil {
 			return nil, err
 		}
@@ -97,48 +126,35 @@ func (s *Service) DeployYAML(clientset *client.ConfigSet) (services []Service, e
 	return services, nil
 }
 
-func (s *Service) newServices(definition file.YAML, path string) []Service {
-	var services []Service
-	for name, function := range definition.Functions {
-		var service Service
-
-		service.Source = function.Handler
-		if path != "." && path != "./." && !file.IsRemote(service.Source) {
-			service.Source = fmt.Sprintf("%s/%s", path, service.Source)
+func getYAML(path string) (string, error) {
+	if file.IsGit(path) {
+		// fmt.Printf("Cloning %s\n", path)
+		localPath, err := file.Clone(path)
+		if err != nil {
+			return "", err
 		}
-		service.Wait = s.Wait
-		service.ResultImageTag = "latest"
-		service.Labels = function.Labels
-		service.RegistrySecret = s.RegistrySecret
-		service.Labels = append(service.Labels, "service:"+s.Name)
-		if len(definition.Service) != 0 && s.Name != definition.Service {
-			name = fmt.Sprintf("%s-%s", definition.Service, name)
-		}
-		service.Name = fmt.Sprintf("%s-%s", s.Name, name)
-
-		if len(function.Runtime) != 0 {
-			service.Buildtemplate = function.Runtime
-		} else if len(definition.Provider.Runtime) != 0 {
-			service.Buildtemplate = definition.Provider.Runtime
-		} else if len(s.Buildtemplate) != 0 {
-			service.Buildtemplate = s.Buildtemplate
-		}
-		service.BuildArgs = function.Buildargs
-		service.Annotations = make(map[string]string)
-		if len(function.Description) != 0 {
-			service.Annotations["Description"] = function.Description
-		} else if len(definition.Description) != 0 {
-			service.Annotations["Description"] = definition.Description
-		}
-		for k, v := range definition.Provider.Environment {
-			service.Env = append(service.Env, k+":"+v)
-		}
-		for k, v := range function.Environment {
-			service.Env = append(service.Env, k+":"+v)
-		}
-		services = append(services, service)
+		path = localPath + "/serverless.yaml"
 	}
-	return services
+	if !file.IsLocal(path) {
+		return "", fmt.Errorf("Can't read %s", s.YAML)
+	}
+	return path, nil
+}
+
+func newService(function file.Function) Service {
+	service := Service{
+		Source:         function.Handler,
+		Buildtemplate:  function.Runtime,
+		Labels:         append(function.Labels, "service:"+s.Name),
+		ResultImageTag: "latest",
+		BuildArgs:      function.Buildargs,
+		Annotations:    make(map[string]string),
+	}
+	service.Annotations["Description"] = function.Description
+	for k, v := range function.Environment {
+		service.Env = append(service.Env, k+":"+v)
+	}
+	return service
 }
 
 func (s *Service) removeOrphans(services []Service, clientset *client.ConfigSet) error {

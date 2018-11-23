@@ -36,7 +36,7 @@ func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 			if len(s.YAML) == 0 {
 				s.YAML = "serverless.yaml"
 			}
-			if _, err := s.DeployYAML(clientset); err != nil {
+			if _, err := s.DeployYAML(args, clientset); err != nil {
 				log.Fatal(err)
 			}
 		},

@@ -29,9 +29,9 @@ type Service struct {
 }
 
 // DeleteYAML removes functions defined in serverless.yaml file
-func (s *Service) DeleteYAML(path string, clientset *client.ConfigSet) (err error) {
+func (s *Service) DeleteYAML(path string, functions []string, clientset *client.ConfigSet) (err error) {
 	if file.IsGit(path) {
-		fmt.Printf("Cloning %s\n", path)
+		// fmt.Printf("Cloning %s\n", path)
 		if path, err = file.Clone(path); err != nil {
 			return err
 		}
@@ -55,6 +55,16 @@ func (s *Service) DeleteYAML(path string, clientset *client.ConfigSet) (err erro
 	}
 
 	for name := range definition.Functions {
+		pass := false
+		for _, v := range functions {
+			if v == name {
+				pass = true
+				break
+			}
+		}
+		if len(functions) != 0 && !pass {
+			continue
+		}
 		if len(definition.Service) != 0 && s.Name != definition.Service {
 			name = fmt.Sprintf("%s-%s", definition.Service, name)
 		}
@@ -74,7 +84,7 @@ func (s *Service) DeleteYAML(path string, clientset *client.ConfigSet) (err erro
 			}
 			path = path + "/serverless.yaml"
 		}
-		if err = s.DeleteYAML(path, clientset); err != nil {
+		if err = s.DeleteYAML(path, functions, clientset); err != nil {
 			return err
 		}
 	}
