@@ -25,6 +25,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/mholt/archiver"
 	"github.com/triggermesh/tm/pkg/client"
@@ -47,9 +48,10 @@ var (
 const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func randString(n int) string {
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b[i] = letterBytes[random.Intn(len(letterBytes))]
 	}
 	return string(b)
 }
