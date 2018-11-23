@@ -14,18 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pod
+package file
 
 import (
 	"bytes"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/mholt/archiver"
 	"github.com/triggermesh/tm/pkg/client"
@@ -44,17 +42,6 @@ var (
 	uploadPath = "/tmp/tm/upload"
 	command    = "tar -xvf -"
 )
-
-const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-func randString(n int) string {
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[random.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
 
 // Upload receives Copy structure, creates tarball of local source path and uploads it to active (un)tar process on remote pod
 func (c *Copy) Upload(clientset *client.ConfigSet) error {

@@ -29,7 +29,6 @@ import (
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
-	"github.com/triggermesh/tm/pkg/pod"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -303,12 +302,17 @@ begin:
 		time.Sleep(2 * time.Second)
 	}
 
+	res, err := clientset.Core.CoreV1().Pods(clientset.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod})
+	if err != nil {
+		return err
+	}
+	defer res.Stop()
+
 	var sourceContainer string
 	for sourceContainer == "" {
-		pod, err := clientset.Core.CoreV1().Pods(clientset.Namespace).Get(buildPod, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
+		e := <-res.ResultChan()
+		pod := e.Object.(*corev1.Pod)
+
 		for _, v := range pod.Status.InitContainerStatuses {
 			if v.Name == "build-step-custom-source" {
 				if v.State.Terminated != nil {
@@ -321,10 +325,9 @@ begin:
 				}
 			}
 		}
-		time.Sleep(2 * time.Second)
 	}
 
-	c := pod.Copy{
+	c := file.Copy{
 		Pod:         buildPod,
 		Container:   sourceContainer,
 		Source:      filepath,
