@@ -17,11 +17,11 @@ package file
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	git "gopkg.in/src-d/go-git.v4"
 )
@@ -29,6 +29,16 @@ import (
 const (
 	tmpPath = "/tmp/tm/"
 )
+
+const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randString(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
 
 // IsLocal return true if path is local filesystem
 func IsLocal(path string) bool {
@@ -96,7 +106,7 @@ func Download(url string) (string, error) {
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return "", err
 	}
-	path = fmt.Sprintf("%s/%d", path, time.Now().Unix())
+	path = fmt.Sprintf("%s/%s", path, randString(10))
 	out, err := os.Create(path)
 	if err != nil {
 		return "", err
@@ -119,7 +129,7 @@ func Download(url string) (string, error) {
 
 // Clone runs `git clone` operation for specified URL and returns local path to repository root directory
 func Clone(url string) (string, error) {
-	path := fmt.Sprintf("%s/git/%d", tmpPath, time.Now().Unix())
+	path := fmt.Sprintf("%s/git/%s", tmpPath, randString(10))
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return "", err
 	}
