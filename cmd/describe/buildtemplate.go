@@ -22,6 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -56,13 +57,26 @@ func listBuildTemplates(clientset *client.ConfigSet) ([]string, error) {
 	for _, v := range list.Items {
 		buildtemplates = append(buildtemplates, v.ObjectMeta.Name)
 	}
+	clusterlist, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().List(metav1.ListOptions{})
+	if err != nil {
+		return buildtemplates, err
+	}
+	for _, v := range clusterlist.Items {
+		buildtemplates = append(buildtemplates, v.ObjectMeta.Name)
+	}
 	return buildtemplates, nil
 }
 
 // BuildTemplate describes knative buildtemplate
 func BuildTemplate(name string, clientset *client.ConfigSet) ([]byte, error) {
 	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
+	if err != nil && k8sErrors.IsNotFound(err) {
+		clusterBuildtemplate, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(name, metav1.GetOptions{})
+		if err != nil {
+			return []byte{}, err
+		}
+		return encode(clusterBuildtemplate)
+	} else if err != nil {
 		return []byte{}, err
 	}
 	return encode(buildtemplate)

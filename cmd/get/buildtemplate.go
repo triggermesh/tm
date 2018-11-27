@@ -55,8 +55,15 @@ func BuildTemplates(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	clusterlist, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
 	if output == "" {
 		table.AddRow("NAMESPACE", "BUILDTEMPLATE")
+		for _, item := range clusterlist.Items {
+			table.AddRow("cluster*", item.Name)
+		}
 		for _, item := range list.Items {
 			table.AddRow(item.Namespace, item.Name)
 		}
