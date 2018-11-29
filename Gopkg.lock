@@ -61,6 +61,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/gobuffalo/envy"
+  packages = ["."]
+  revision = "7e7ddcbb431d1d9e32121d7eeee8d68bdecd7081"
+  version = "v1.6.10"
+
+[[projects]]
   name = "github.com/gogo/protobuf"
   packages = [
     "proto",
@@ -103,6 +109,7 @@
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
+    "cmp/cmpopts",
     "cmp/internal/diff",
     "cmp/internal/function",
     "cmp/internal/value"
@@ -173,6 +180,12 @@
   revision = "d14ea06fba99483203c19d92cfcd13ebe73135f4"
 
 [[projects]]
+  name = "github.com/joho/godotenv"
+  packages = ["."]
+  revision = "23d116af351c84513e1946b527c88823e476be13"
+  version = "v1.3.0"
+
+[[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
   revision = "1624edc4454b8682399def8740d46db5e4362ba4"
@@ -197,13 +210,30 @@
   version = "v0.2.0"
 
 [[projects]]
+  name = "github.com/knative/eventing"
+  packages = [
+    "pkg/apis/duck/v1alpha1",
+    "pkg/apis/eventing",
+    "pkg/apis/eventing/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/eventing/v1alpha1"
+  ]
+  revision = "90852711c747bbafbf61baa7c5786f0066b20d4e"
+  version = "v0.2.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1alpha1",
-    "kmeta"
+    "changeset",
+    "kmeta",
+    "logging",
+    "logging/logkey",
+    "webhook"
   ]
   revision = "3e52d67e3d58f63f43ad61241b00a9974cb03ecd"
 
@@ -224,6 +254,12 @@
   ]
   revision = "f69d5efe522edecc5ff5bc3e23f1a7ff206a7726"
   version = "v0.2.2"
+
+[[projects]]
+  name = "github.com/markbates/inflect"
+  packages = ["."]
+  revision = "24b83195037b3bc61fcda2d28b7b0518bce293b6"
+  version = "v1.0.4"
 
 [[projects]]
   branch = "master"
@@ -295,6 +331,16 @@
   version = "v2.0.7"
 
 [[projects]]
+  name = "github.com/rogpeppe/go-internal"
+  packages = [
+    "modfile",
+    "module",
+    "semver"
+  ]
+  revision = "d87f08a7d80821c797ffc8eb8f4e01675f378736"
+  version = "v1.0.0"
+
+[[projects]]
   name = "github.com/sergi/go-diff"
   packages = ["diffmatchpatch"]
   revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
@@ -339,6 +385,31 @@
   packages = ["."]
   revision = "640f0ab560aeb89d523bb6ac322b1244d5c3796c"
   version = "v0.2.0"
+
+[[projects]]
+  name = "go.uber.org/atomic"
+  packages = ["."]
+  revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
+  version = "v1.3.2"
+
+[[projects]]
+  name = "go.uber.org/multierr"
+  packages = ["."]
+  revision = "3c4937480c32f4c13a875a1829af76c98ca3d40a"
+  version = "v1.1.0"
+
+[[projects]]
+  name = "go.uber.org/zap"
+  packages = [
+    ".",
+    "buffer",
+    "internal/bufferpool",
+    "internal/color",
+    "internal/exit",
+    "zapcore"
+  ]
+  revision = "ff33455a0e382e8a81d14dd7c922020b6b5e7982"
+  version = "v1.9.1"
 
 [[projects]]
   branch = "master"
@@ -523,6 +594,7 @@
   branch = "release-1.11"
   name = "k8s.io/api"
   packages = [
+    "admission/v1beta1",
     "admissionregistration/v1alpha1",
     "admissionregistration/v1beta1",
     "apps/v1",
@@ -678,6 +750,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a3504c791e5b8c0c3d6316181b068daf43dddabbe9f888b0cbdec86c33d937be"
+  inputs-digest = "ff0f0abd8fcf0dceb46b0005145924f9209270fbe84c37a40476012e3dfdfd4c"
   solver-name = "gps-cdcl"
   solver-version = 1

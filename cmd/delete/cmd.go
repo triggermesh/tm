@@ -46,5 +46,6 @@ func NewDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 	deleteCmd.AddCommand(cmdDeleteService(clientset))
 	deleteCmd.AddCommand(cmdDeleteBuild(clientset))
 	deleteCmd.AddCommand(cmdDeleteRoute(clientset))
+	deleteCmd.AddCommand(cmdDeleteChannel(clientset))
 	return deleteCmd
 }

@@ -44,6 +44,7 @@ func NewGetCmd(clientset *client.ConfigSet) *cobra.Command {
 	getCmd.AddCommand(cmdListRevision(clientset))
 	getCmd.AddCommand(cmdListRoute(clientset))
 	getCmd.AddCommand(cmdListService(clientset))
+	getCmd.AddCommand(cmdListChannels(clientset))
 
 	table = uitable.New()
 	table.Wrap = true

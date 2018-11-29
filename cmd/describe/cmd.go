@@ -42,6 +42,7 @@ func NewDescribeCmd(clientset *client.ConfigSet) *cobra.Command {
 	describeCmd.AddCommand(cmdDescribeRevision(clientset))
 	describeCmd.AddCommand(cmdDescribeRoute(clientset))
 	describeCmd.AddCommand(cmdDescribeService(clientset))
+	describeCmd.AddCommand(cmdDescribeChannel(clientset))
 	return describeCmd
 }
 
