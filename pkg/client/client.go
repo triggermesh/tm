@@ -24,6 +24,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
+	eventingApi "github.com/knative/eventing/pkg/client/clientset/versioned"
 	servingApi "github.com/knative/serving/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -39,9 +40,10 @@ const (
 
 // ConfigSet contains different information that may be needed by underlying functions
 type ConfigSet struct {
-	Core    *kubernetes.Clientset
-	Build   *buildApi.Clientset
-	Serving *servingApi.Clientset
+	Core     *kubernetes.Clientset
+	Build    *buildApi.Clientset
+	Serving  *servingApi.Clientset
+	Eventing *eventingApi.Clientset
 
 	Config *rest.Config
 
@@ -131,6 +133,9 @@ func NewClient(cfgFile, namespace, registry string) (ConfigSet, error) {
 		Config:    config,
 	}
 
+	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
+		return c, err
+	}
 	if c.Build, err = buildApi.NewForConfig(config); err != nil {
 		return c, err
 	}

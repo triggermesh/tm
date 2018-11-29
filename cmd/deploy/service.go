@@ -62,17 +62,17 @@ type Service struct {
 	Wait           bool
 }
 
-// DeployService receives Service structure and generate knative/service object to deploy it in knative cluster
-func (s *Service) DeployService(clientset *client.ConfigSet) error {
+// Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
+func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	configuration := servingv1alpha1.ConfigurationSpec{}
 	buildArguments, templateParams := getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs)
 
 	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); len(s.Buildtemplate) != 0 && err != nil {
-		b := Buildtemplate{
+		buildtemplate := Buildtemplate{
 			File:           s.Buildtemplate,
 			RegistrySecret: s.RegistrySecret,
 		}
-		if s.Buildtemplate, err = b.DeployBuildTemplate(clientset); err != nil {
+		if s.Buildtemplate, err = buildtemplate.Deploy(clientset); err != nil {
 			return err
 		}
 	}
@@ -154,7 +154,7 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 		Spec: spec,
 	}
 
-	if err := s.createOrUpdateObject(serviceObject, clientset); err != nil {
+	if err := s.createOrUpdate(serviceObject, clientset); err != nil {
 		return err
 	}
 
@@ -178,7 +178,7 @@ func (s *Service) DeployService(clientset *client.ConfigSet) error {
 	return nil
 }
 
-func (s *Service) createOrUpdateObject(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
+func (s *Service) createOrUpdate(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
 	_, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
 	if k8sErrors.IsAlreadyExists(err) {
 		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})

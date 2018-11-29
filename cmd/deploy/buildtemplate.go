@@ -37,8 +37,8 @@ type Buildtemplate struct {
 	RegistrySecret string
 }
 
-// DeployBuildTemplate deploys knative buildtemplate either from local file or by its URL
-func (b *Buildtemplate) DeployBuildTemplate(clientset *client.ConfigSet) (string, error) {
+// Deploy deploys knative buildtemplate either from local file or by its URL
+func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (string, error) {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 

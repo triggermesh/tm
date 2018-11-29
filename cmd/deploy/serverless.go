@@ -100,7 +100,7 @@ func (s *Service) DeployYAML(functions []string, clientset *client.ConfigSet) (s
 		}
 		service.Env = append(service.Env, s.Env...)
 
-		if err := service.DeployService(clientset); err != nil {
+		if err := service.Deploy(clientset); err != nil {
 			return nil, err
 		}
 		services = append(services, service)
@@ -136,7 +136,7 @@ func getYAML(path string) (string, error) {
 		path = localPath + "/serverless.yaml"
 	}
 	if !file.IsLocal(path) {
-		return "", fmt.Errorf("Can't read %s", s.YAML)
+		return "", fmt.Errorf("Can't read %s", service.YAML)
 	}
 	return path, nil
 }
@@ -145,7 +145,7 @@ func newService(function file.Function) Service {
 	service := Service{
 		Source:         function.Handler,
 		Buildtemplate:  function.Runtime,
-		Labels:         append(function.Labels, "service:"+s.Name),
+		Labels:         append(function.Labels, "service:"+service.Name),
 		ResultImageTag: "latest",
 		BuildArgs:      function.Buildargs,
 		Annotations:    make(map[string]string),

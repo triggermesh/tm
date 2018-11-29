@@ -39,8 +39,8 @@ type Build struct {
 	Image         string
 }
 
-// DeployBuild uses Build structure to generate and deploy knative build
-func (b *Build) DeployBuild(clientset *client.ConfigSet) error {
+// Deploy uses Build structure to generate and deploy knative build
+func (b *Build) Deploy(clientset *client.ConfigSet) error {
 	build := buildv1alpha1.Build{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Build",
