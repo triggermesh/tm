@@ -30,11 +30,11 @@ type Channel struct {
 
 // Deploy knative eventing channel
 func (c *Channel) Deploy(clientset *client.ConfigSet) error {
-	channelObject := c.NewObject(clientset)
+	channelObject := c.newObject(clientset)
 	return c.createOrUpdate(channelObject, clientset)
 }
 
-func (c *Channel) NewObject(clientset *client.ConfigSet) eventingApi.Channel {
+func (c *Channel) newObject(clientset *client.ConfigSet) eventingApi.Channel {
 	return eventingApi.Channel{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Channel",
