@@ -132,7 +132,7 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 	return err
 }
 
-func getBuildArguments(image string, buildArgs []string) ([]buildv1alpha1.ArgumentSpec, []buildv1alpha1.ParameterSpec) {
+func getBuildArguments(image string, buildArgs []string) []buildv1alpha1.ArgumentSpec {
 	args := []buildv1alpha1.ArgumentSpec{
 		{
 			Name:  "IMAGE",
@@ -146,16 +146,5 @@ func getBuildArguments(image string, buildArgs []string) ([]buildv1alpha1.Argume
 		})
 	}
 
-	params := []buildv1alpha1.ParameterSpec{
-		{
-			Name: "IMAGE",
-		},
-	}
-
-	for _, v := range args {
-		params = append(params, buildv1alpha1.ParameterSpec{
-			Name: v.Name,
-		})
-	}
-	return args, params
+	return args
 }
