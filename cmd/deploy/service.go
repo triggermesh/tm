@@ -23,8 +23,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/triggermesh/tm/cmd/describe"
-
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -64,14 +62,22 @@ type Service struct {
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) error {
+	var clusterBuildtemplate bool
 	configuration := servingv1alpha1.ConfigurationSpec{}
-	if _, err := describe.BuildTemplate(s.Buildtemplate, clientset); len(s.Buildtemplate) != 0 && err != nil {
-		buildtemplate := Buildtemplate{
-			File:           s.Buildtemplate,
-			RegistrySecret: s.RegistrySecret,
-		}
-		if s.Buildtemplate, err = buildtemplate.Deploy(clientset); err != nil {
-			return err
+
+	if len(s.Buildtemplate) != 0 {
+		if _, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
+			clusterBuildtemplate = false
+		} else if _, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
+			clusterBuildtemplate = true
+		} else {
+			buildtemplate := Buildtemplate{
+				File:           s.Buildtemplate,
+				RegistrySecret: s.RegistrySecret,
+			}
+			if s.Buildtemplate, err = buildtemplate.Deploy(clientset); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -103,6 +109,9 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
 			Name:      s.Buildtemplate,
 			Arguments: getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs),
+		}
+		if clusterBuildtemplate {
+			configuration.Build.BuildSpec.Template.Kind = buildv1alpha1.ClusterBuildTemplateKind
 		}
 	}
 

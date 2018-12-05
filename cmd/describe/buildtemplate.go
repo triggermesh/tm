@@ -70,14 +70,13 @@ func listBuildTemplates(clientset *client.ConfigSet) ([]string, error) {
 // BuildTemplate describes knative buildtemplate
 func BuildTemplate(name string, clientset *client.ConfigSet) ([]byte, error) {
 	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil && k8sErrors.IsNotFound(err) {
+	if err == nil {
+		return encode(buildtemplate)
+	} else if k8sErrors.IsNotFound(err) {
 		clusterBuildtemplate, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(name, metav1.GetOptions{})
-		if err != nil {
-			return []byte{}, err
+		if err == nil {
+			return encode(clusterBuildtemplate)
 		}
-		return encode(clusterBuildtemplate)
-	} else if err != nil {
-		return []byte{}, err
 	}
-	return encode(buildtemplate)
+	return []byte{}, err
 }
