@@ -90,7 +90,7 @@ func IsRegistry(path string) bool {
 		return false
 	}
 	// Need to find the way how to detect docker registry
-	if strings.Contains(url.String(), "docker.com/") {
+	if strings.Contains(url.String(), "docker.") {
 		return true
 	}
 	if url.Scheme == "" {
