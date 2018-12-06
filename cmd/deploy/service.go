@@ -84,15 +84,13 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	switch {
 	case file.IsLocal(s.Source):
 		configuration = s.fromPath()
-	case file.IsRegistry(s.Source):
-		configuration = s.fromImage()
 	case file.IsGit(s.Source):
 		if len(s.Revision) == 0 {
 			s.Revision = "master"
 		}
 		configuration = s.fromSource()
 	default:
-		return fmt.Errorf("Can't recognize source type %s", s.Source)
+		configuration = s.fromImage()
 	}
 
 	if configuration.Build != nil {
