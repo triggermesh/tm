@@ -53,21 +53,21 @@ func cmdListBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
 func BuildTemplates(clientset *client.ConfigSet) (string, error) {
 	list, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {
-		return "", err
+		fmt.Println("Can't read BuildTemplates")
 	}
 	clusterlist, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().List(metav1.ListOptions{})
 	if err != nil {
-		return "", err
+		fmt.Println("Can't read ClusterBuildTemplates")
 	}
-	if output == "" {
-		table.AddRow("NAMESPACE", "BUILDTEMPLATE")
-		for _, item := range clusterlist.Items {
-			table.AddRow("cluster*", item.Name)
-		}
-		for _, item := range list.Items {
-			table.AddRow(item.Namespace, item.Name)
-		}
-		return table.String(), err
+	if output != "" {
+		return encode(list)
 	}
-	return encode(list)
+	table.AddRow("NAMESPACE", "BUILDTEMPLATE")
+	for _, item := range clusterlist.Items {
+		table.AddRow("cluster*", item.Name)
+	}
+	for _, item := range list.Items {
+		table.AddRow(item.Namespace, item.Name)
+	}
+	return table.String(), err
 }
