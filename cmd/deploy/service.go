@@ -23,6 +23,8 @@ import (
 	"regexp"
 	"time"
 
+	"k8s.io/apimachinery/pkg/watch"
+
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -32,8 +34,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Knative build timeout in minutes
 const (
+	// Knative build timeout in minutes
 	timeout           = 10
 	uploadDoneTrigger = "/home/.done"
 )
@@ -62,6 +64,7 @@ type Service struct {
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) error {
+	fmt.Printf("Creating %s function\n", s.Name)
 	var clusterBuildtemplate bool
 	configuration := servingv1alpha1.ConfigurationSpec{}
 
@@ -161,7 +164,6 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	}
 
 	if file.IsLocal(s.Source) {
-		fmt.Printf("Uploading %s sources\n", s.Name)
 		if err := injectSources(s.Name, path.Dir(s.Source), clientset); err != nil {
 			return err
 		}
@@ -169,14 +171,13 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, s.Name)
 
 	if s.Wait {
-		fmt.Print("Waiting for ready state")
+		fmt.Printf("Waiting for ready state")
 		domain, err := waitService(s.Name, clientset)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("\nService domain: %s\n", domain)
+		fmt.Printf("\nFunction is available on http://%s\n", domain)
 	}
-
 	return nil
 }
 
@@ -250,32 +251,44 @@ func getArgsFromSlice(slice []string) map[string]string {
 	return m
 }
 
-func injectSources(name string, filepath string, clientset *client.ConfigSet) error {
-	// Temporary fix for retrieving latest service revision
-begin:
+func serviceLatestRevision(name string, clientset *client.ConfigSet) (string, error) {
 	var latestRevision string
 	for latestRevision == "" {
 		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
-			return err
+			return "", err
 		}
 		latestRevision = service.Status.LatestCreatedRevisionName
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
+	return latestRevision, nil
+}
 
+func serviceBuildPod(name string, clientset *client.ConfigSet) (string, error) {
 	var buildPod string
 	for buildPod == "" {
-		build, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(latestRevision, metav1.GetOptions{})
+		build, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		if build.Status.Cluster != nil {
 			buildPod = build.Status.Cluster.PodName
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
+	return buildPod, nil
+}
 
+func injectSources(name string, filepath string, clientset *client.ConfigSet) error {
+	latestRevision, err := serviceLatestRevision(name, clientset)
+	if err != nil {
+		return err
+	}
+	buildPod, err := serviceBuildPod(latestRevision, clientset)
+	if err != nil {
+		return err
+	}
 	res, err := clientset.Core.CoreV1().Pods(clientset.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod})
 	if err != nil {
 		return err
@@ -290,8 +303,17 @@ begin:
 		for _, v := range pod.Status.InitContainerStatuses {
 			if v.Name == "build-step-custom-source" {
 				if v.State.Terminated != nil {
-					// TODO get rid of goto
-					goto begin
+					// Looks like we got watch interface for "previous" service version, updating
+					if latestRevision, err = serviceLatestRevision(name, clientset); err != nil {
+						return err
+					}
+					if buildPod, err = serviceBuildPod(latestRevision, clientset); err != nil {
+						return err
+					}
+					if res, err = clientset.Core.CoreV1().Pods(clientset.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
+						return err
+					}
+					break
 				}
 				if v.State.Running != nil {
 					sourceContainer = v.Name
@@ -307,7 +329,6 @@ begin:
 		Source:      filepath,
 		Destination: "/home",
 	}
-
 	if err := c.Upload(clientset); err != nil {
 		return err
 	}
@@ -319,37 +340,57 @@ begin:
 	return nil
 }
 
-func waitService(name string, clientset *client.ConfigSet) (string, error) {
+func watchService(service string, clientset *client.ConfigSet) (watch.Interface, error) {
+	return clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Watch(metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", service),
+	})
+}
+
+func waitService(service string, clientset *client.ConfigSet) (string, error) {
 	quit := time.After(timeout * time.Minute)
 	tick := time.Tick(5 * time.Second)
+
+	res, err := watchService(service, clientset)
+	if err != nil {
+		return "", err
+	}
+	defer res.Stop()
+
+	firstError := true
 	for {
 		select {
 		case <-quit:
 			return "", errors.New("Service status wait timeout")
 		case <-tick:
-			fmt.Print(".")
-			domain, err := readyDomain(name, clientset)
-			if err != nil {
-				return "", err
-			} else if domain != "" {
-				return domain, nil
+			// Sometimes it is useful to see a spinner which means that the process is still active
+			fmt.Printf(".")
+		case event := <-res.ResultChan():
+			if event.Object == nil {
+				if res, err = watchService(service, clientset); err != nil {
+					return "", err
+				}
+				break
+			}
+			serviceEvent, ok := event.Object.(*servingv1alpha1.Service)
+			if ok {
+				if serviceEvent.Status.IsReady() {
+					return serviceEvent.Status.Domain, nil
+				}
+				for _, v := range serviceEvent.Status.Conditions {
+					if v.IsFalse() {
+						if v.Reason == "RevisionFailed" && firstError {
+							time.Sleep(time.Second * 3)
+							if res, err = watchService(service, clientset); err != nil {
+								return "", err
+							}
+							firstError = false
+							break
+						}
+						return "", errors.New(v.Message)
+					}
+				}
 			}
 		}
-	}
-}
-
-func readyDomain(name string, clientset *client.ConfigSet) (string, error) {
-	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	for _, v := range service.Status.Conditions {
-		if v.Status == corev1.ConditionFalse {
-			return "", errors.New(v.Message)
-		}
-	}
-	if service.Status.IsReady() {
-		return service.Status.Domain, nil
 	}
 	return "", nil
 }
