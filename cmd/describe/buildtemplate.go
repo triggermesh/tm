@@ -22,7 +22,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -52,14 +51,14 @@ func listBuildTemplates(clientset *client.ConfigSet) ([]string, error) {
 	var buildtemplates []string
 	list, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).List(metav1.ListOptions{})
 	if err != nil {
-		return buildtemplates, err
-	}
-	for _, v := range list.Items {
-		buildtemplates = append(buildtemplates, v.ObjectMeta.Name)
+		fmt.Println("Can't read BuildTemplates")
 	}
 	clusterlist, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().List(metav1.ListOptions{})
 	if err != nil {
-		return buildtemplates, err
+		fmt.Println("Can't read ClusterBuildTemplates")
+	}
+	for _, v := range list.Items {
+		buildtemplates = append(buildtemplates, v.ObjectMeta.Name)
 	}
 	for _, v := range clusterlist.Items {
 		buildtemplates = append(buildtemplates, v.ObjectMeta.Name)
@@ -72,11 +71,10 @@ func BuildTemplate(name string, clientset *client.ConfigSet) ([]byte, error) {
 	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err == nil {
 		return encode(buildtemplate)
-	} else if k8sErrors.IsNotFound(err) {
-		clusterBuildtemplate, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(name, metav1.GetOptions{})
-		if err == nil {
-			return encode(clusterBuildtemplate)
-		}
 	}
-	return []byte{}, err
+	clusterBuildtemplate, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(name, metav1.GetOptions{})
+	if err == nil {
+		return encode(clusterBuildtemplate)
+	}
+	return []byte{}, nil
 }
