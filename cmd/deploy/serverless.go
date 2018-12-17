@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	p "path"
+	"strings"
 
 	"github.com/triggermesh/tm/cmd/delete"
 	"github.com/triggermesh/tm/pkg/client"
@@ -136,7 +137,13 @@ func getYAML(path string) (string, error) {
 		path = localPath + "/serverless.yaml"
 	}
 	if !file.IsLocal(path) {
-		return "", fmt.Errorf("Can't read %s", service.YAML)
+		/* Add a secondary check against /serverless.yml */
+		path = strings.TrimSuffix(path, ".yaml")
+		path = path + ".yml"
+
+		if !file.IsLocal(path) {
+			return "", fmt.Errorf("Can't read %s", service.YAML)
+		}
 	}
 	return path, nil
 }

@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	p "path"
+	"strings"
 
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
@@ -38,7 +39,13 @@ func (s *Service) DeleteYAML(path string, functions []string, clientset *client.
 		path = path + "/serverless.yaml"
 	}
 	if !file.IsLocal(path) {
-		return errors.New("Can't get YAML file")
+		/* Add a secondary check against serverless.yml */
+		path = strings.TrimSuffix(path, ".yaml")
+		path = path + ".yml"
+
+		if !file.IsLocal(path) {
+			return errors.New("Can't get YAML file")
+		}
 	}
 	definition, err := file.ParseServerlessYAML(path)
 	if err != nil {
