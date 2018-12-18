@@ -46,7 +46,7 @@ var (
 var tmCmd = &cobra.Command{
 	Use:     "tm",
 	Short:   "Triggermesh CLI",
-	Version: "0.0.6",
+	Version: "v0.0.7",
 }
 
 // Execute runs cobra CLI commands
