@@ -45,7 +45,7 @@ jobs:
           name: "Publish Release on GitHub"
           command: |
             go get github.com/tcnksm/ghr
-            VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
+            VERSION=$(curl -sI https://github.com/triggermesh/tm/releases/latest | grep "Location:" | rev | cut -d"/" -f1 | rev)
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts
 
 workflows:
