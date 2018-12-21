@@ -1,6 +1,7 @@
 GOCMD=go
 UPX=upx
-GOBUILD=$(GOCMD) build -ldflags="-s -w"
+VERSION=$(shell git describe --tags)
+GOBUILD=$(GOCMD) build -ldflags="-s -w -X github.com/triggermesh/tm/cmd.version=$(VERSION)"
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 BINARY_NAME=tm

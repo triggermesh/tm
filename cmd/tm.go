@@ -33,6 +33,7 @@ import (
 )
 
 var (
+	version   string
 	debug     bool
 	err       error
 	cfgFile   string
@@ -46,7 +47,7 @@ var (
 var tmCmd = &cobra.Command{
 	Use:     "tm",
 	Short:   "Triggermesh CLI",
-	Version: "v0.0.7",
+	Version: version,
 }
 
 // Execute runs cobra CLI commands
@@ -75,7 +76,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of tm CLI",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("%s, version %s\n", tmCmd.Short, tmCmd.Version)
+		fmt.Printf("%s, version %s\n", tmCmd.Short, version)
 	},
 }
 
