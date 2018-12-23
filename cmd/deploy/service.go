@@ -75,6 +75,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 			clusterBuildtemplate = true
 		} else {
 			buildtemplate := Buildtemplate{
+				Name:           s.Name + "-buildtemplate",
 				File:           s.Buildtemplate,
 				RegistrySecret: s.RegistrySecret,
 			}
@@ -230,7 +231,8 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 					Custom: &corev1.Container{
 						Image:   "library/busybox",
 						Command: []string{"sh"},
-						Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(path.Dir(s.Source)))},
+						Args: []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync",
+							uploadDoneTrigger, path.Base(path.Dir(s.Source)))},
 					},
 				},
 			},

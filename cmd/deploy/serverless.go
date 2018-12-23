@@ -17,7 +17,7 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	p "path"
+	"path"
 	"strings"
 
 	"github.com/triggermesh/tm/cmd/delete"
@@ -58,7 +58,7 @@ func (s *Service) DeployYAML(functions []string, clientset *client.ConfigSet) (s
 	if len(definition.Provider.Runtime) != 0 {
 		s.Buildtemplate = definition.Provider.Runtime
 	}
-	workdir := p.Dir(s.YAML)
+	workdir := path.Dir(s.YAML)
 
 	for name, function := range definition.Functions {
 		pass := false
@@ -127,25 +127,25 @@ func (s *Service) DeployYAML(functions []string, clientset *client.ConfigSet) (s
 	return services, nil
 }
 
-func getYAML(path string) (string, error) {
-	if file.IsGit(path) {
-		// fmt.Printf("Cloning %s\n", path)
-		localPath, err := file.Clone(path)
+func getYAML(filepath string) (string, error) {
+	if file.IsGit(filepath) {
+		// fmt.Printf("Cloning %s\n", filepath)
+		localfilepath, err := file.Clone(filepath)
 		if err != nil {
 			return "", err
 		}
-		path = localPath + "/serverless.yaml"
+		filepath = localfilepath + "/serverless.yaml"
 	}
-	if !file.IsLocal(path) {
+	if !file.IsLocal(filepath) {
 		/* Add a secondary check against /serverless.yml */
-		path = strings.TrimSuffix(path, ".yaml")
-		path = path + ".yml"
+		filepath = strings.TrimSuffix(filepath, ".yaml")
+		filepath = filepath + ".yml"
 
-		if !file.IsLocal(path) {
+		if !file.IsLocal(filepath) {
 			return "", fmt.Errorf("Can't read %s", service.YAML)
 		}
 	}
-	return path, nil
+	return filepath, nil
 }
 
 func newService(function file.Function) Service {
