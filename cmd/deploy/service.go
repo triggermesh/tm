@@ -50,11 +50,10 @@ type Service struct {
 	Name           string
 	Source         string
 	Revision       string
-	YAML           string
 	PullPolicy     string
 	ResultImageTag string
 	Buildtemplate  string
-	RegistrySecret string
+	RegistrySecret string // Does not belong to the service, need to be deleted
 	Env            []string
 	Annotations    map[string]string
 	Labels         []string
@@ -151,6 +150,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.Name,
+			Labels:    configuration.RevisionTemplate.ObjectMeta.Labels,
 			Namespace: clientset.Namespace,
 			CreationTimestamp: metav1.Time{
 				time.Now(),

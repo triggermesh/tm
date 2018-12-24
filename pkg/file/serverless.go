@@ -8,8 +8,8 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// YAML represents serverless.yaml file structure
-type YAML struct {
+// Definition represents serverless.yaml file structure
+type Definition struct {
 	Service     string
 	Description string
 	Provider    struct {
@@ -37,8 +37,8 @@ type Function struct {
 }
 
 // ParseServerlessYAML accepts serverless yaml file path and returns decoded structure
-func ParseServerlessYAML(path string) (YAML, error) {
-	var f YAML
+func ParseServerlessYAML(path string) (Definition, error) {
+	var f Definition
 	if _, err := os.Stat(path); err != nil {
 		return f, err
 	}

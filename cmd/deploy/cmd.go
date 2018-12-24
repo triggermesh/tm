@@ -28,6 +28,7 @@ var service Service
 var build Build
 var buildtemplate Buildtemplate
 var channel Channel
+var YAML string
 
 // NewDeployCmd returns deploy cobra command and its subcommands
 func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
@@ -35,16 +36,13 @@ func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(service.YAML) == 0 {
-				service.YAML = "serverless.yaml"
-			}
-			if _, err := service.DeployYAML(args, clientset); err != nil {
+			if _, err := service.DeployYAML(YAML, args, clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
 
-	deployCmd.Flags().StringVarP(&service.YAML, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
+	deployCmd.Flags().StringVarP(&YAML, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
 	deployCmd.Flags().BoolVarP(&service.Wait, "wait", "w", false, "Wait for each function deployment")
 
 	deployCmd.AddCommand(cmdDeployService(clientset))
