@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/triggermesh/tm/cmd/delete"
 	"github.com/triggermesh/tm/pkg/client"
@@ -61,6 +62,7 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 	}
 	workdir := path.Dir(YAML)
 
+	var wg sync.WaitGroup
 	for name, function := range definition.Functions {
 		if !inList(name, functionsToDeploy) {
 			continue
@@ -84,9 +86,13 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)
 		}
 
-		if err := service.Deploy(clientset); err != nil {
-			return nil, err
-		}
+		wg.Add(1)
+		go func(service Service) {
+			defer wg.Done()
+			if err := service.Deploy(clientset); err != nil {
+				fmt.Printf("%s: %s\n", service.Name, err)
+			}
+		}(service)
 		services = append(services, service)
 	}
 
@@ -101,10 +107,15 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		if file.IsRemote(include) {
 			YAML = include
 		}
-		if _, err := s.DeployYAML(YAML, functionsToDeploy, clientset); err != nil {
-			return nil, err
-		}
+		wg.Add(1)
+		go func(YAML string, functionsToDeploy []string) {
+			defer wg.Done()
+			if _, err := s.DeployYAML(YAML, functionsToDeploy, clientset); err != nil {
+				fmt.Printf("%s: %s\n", YAML, err)
+			}
+		}(YAML, functionsToDeploy)
 	}
+	wg.Wait()
 
 	return services, nil
 }

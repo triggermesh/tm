@@ -172,12 +172,12 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, s.Name)
 
 	if s.Wait {
-		fmt.Printf("Waiting for ready state")
+		fmt.Printf("Waiting for %s ready state\n", s.Name)
 		domain, err := waitService(s.Name, clientset)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("\nFunction is available on http://%s\n", domain)
+		fmt.Printf("Service %s URL: http://%s\n", s.Name, domain)
 	}
 	return nil
 }
@@ -350,8 +350,6 @@ func watchService(service string, clientset *client.ConfigSet) (watch.Interface,
 
 func waitService(service string, clientset *client.ConfigSet) (string, error) {
 	quit := time.After(timeout * time.Minute)
-	tick := time.Tick(5 * time.Second)
-
 	res, err := watchService(service, clientset)
 	if err != nil {
 		return "", err
@@ -363,9 +361,6 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 		select {
 		case <-quit:
 			return "", errors.New("Service status wait timeout")
-		case <-tick:
-			// Sometimes it is useful to see a spinner which means that the process is still active
-			fmt.Printf(".")
 		case event := <-res.ResultChan():
 			if event.Object == nil {
 				if res, err = watchService(service, clientset); err != nil {

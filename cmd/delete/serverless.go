@@ -86,7 +86,7 @@ func (s *Service) DeleteYAML(filepath string, functions []string, clientset *cli
 		go func(service Service) {
 			defer wg.Done()
 			if err = service.DeleteService(clientset); err != nil {
-				fmt.Println(err)
+				fmt.Printf("%s: %s\n", service.Name, err)
 			}
 		}(service)
 	}
@@ -102,7 +102,7 @@ func (s *Service) DeleteYAML(filepath string, functions []string, clientset *cli
 		go func(filepath string, functions []string) {
 			defer wg.Done()
 			if err = s.DeleteYAML(filepath, functions, clientset); err != nil {
-				fmt.Println(err)
+				fmt.Printf("%s: %s\n", filepath, err)
 			}
 		}(filepath, functions)
 	}
