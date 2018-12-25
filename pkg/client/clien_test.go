@@ -27,8 +27,8 @@ func TestUsername(t *testing.T) {
 	c := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"triggermesh","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
 	d := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"test","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
 
-	_ = ioutil.WriteFile("config.json", c, 0644)
-	_ = ioutil.WriteFile("default.json", d, 0644)
+	ioutil.WriteFile("config.json", c, 0644)
+	ioutil.WriteFile("default.json", d, 0644)
 
 	testCases := []struct {
 		input  string

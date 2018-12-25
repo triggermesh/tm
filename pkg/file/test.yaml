@@ -1,0 +1,34 @@
+service: serverless-foo
+description: "serverless.yaml parsing test"
+
+provider:
+  name: triggermesh
+  runtime: https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/go/openfaas-go-runtime.yaml
+  environment:
+    FOO: BAR
+
+functions:
+  bar:
+    handler: bar/main.go
+    environment:
+      FUNCTION: bar
+
+  nodejs:
+    handler: https://github.com/openfaas/faas
+    runtime: https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/nodejs/openfaas-nodejs-runtime.yaml
+    description: "nodejs fragment"
+    buildargs:
+      - DIRECTORY=sample-functions/BaseFunctions/node
+    environment:
+      FUNCTION: nodejs
+
+  remote:
+    handler: https://gitlab.com/tzununbekov/tesfunc
+    revision: master
+    description: "Go function with another repository as source"
+    environment:
+      FUNCTION: remote
+
+include:
+  - foo/single-function.yaml
+  - https://github.com/tzununbekov/serverless-include
