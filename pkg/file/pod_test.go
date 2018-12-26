@@ -41,7 +41,7 @@ func TestUpload(t *testing.T) {
 	copy := Copy{
 		Pod:         "testPod",
 		Container:   "testSourceContainer",
-		Source:      "test/filepath",
+		Source:      "test.yaml",
 		Destination: "/home",
 	}
 

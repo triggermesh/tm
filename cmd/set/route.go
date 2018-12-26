@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -35,12 +36,12 @@ type Route struct {
 func split(slice []string) map[string]int {
 	m := make(map[string]int)
 	for _, s := range slice {
-		t := regexp.MustCompile("[:=]").Split(s, 2)
+		t := regexp.MustCompile("[:=]").Split(strings.TrimSpace(s), 2)
 		if len(t) != 2 {
 			fmt.Printf("Can't parse target %s\n", s)
 			continue
 		}
-		percent, err := strconv.Atoi(t[1])
+		percent, err := strconv.Atoi(strings.TrimSpace(t[1]))
 		if err != nil {
 			fmt.Printf("Invalid traffic percent value %s\n", t[1])
 			continue
