@@ -108,7 +108,7 @@ func NewClient(cfgFile, namespace, registry string) (ConfigSet, error) {
 	} else if _, err := os.Stat(homeDir + "/.tm/config.json"); err == nil {
 		cfgFile = homeDir + "/.tm/config.json"
 	} else if _, err := os.Stat(kubeconfig); err == nil {
-		cfgFile = homeDir + kubeconfig
+		cfgFile = kubeconfig
 	} else {
 		cfgFile = homeDir + "/.kube/config"
 	}
