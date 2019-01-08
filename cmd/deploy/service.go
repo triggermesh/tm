@@ -165,7 +165,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	}
 
 	if file.IsLocal(s.Source) {
-		if err := injectSources(s.Name, path.Dir(s.Source), clientset); err != nil {
+		if err := injectSources(s.Name, path.Clean(s.Source), clientset); err != nil {
 			return err
 		}
 	}
@@ -232,7 +232,7 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 						Image:   "library/busybox",
 						Command: []string{"sh"},
 						Args: []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync",
-							uploadDoneTrigger, path.Base(path.Dir(s.Source)))},
+							uploadDoneTrigger, path.Base(path.Clean(s.Source)))},
 					},
 				},
 			},
