@@ -73,11 +73,11 @@ func IsGit(path string) bool {
 	if url.Scheme == "" {
 		url.Scheme = "https"
 	}
-	resp, err := http.Head(url.String())
+	resp, err := http.Head(url.String() + ".git")
 	if err != nil {
 		return false
 	}
-	if resp.StatusCode == 200 || resp.StatusCode == 302 || resp.StatusCode == 401 {
+	if resp.StatusCode == 301 || resp.StatusCode == 302 || resp.StatusCode == 401 || resp.StatusCode == 404 {
 		return true
 	}
 	return false
