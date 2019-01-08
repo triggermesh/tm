@@ -20,7 +20,11 @@ Or head to the GitHub [release page](https://github.com/triggermesh/tm/releases)
 2. Download your TriggerMesh configuration file by clicking on the `download` button in the upper right corner
 3. Save the file as $HOME/.tm/config.json and you are ready to use the `tm` CLI
 
-Examples:
+**On your own knative cluster:**
+
+Assuming you have access to the Kubernetes API and have a working `kubectl` setup, `tm` should work out of the box.
+
+### Examples
 
 Deploy service from Docker image
 ```
@@ -96,10 +100,6 @@ curl http://go-lambda.default.dev.triggermesh.io --data '{"Name": "Foo"}'
 ```
 
 [Here](https://github.com/triggermesh/knative-lambda-runtime) you can find more information about Knative lambda runtimes
-
-**On your own knative cluster:**
-
-Assuming you have access to the Kubernetes API and have a working `kubectl` setup, `tm` should work out of the box.
 
 ### Support
 
