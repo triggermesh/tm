@@ -106,7 +106,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		}
 	}
 
-	if len(s.Buildtemplate) != 0 {
+	if configuration.Build != nil && len(s.Buildtemplate) != 0 {
 		configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
 			Name:      s.Buildtemplate,
 			Arguments: getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs),

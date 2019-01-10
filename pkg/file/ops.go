@@ -77,8 +77,10 @@ func IsGit(path string) bool {
 	if err != nil {
 		return false
 	}
-	if resp.StatusCode == 301 || resp.StatusCode == 302 || resp.StatusCode == 401 || resp.StatusCode == 404 {
-		return true
+	for _, status := range []int{200, 301, 302, 401, 404} {
+		if resp.StatusCode == status {
+			return true
+		}
 	}
 	return false
 }
