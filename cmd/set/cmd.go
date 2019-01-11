@@ -21,6 +21,7 @@ var setCmd = &cobra.Command{
 func NewSetCmd(clientset *client.ConfigSet) *cobra.Command {
 	setCmd.AddCommand(cmdSetRoutes(clientset))
 	setCmd.AddCommand(cmdSetRegistryCreds(clientset))
+	setCmd.AddCommand(cmdSetPullSecret(clientset))
 	return setCmd
 }
 
@@ -59,4 +60,24 @@ func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
 	setRegistryCredsCmd.Flags().StringVar(&c.Username, "username", "", "Registry username")
 	setRegistryCredsCmd.Flags().StringVar(&c.Password, "password", "", "Registry password")
 	return setRegistryCredsCmd
+}
+
+func cmdSetPullSecret(clientset *client.ConfigSet) *cobra.Command {
+	setPullSecretCmd := &cobra.Command{
+		Use:   "pull-secret",
+		Short: "Image pull secret for service account",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := c.SetRegistryCreds(args, clientset); err != nil {
+				log.Fatalln(err)
+			}
+			fmt.Println("Image pull secret created")
+		},
+	}
+
+	setPullSecretCmd.Flags().StringVar(&c.Host, "registry", "", "Registry host address")
+	setPullSecretCmd.Flags().StringVar(&c.Username, "username", "", "Registry username")
+	setPullSecretCmd.Flags().StringVar(&c.Password, "password", "", "Registry password")
+	setPullSecretCmd.Flags().StringVar(&c.Password, "email", "", "User email")
+	return setPullSecretCmd
 }
