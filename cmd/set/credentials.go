@@ -15,6 +15,7 @@
 package set
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/triggermesh/tm/pkg/client"
@@ -60,8 +61,8 @@ func (c *Credentials) SetRegistryCreds(args []string, clientset *client.ConfigSe
 
 func (c *Credentials) SetPullSecret(args []string, clientset *client.ConfigSet) error {
 	secret := make(map[string]string)
-	secret[".dockerconfigjson"] = fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\", \"email\":\"%s\"}}",
-		c.Host, c.Username, c.Password, c.Email)
+	secret[".dockerconfigjson"] = fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}}",
+		c.Host, c.Username, c.Password, c.Email, base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
 	newSecret := corev1.Secret{
 		Type: corev1.DockerConfigJsonKey,
 		TypeMeta: metav1.TypeMeta{
