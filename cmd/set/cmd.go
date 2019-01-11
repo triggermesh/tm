@@ -78,6 +78,6 @@ func cmdSetPullSecret(clientset *client.ConfigSet) *cobra.Command {
 	setPullSecretCmd.Flags().StringVar(&c.Host, "registry", "", "Registry host address")
 	setPullSecretCmd.Flags().StringVar(&c.Username, "username", "", "Registry username")
 	setPullSecretCmd.Flags().StringVar(&c.Password, "password", "", "Registry password")
-	setPullSecretCmd.Flags().StringVar(&c.Password, "email", "", "User email")
+	setPullSecretCmd.Flags().StringVar(&c.Email, "email", "", "User email")
 	return setPullSecretCmd
 }
