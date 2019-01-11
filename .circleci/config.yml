@@ -47,8 +47,8 @@ jobs:
             go get github.com/tcnksm/ghr
             VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
             # Workaround not to trigger build loop by updating tag with artifacts
-            curl -I -s ${CIRCLE_PROJECT_REPONAME}/releases/download/${VERSION}/tm | grep "Status: 302 Found" > /dev/null
-            if [[ $? != 0 ]]; then
+            status=$(curl -s -I ${CIRCLE_PROJECT_REPONAME}/releases/download/${VERSION}/tm | grep "Status:" | tr -d "\r")
+            if [[ "${status}" != "Status: 302 Found" ]]; then
               ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts
             fi
 
