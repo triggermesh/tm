@@ -68,7 +68,7 @@ func cmdSetPullSecret(clientset *client.ConfigSet) *cobra.Command {
 		Short: "Image pull secret for service account",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.SetRegistryCreds(args, clientset); err != nil {
+			if err := c.SetPullSecret(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Image pull secret created")
