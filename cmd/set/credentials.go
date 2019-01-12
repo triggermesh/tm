@@ -15,7 +15,6 @@
 package set
 
 import (
-	"encoding/base64"
 	"fmt"
 
 	"github.com/triggermesh/tm/pkg/client"
@@ -36,35 +35,9 @@ type Credentials struct {
 func (c *Credentials) SetRegistryCreds(args []string, clientset *client.ConfigSet) error {
 	secret := make(map[string]string)
 	secret["config.json"] = fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
+	secret[".dockerconfigjson"] = secret["config.json"]
 	newSecret := corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      args[0],
-			Namespace: clientset.Namespace,
-		},
-		StringData: secret,
-	}
-	s, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(args[0], metav1.GetOptions{})
-	if err == nil {
-		newSecret.ObjectMeta.ResourceVersion = s.ObjectMeta.ResourceVersion
-		_, err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Update(&newSecret)
-		return err
-	} else if k8sErrors.IsNotFound(err) {
-		_, err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Create(&newSecret)
-		return err
-	}
-	return nil
-}
-
-func (c *Credentials) SetPullSecret(args []string, clientset *client.ConfigSet) error {
-	secret := make(map[string]string)
-	secret[".dockerconfigjson"] = fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"email\":\"%s\",\"auth\":\"%s\"}}}",
-		c.Host, c.Username, c.Password, c.Email, base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password)))
-	newSecret := corev1.Secret{
-		Type: corev1.DockerConfigJsonKey,
+		Type: "kubernetes.io/dockerconfigjson",
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
 			APIVersion: "v1",
