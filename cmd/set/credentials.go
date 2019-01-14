@@ -19,7 +19,6 @@ import (
 
 	"github.com/triggermesh/tm/pkg/client"
 	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,14 +27,27 @@ type Credentials struct {
 	Host     string
 	Username string
 	Password string
-	Email    string
+	Pull     bool
+	Push     bool
 }
 
 // SetRegistryCreds creates Secret with docker registry credentials json which later can be mounted as config.json file
-func (c *Credentials) SetRegistryCreds(args []string, clientset *client.ConfigSet) error {
-	secret := make(map[string]string)
-	secret["config.json"] = fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
-	secret[".dockerconfigjson"] = secret["config.json"]
+func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet) error {
+	secrets := make(map[string]string)
+	secret := fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
+	s, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(name, metav1.GetOptions{})
+	if err == nil {
+		for k, v := range s.Data {
+			secrets[k] = string(v)
+		}
+	}
+
+	if c.Pull || c.Pull == c.Push {
+		secrets[".dockerconfigjson"] = secret
+	}
+	if c.Push || c.Push == c.Pull {
+		secrets["config.json"] = secret
+	}
 	newSecret := corev1.Secret{
 		Type: "kubernetes.io/dockerconfigjson",
 		TypeMeta: metav1.TypeMeta{
@@ -43,31 +55,33 @@ func (c *Credentials) SetRegistryCreds(args []string, clientset *client.ConfigSe
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      args[0],
+			Name:      name,
 			Namespace: clientset.Namespace,
 		},
-		StringData: secret,
+		StringData: secrets,
 	}
-	s, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(args[0], metav1.GetOptions{})
-	if err == nil {
+	if s.GetName() != "" {
 		newSecret.ObjectMeta.ResourceVersion = s.ObjectMeta.ResourceVersion
 		if _, err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Update(&newSecret); err != nil {
 			return err
 		}
-	} else if k8sErrors.IsNotFound(err) {
+	} else {
 		if _, err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Create(&newSecret); err != nil {
 			return err
 		}
 	}
-	sa, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Get("default", metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	sa.ImagePullSecrets = []corev1.LocalObjectReference{
-		{Name: args[0]},
-	}
-	if _, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Update(sa); err != nil {
-		return err
+
+	if c.Pull || c.Pull == c.Push {
+		sa, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Get("default", metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		sa.ImagePullSecrets = []corev1.LocalObjectReference{
+			{Name: name},
+		}
+		if _, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Update(sa); err != nil {
+			return err
+		}
 	}
 	return nil
 }

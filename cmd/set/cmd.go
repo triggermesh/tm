@@ -48,7 +48,7 @@ func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
 		Short: "Create secret with registry credentials",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.SetRegistryCreds(args, clientset); err != nil {
+			if err := c.SetRegistryCreds(args[0], clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Registry credentials set")
@@ -58,5 +58,7 @@ func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
 	setRegistryCredsCmd.Flags().StringVar(&c.Host, "registry", "", "Registry host address")
 	setRegistryCredsCmd.Flags().StringVar(&c.Username, "username", "", "Registry username")
 	setRegistryCredsCmd.Flags().StringVar(&c.Password, "password", "", "Registry password")
+	setRegistryCredsCmd.Flags().BoolVar(&c.Pull, "pull", false, "Indicates if this token must be used for pull operations only")
+	setRegistryCredsCmd.Flags().BoolVar(&c.Push, "push", false, "Indicates if this token must be used for push operations only")
 	return setRegistryCredsCmd
 }
