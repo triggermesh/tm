@@ -54,9 +54,14 @@ func TestUpload(t *testing.T) {
 
 // RemoteExec executes command on remote pod and returns stdout and stderr output
 func TestRemoteExec(t *testing.T) {
+	err := os.Setenv("KUBECONFIG", "/tmp/test/config.json")
+	if err != nil {
+		t.Error(err)
+	}
+
 	c := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"triggermesh","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
 
-	path := os.Getenv("HOME") + "/.tm/test_config.json"
+	path := os.Getenv("KUBECONFIG")
 	ioutil.WriteFile(path, c, 0644)
 
 	configSet, err := client.NewClient("", "testnamespace", "testregistry")
@@ -79,4 +84,5 @@ func TestRemoteExec(t *testing.T) {
 	fmt.Println(stdOut)
 	fmt.Println(stdErr)
 
+	os.Remove(path)
 }
