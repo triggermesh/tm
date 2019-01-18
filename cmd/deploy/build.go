@@ -56,7 +56,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) error {
 	}
 	switch {
 	case len(b.Buildtemplate) != 0:
-		build.Spec = b.fromBuildtemplate(b.Buildtemplate, getArgsFromSlice(b.Args))
+		build.Spec = b.fromBuildtemplate(b.Buildtemplate, mapFromSlice(b.Args))
 	case len(b.Step) != 0:
 		steps := build.Spec.Steps
 		existingBuild, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(b.Name, metav1.GetOptions{})

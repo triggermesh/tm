@@ -19,7 +19,7 @@ type Definition struct {
 		Namespace      string
 		Runtime        string
 		Environment    map[string]string
-		MemorySize     int
+		EnvSecrets     []string `yaml:"env-secrets"`
 	}
 	Repository string
 	Functions  map[string]Function
@@ -34,6 +34,7 @@ type Function struct {
 	Description string
 	Labels      []string
 	Environment map[string]string
+	EnvSecrets  []string `yaml:"env-secrets"`
 }
 
 // ParseServerlessYAML accepts serverless yaml file path and returns decoded structure

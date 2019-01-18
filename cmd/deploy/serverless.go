@@ -166,6 +166,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 	for k, v := range definition.Provider.Environment {
 		s.Env = append(s.Env, k+":"+v)
 	}
+	s.EnvSecrets = definition.Provider.EnvSecrets
 }
 
 func (s *Service) serviceObject(function file.Function) Service {
@@ -185,6 +186,8 @@ func (s *Service) serviceObject(function file.Function) Service {
 	for k, v := range function.Environment {
 		service.Env = append(service.Env, k+":"+v)
 	}
+	service.EnvSecrets = append(s.EnvSecrets, function.EnvSecrets...)
+
 	return service
 }
 

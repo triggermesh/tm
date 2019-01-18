@@ -55,6 +55,7 @@ type Service struct {
 	Buildtemplate  string
 	RegistrySecret string // Does not belong to the service, need to be deleted
 	Env            []string
+	EnvSecrets     []string
 	Annotations    map[string]string
 	Labels         []string
 	BuildArgs      []string
@@ -64,24 +65,11 @@ type Service struct {
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	fmt.Printf("Creating %s function\n", s.Name)
-	var clusterBuildtemplate bool
 	configuration := servingv1alpha1.ConfigurationSpec{}
 
-	if len(s.Buildtemplate) != 0 {
-		if _, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
-			clusterBuildtemplate = false
-		} else if _, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
-			clusterBuildtemplate = true
-		} else {
-			buildtemplate := Buildtemplate{
-				Name:           s.Name + "-buildtemplate",
-				File:           s.Buildtemplate,
-				RegistrySecret: s.RegistrySecret,
-			}
-			if s.Buildtemplate, err = buildtemplate.Deploy(clientset); err != nil {
-				return err
-			}
-		}
+	clusterBuildtemplate, err := s.setupBuildtemplate(clientset)
+	if err != nil {
+		return err
 	}
 
 	switch {
@@ -120,27 +108,12 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		Name:              s.Name,
 		CreationTimestamp: metav1.Time{time.Now()},
 		Annotations:       s.Annotations,
-		Labels:            getArgsFromSlice(s.Labels),
+		Labels:            mapFromSlice(s.Labels),
 	}
 
-	envVars := []corev1.EnvVar{
-		{
-			Name:  "timestamp",
-			Value: time.Now().Format("2006-01-02 15:04:05"),
-		},
-	}
-	for k, v := range getArgsFromSlice(s.Env) {
-		envVars = append(envVars, corev1.EnvVar{Name: k, Value: v})
-	}
-
-	configuration.RevisionTemplate.Spec.Container.Env = envVars
+	configuration.RevisionTemplate.Spec.Container.Env = s.setupEnv()
+	configuration.RevisionTemplate.Spec.Container.EnvFrom = s.setupEnvSecrets()
 	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
-
-	spec := servingv1alpha1.ServiceSpec{
-		RunLatest: &servingv1alpha1.RunLatestType{
-			Configuration: configuration,
-		},
-	}
 
 	serviceObject := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -156,8 +129,11 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 				time.Now(),
 			},
 		},
-
-		Spec: spec,
+		Spec: servingv1alpha1.ServiceSpec{
+			RunLatest: &servingv1alpha1.RunLatestType{
+				Configuration: configuration,
+			},
+		},
 	}
 
 	if err := s.createOrUpdate(serviceObject, clientset); err != nil {
@@ -180,6 +156,56 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		fmt.Printf("Service %s URL: http://%s\n", s.Name, domain)
 	}
 	return nil
+}
+
+func (s *Service) setupEnv() []corev1.EnvVar {
+	env := []corev1.EnvVar{
+		{
+			Name:  "timestamp",
+			Value: time.Now().Format("2006-01-02 15:04:05"),
+		},
+	}
+	for k, v := range mapFromSlice(s.Env) {
+		env = append(env, corev1.EnvVar{Name: k, Value: v})
+	}
+	return env
+}
+
+func (s *Service) setupEnvSecrets() []corev1.EnvFromSource {
+	optional := true
+	env := []corev1.EnvFromSource{}
+	for _, secret := range s.EnvSecrets {
+		env = append(env, corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: secret,
+				},
+				Optional: &optional,
+			},
+		})
+	}
+	return env
+}
+
+func (s *Service) setupBuildtemplate(clientset *client.ConfigSet) (bool, error) {
+	if len(s.Buildtemplate) == 0 {
+		return false, nil
+	}
+	if _, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
+		return false, nil
+	} else if _, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
+		return true, nil
+	} else {
+		buildtemplate := Buildtemplate{
+			Name:           s.Name + "-buildtemplate",
+			File:           s.Buildtemplate,
+			RegistrySecret: s.RegistrySecret,
+		}
+		if s.Buildtemplate, err = buildtemplate.Deploy(clientset); err != nil {
+			return false, err
+		}
+	}
+	return false, nil
 }
 
 func (s *Service) createOrUpdate(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
@@ -240,7 +266,7 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 	}
 }
 
-func getArgsFromSlice(slice []string) map[string]string {
+func mapFromSlice(slice []string) map[string]string {
 	m := make(map[string]string)
 	for _, s := range slice {
 		t := regexp.MustCompile("[:=]").Split(s, 2)
