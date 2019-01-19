@@ -43,12 +43,13 @@ func cmdSetRoutes(clientset *client.ConfigSet) *cobra.Command {
 }
 
 func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
+	var stdin bool
 	setRegistryCredsCmd := &cobra.Command{
 		Use:   "registry-auth",
 		Short: "Create secret with registry credentials",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := c.SetRegistryCreds(args[0], clientset); err != nil {
+			if err := c.SetRegistryCreds(args[0], stdin, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Registry credentials set")
@@ -60,5 +61,6 @@ func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
 	setRegistryCredsCmd.Flags().StringVar(&c.Password, "password", "", "Registry password")
 	setRegistryCredsCmd.Flags().BoolVar(&c.Pull, "pull", false, "Indicates if this token must be used for pull operations only")
 	setRegistryCredsCmd.Flags().BoolVar(&c.Push, "push", false, "Indicates if this token must be used for push operations only")
+	setRegistryCredsCmd.Flags().BoolVar(&stdin, "stdin", false, "Use stdin to read credentials")
 	return setRegistryCredsCmd
 }

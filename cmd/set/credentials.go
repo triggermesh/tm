@@ -15,9 +15,13 @@
 package set
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/triggermesh/tm/pkg/client"
+	"golang.org/x/crypto/ssh/terminal"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,8 +36,13 @@ type Credentials struct {
 }
 
 // SetRegistryCreds creates Secret with docker registry credentials json which later can be mounted as config.json file
-func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet) error {
+func (c *Credentials) SetRegistryCreds(name string, stdin bool, clientset *client.ConfigSet) error {
 	secrets := make(map[string]string)
+	if stdin {
+		if err := c.readStdin(); err != nil {
+			return err
+		}
+	}
 	secret := fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
 	s, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(name, metav1.GetOptions{})
 	if err == nil {
@@ -82,6 +91,36 @@ func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet)
 		if _, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Update(sa); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (c *Credentials) readStdin() error {
+	reader := bufio.NewReader(os.Stdin)
+	if len(c.Host) == 0 {
+		fmt.Printf("Registry: ")
+		text, err := reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+		c.Host = strings.Replace(text, "\n", "", -1)
+	}
+	if len(c.Username) == 0 {
+		fmt.Print("Username: ")
+		text, err := reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+		c.Username = strings.Replace(text, "\n", "", -1)
+	}
+	if len(c.Password) == 0 {
+		fmt.Print("Password: ")
+		text, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+		if err != nil {
+			return err
+		}
+		fmt.Println()
+		c.Password = string(text)
 	}
 	return nil
 }
