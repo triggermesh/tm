@@ -17,10 +17,12 @@ limitations under the License.
 package deploy
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path"
 	"regexp"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/watch"
@@ -40,11 +42,6 @@ const (
 	uploadDoneTrigger = "/home/.done"
 )
 
-type status struct {
-	domain string
-	err    error
-}
-
 // Service represents knative service structure
 type Service struct {
 	Name           string
@@ -62,15 +59,31 @@ type Service struct {
 	Wait           bool
 }
 
+type registryAuths struct {
+	Auths registry
+}
+
+type credentials struct {
+	Username string
+	Password string
+}
+
+type registry map[string]credentials
+
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	fmt.Printf("Creating %s function\n", s.Name)
 	configuration := servingv1alpha1.ConfigurationSpec{}
 
-	clusterBuildtemplate, err := s.setupBuildtemplate(clientset)
+	clusterBuildtemplate, err := s.isClusterBuildtemplate(clientset)
 	if err != nil {
+		if s.Buildtemplate, err = s.deployBuildtemplate(clientset); err != nil {
+			return err
+		}
+	} else if s.Buildtemplate, err = s.cloneBuildtemplate(clusterBuildtemplate, clientset); err != nil {
 		return err
 	}
+	defer clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(s.Name+"-buildtemplate", &metav1.DeleteOptions{})
 
 	switch {
 	case file.IsLocal(s.Source):
@@ -84,11 +97,16 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		configuration = s.fromImage()
 	}
 
+	image, err := s.imageName(clientset)
+	if err != nil {
+		return err
+	}
+
 	if configuration.Build != nil {
 		configuration.RevisionTemplate = servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
 				Container: corev1.Container{
-					Image: fmt.Sprintf("%s/%s-%s:%s", clientset.Registry, clientset.Namespace, s.Name, s.ResultImageTag),
+					Image: fmt.Sprintf("%s:%s", image, s.ResultImageTag),
 				},
 			},
 		}
@@ -97,10 +115,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	if configuration.Build != nil && len(s.Buildtemplate) != 0 {
 		configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
 			Name:      s.Buildtemplate,
-			Arguments: getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs),
-		}
-		if clusterBuildtemplate {
-			configuration.Build.BuildSpec.Template.Kind = buildv1alpha1.ClusterBuildTemplateKind
+			Arguments: getBuildArguments(image, s.BuildArgs),
 		}
 	}
 
@@ -122,12 +137,10 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      s.Name,
-			Labels:    configuration.RevisionTemplate.ObjectMeta.Labels,
-			Namespace: clientset.Namespace,
-			CreationTimestamp: metav1.Time{
-				time.Now(),
-			},
+			Name:              s.Name,
+			Labels:            configuration.RevisionTemplate.ObjectMeta.Labels,
+			Namespace:         clientset.Namespace,
+			CreationTimestamp: metav1.Time{time.Now()},
 		},
 		Spec: servingv1alpha1.ServiceSpec{
 			RunLatest: &servingv1alpha1.RunLatestType{
@@ -187,25 +200,28 @@ func (s *Service) setupEnvSecrets() []corev1.EnvFromSource {
 	return env
 }
 
-func (s *Service) setupBuildtemplate(clientset *client.ConfigSet) (bool, error) {
+func (s *Service) isClusterBuildtemplate(clientset *client.ConfigSet) (bool, error) {
 	if len(s.Buildtemplate) == 0 {
 		return false, nil
 	}
-	if _, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
+	_, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{})
+	if err == nil {
 		return false, nil
-	} else if _, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
-		return true, nil
-	} else {
-		buildtemplate := Buildtemplate{
-			Name:           s.Name + "-buildtemplate",
-			File:           s.Buildtemplate,
-			RegistrySecret: s.RegistrySecret,
-		}
-		if s.Buildtemplate, err = buildtemplate.Deploy(clientset); err != nil {
-			return false, err
-		}
 	}
-	return false, nil
+	_, err = clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{})
+	if err == nil {
+		return true, nil
+	}
+	return false, err
+}
+
+func (s *Service) deployBuildtemplate(clientset *client.ConfigSet) (string, error) {
+	buildtemplate := Buildtemplate{
+		Name:           s.Name + "-buildtemplate",
+		File:           s.Buildtemplate,
+		RegistrySecret: s.RegistrySecret,
+	}
+	return buildtemplate.Deploy(clientset)
 }
 
 func (s *Service) createOrUpdate(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
@@ -282,7 +298,7 @@ func mapFromSlice(slice []string) map[string]string {
 func serviceLatestRevision(name string, clientset *client.ConfigSet) (string, error) {
 	var latestRevision string
 	for latestRevision == "" {
-		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
+		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			return "", err
 		}
@@ -416,4 +432,67 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.ConfigSet) (string, error) {
+	if len(s.Buildtemplate) == 0 {
+		return "", nil
+	}
+	var err error
+	var bt *buildv1alpha1.BuildTemplate
+	if clustertemplate {
+		cbt, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{})
+		if err != nil {
+			return "", err
+		}
+
+		bt = &buildv1alpha1.BuildTemplate{
+			ObjectMeta: cbt.ObjectMeta,
+			TypeMeta:   cbt.TypeMeta,
+			Spec:       cbt.Spec,
+		}
+		bt.Namespace = clientset.Namespace
+	} else {
+		if bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err != nil {
+			return "", err
+		}
+	}
+
+	if len(s.RegistrySecret) != 0 {
+		addSecretVolume(s.RegistrySecret, bt)
+		setEnvConfig(s.RegistrySecret, bt)
+	}
+
+	bt.Name = s.Buildtemplate + "-buildtemplate"
+	bt.ObjectMeta.ResourceVersion = ""
+
+	clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(bt.Name, &metav1.DeleteOptions{})
+	if bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Create(bt); err != nil {
+		return "", err
+	}
+
+	return bt.Name, nil
+}
+
+func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
+	if len(s.RegistrySecret) == 0 {
+		return fmt.Sprintf("%s/%s/%s", clientset.Registry, clientset.Namespace, s.Name), nil
+	}
+	secret, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(s.RegistrySecret, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	data := secret.Data["config.json"]
+	dec := json.NewDecoder(strings.NewReader(string(data)))
+	var config registryAuths
+	if err := dec.Decode(&config); err != nil {
+		return "", err
+	}
+	if len(config.Auths) > 1 {
+		return "", errors.New("credentials with multiple registries not supported")
+	}
+	for k, v := range config.Auths {
+		return fmt.Sprintf("%s/%s/%s", k, v.Username, s.Name), nil
+	}
+	return "", errors.New("empty registry credentials")
 }

@@ -22,7 +22,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,10 +44,10 @@ func cmdDeleteService(clientset *client.ConfigSet) *cobra.Command {
 
 // DeleteService remove knative service object
 func (s Service) DeleteService(clientset *client.ConfigSet) error {
-	if err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(s.Name+"-buildtemplate", &metav1.DeleteOptions{}); err != nil {
-		if !k8sErrors.IsNotFound(err) {
-			fmt.Println(err)
-		}
-	}
+	// if err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(s.Name+"-buildtemplate", &metav1.DeleteOptions{}); err != nil {
+	// if !k8sErrors.IsNotFound(err) {
+	// fmt.Println(err)
+	// }
+	// }
 	return clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Delete(s.Name, &metav1.DeleteOptions{})
 }

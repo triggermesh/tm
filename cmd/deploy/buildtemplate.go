@@ -57,42 +57,41 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (string, error) {
 	if len(b.Name) != 0 {
 		bt.ObjectMeta.Name = b.Name
 	}
-	// fmt.Printf("Creating \"%s\" build template\n", bt.ObjectMeta.Name)
 
 	if len(b.RegistrySecret) != 0 {
-		b.addSecretVolume(&bt)
-		b.setEnvConfig(&bt)
+		addSecretVolume(b.RegistrySecret, &bt)
+		setEnvConfig(b.RegistrySecret, &bt)
 	}
 
 	return bt.ObjectMeta.Name, createBuildTemplate(bt, clientset)
 }
 
-func (b *Buildtemplate) addSecretVolume(template *buildv1alpha1.BuildTemplate) {
+func addSecretVolume(registrySecret string, template *buildv1alpha1.BuildTemplate) {
 	template.Spec.Volumes = []corev1.Volume{
 		{
-			Name: b.RegistrySecret,
+			Name: registrySecret,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: b.RegistrySecret,
+					SecretName: registrySecret,
 				},
 			},
 		},
 	}
 	for i, step := range template.Spec.Steps {
 		mounts := append(step.VolumeMounts, corev1.VolumeMount{
-			Name:      b.RegistrySecret,
-			MountPath: "/" + b.RegistrySecret,
+			Name:      registrySecret,
+			MountPath: "/" + registrySecret,
 			ReadOnly:  true,
 		})
 		template.Spec.Steps[i].VolumeMounts = mounts
 	}
 }
 
-func (b *Buildtemplate) setEnvConfig(template *buildv1alpha1.BuildTemplate) {
+func setEnvConfig(registrySecret string, template *buildv1alpha1.BuildTemplate) {
 	for i, step := range template.Spec.Steps {
 		envs := append(step.Env, corev1.EnvVar{
 			Name:  "DOCKER_CONFIG",
-			Value: "/" + b.RegistrySecret,
+			Value: "/" + registrySecret,
 		})
 		template.Spec.Steps[i].Env = envs
 	}
