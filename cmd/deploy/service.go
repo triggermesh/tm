@@ -50,12 +50,12 @@ type Service struct {
 	Name           string
 	Source         string
 	Revision       string
-	YAML           string
 	PullPolicy     string
 	ResultImageTag string
 	Buildtemplate  string
-	RegistrySecret string
+	RegistrySecret string // Does not belong to the service, need to be deleted
 	Env            []string
+	EnvSecrets     []string
 	Annotations    map[string]string
 	Labels         []string
 	BuildArgs      []string
@@ -65,23 +65,11 @@ type Service struct {
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	fmt.Printf("Creating %s function\n", s.Name)
-	var clusterBuildtemplate bool
 	configuration := servingv1alpha1.ConfigurationSpec{}
 
-	if len(s.Buildtemplate) != 0 {
-		if _, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
-			clusterBuildtemplate = false
-		} else if _, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
-			clusterBuildtemplate = true
-		} else {
-			buildtemplate := Buildtemplate{
-				File:           s.Buildtemplate,
-				RegistrySecret: s.RegistrySecret,
-			}
-			if s.Buildtemplate, err = buildtemplate.Deploy(clientset); err != nil {
-				return err
-			}
-		}
+	clusterBuildtemplate, err := s.setupBuildtemplate(clientset)
+	if err != nil {
+		return err
 	}
 
 	switch {
@@ -106,7 +94,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		}
 	}
 
-	if len(s.Buildtemplate) != 0 {
+	if configuration.Build != nil && len(s.Buildtemplate) != 0 {
 		configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
 			Name:      s.Buildtemplate,
 			Arguments: getBuildArguments(fmt.Sprintf("%s/%s-%s", clientset.Registry, clientset.Namespace, s.Name), s.BuildArgs),
@@ -120,27 +108,12 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		Name:              s.Name,
 		CreationTimestamp: metav1.Time{time.Now()},
 		Annotations:       s.Annotations,
-		Labels:            getArgsFromSlice(s.Labels),
+		Labels:            mapFromSlice(s.Labels),
 	}
 
-	envVars := []corev1.EnvVar{
-		{
-			Name:  "timestamp",
-			Value: time.Now().Format("2006-01-02 15:04:05"),
-		},
-	}
-	for k, v := range getArgsFromSlice(s.Env) {
-		envVars = append(envVars, corev1.EnvVar{Name: k, Value: v})
-	}
-
-	configuration.RevisionTemplate.Spec.Container.Env = envVars
+	configuration.RevisionTemplate.Spec.Container.Env = s.setupEnv()
+	configuration.RevisionTemplate.Spec.Container.EnvFrom = s.setupEnvSecrets()
 	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
-
-	spec := servingv1alpha1.ServiceSpec{
-		RunLatest: &servingv1alpha1.RunLatestType{
-			Configuration: configuration,
-		},
-	}
 
 	serviceObject := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -150,13 +123,17 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.Name,
+			Labels:    configuration.RevisionTemplate.ObjectMeta.Labels,
 			Namespace: clientset.Namespace,
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
 		},
-
-		Spec: spec,
+		Spec: servingv1alpha1.ServiceSpec{
+			RunLatest: &servingv1alpha1.RunLatestType{
+				Configuration: configuration,
+			},
+		},
 	}
 
 	if err := s.createOrUpdate(serviceObject, clientset); err != nil {
@@ -164,21 +141,71 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 	}
 
 	if file.IsLocal(s.Source) {
-		if err := injectSources(s.Name, path.Dir(s.Source), clientset); err != nil {
+		if err := injectSources(s.Name, path.Clean(s.Source), clientset); err != nil {
 			return err
 		}
 	}
 	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, s.Name)
 
 	if s.Wait {
-		fmt.Printf("Waiting for ready state")
+		fmt.Printf("Waiting for %s ready state\n", s.Name)
 		domain, err := waitService(s.Name, clientset)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("\nFunction is available on http://%s\n", domain)
+		fmt.Printf("Service %s URL: http://%s\n", s.Name, domain)
 	}
 	return nil
+}
+
+func (s *Service) setupEnv() []corev1.EnvVar {
+	env := []corev1.EnvVar{
+		{
+			Name:  "timestamp",
+			Value: time.Now().Format("2006-01-02 15:04:05"),
+		},
+	}
+	for k, v := range mapFromSlice(s.Env) {
+		env = append(env, corev1.EnvVar{Name: k, Value: v})
+	}
+	return env
+}
+
+func (s *Service) setupEnvSecrets() []corev1.EnvFromSource {
+	optional := true
+	env := []corev1.EnvFromSource{}
+	for _, secret := range s.EnvSecrets {
+		env = append(env, corev1.EnvFromSource{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: secret,
+				},
+				Optional: &optional,
+			},
+		})
+	}
+	return env
+}
+
+func (s *Service) setupBuildtemplate(clientset *client.ConfigSet) (bool, error) {
+	if len(s.Buildtemplate) == 0 {
+		return false, nil
+	}
+	if _, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
+		return false, nil
+	} else if _, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{}); err == nil {
+		return true, nil
+	} else {
+		buildtemplate := Buildtemplate{
+			Name:           s.Name + "-buildtemplate",
+			File:           s.Buildtemplate,
+			RegistrySecret: s.RegistrySecret,
+		}
+		if s.Buildtemplate, err = buildtemplate.Deploy(clientset); err != nil {
+			return false, err
+		}
+	}
+	return false, nil
 }
 
 func (s *Service) createOrUpdate(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
@@ -230,7 +257,8 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 					Custom: &corev1.Container{
 						Image:   "library/busybox",
 						Command: []string{"sh"},
-						Args:    []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync", uploadDoneTrigger, path.Base(path.Dir(s.Source)))},
+						Args: []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync",
+							uploadDoneTrigger, path.Base(path.Clean(s.Source)))},
 					},
 				},
 			},
@@ -238,7 +266,7 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 	}
 }
 
-func getArgsFromSlice(slice []string) map[string]string {
+func mapFromSlice(slice []string) map[string]string {
 	m := make(map[string]string)
 	for _, s := range slice {
 		t := regexp.MustCompile("[:=]").Split(s, 2)
@@ -348,8 +376,6 @@ func watchService(service string, clientset *client.ConfigSet) (watch.Interface,
 
 func waitService(service string, clientset *client.ConfigSet) (string, error) {
 	quit := time.After(timeout * time.Minute)
-	tick := time.Tick(5 * time.Second)
-
 	res, err := watchService(service, clientset)
 	if err != nil {
 		return "", err
@@ -361,9 +387,6 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 		select {
 		case <-quit:
 			return "", errors.New("Service status wait timeout")
-		case <-tick:
-			// Sometimes it is useful to see a spinner which means that the process is still active
-			fmt.Printf(".")
 		case event := <-res.ResultChan():
 			if event.Object == nil {
 				if res, err = watchService(service, clientset); err != nil {

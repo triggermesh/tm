@@ -140,7 +140,7 @@ func getBuildArguments(image string, buildArgs []string) []buildv1alpha1.Argumen
 		},
 	}
 
-	for k, v := range getArgsFromSlice(buildArgs) {
+	for k, v := range mapFromSlice(buildArgs) {
 		args = append(args, buildv1alpha1.ArgumentSpec{
 			Name: k, Value: v,
 		})

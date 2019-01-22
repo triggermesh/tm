@@ -17,7 +17,9 @@ package delete
 import (
 	"errors"
 	"fmt"
-	p "path"
+	"path"
+	"strings"
+	"sync"
 
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
@@ -29,18 +31,25 @@ type Service struct {
 }
 
 // DeleteYAML removes functions defined in serverless.yaml file
-func (s *Service) DeleteYAML(path string, functions []string, clientset *client.ConfigSet) (err error) {
-	if file.IsGit(path) {
+func (s *Service) DeleteYAML(filepath string, functions []string, clientset *client.ConfigSet) (err error) {
+	var wg sync.WaitGroup
+	if file.IsGit(filepath) {
 		// fmt.Printf("Cloning %s\n", path)
-		if path, err = file.Clone(path); err != nil {
+		if filepath, err = file.Clone(filepath); err != nil {
 			return err
 		}
-		path = path + "/serverless.yaml"
+		filepath = filepath + "/serverless.yaml"
 	}
-	if !file.IsLocal(path) {
-		return errors.New("Can't get YAML file")
+	if !file.IsLocal(filepath) {
+		/* Add a secondary check against serverless.yml */
+		filepath = strings.TrimSuffix(filepath, ".yaml")
+		filepath = filepath + ".yml"
+
+		if !file.IsLocal(filepath) {
+			return errors.New("Can't get YAML file")
+		}
 	}
-	definition, err := file.ParseServerlessYAML(path)
+	definition, err := file.ParseServerlessYAML(filepath)
 	if err != nil {
 		return err
 	}
@@ -68,25 +77,35 @@ func (s *Service) DeleteYAML(path string, functions []string, clientset *client.
 		if len(definition.Service) != 0 && s.Name != definition.Service {
 			name = fmt.Sprintf("%s-%s", definition.Service, name)
 		}
-		tmp := Service{
+		service := Service{
 			Name: fmt.Sprintf("%s-%s", s.Name, name),
 		}
-		fmt.Printf("Deleting %s\n", tmp.Name)
-		if err = tmp.DeleteService(clientset); err != nil {
-			fmt.Println(err)
-		}
+
+		wg.Add(1)
+		fmt.Printf("Deleting %s\n", service.Name)
+		go func(service Service) {
+			defer wg.Done()
+			if err = service.DeleteService(clientset); err != nil {
+				fmt.Printf("%s: %s\n", service.Name, err)
+			}
+		}(service)
 	}
 	for _, include := range definition.Include {
-		path = p.Dir(path) + "/" + include
+		filepath = path.Dir(filepath) + "/" + include
 		if file.IsRemote(include) {
-			if path, err = file.Clone(include); err != nil {
+			if filepath, err = file.Clone(include); err != nil {
 				return err
 			}
-			path = path + "/serverless.yaml"
+			filepath = filepath + "/serverless.yaml"
 		}
-		if err = s.DeleteYAML(path, functions, clientset); err != nil {
-			return err
-		}
+		wg.Add(1)
+		go func(filepath string, functions []string) {
+			defer wg.Done()
+			if err = s.DeleteYAML(filepath, functions, clientset); err != nil {
+				fmt.Printf("%s: %s\n", filepath, err)
+			}
+		}(filepath, functions)
 	}
+	wg.Wait()
 	return nil
 }

@@ -20,7 +20,11 @@ Or head to the GitHub [release page](https://github.com/triggermesh/tm/releases)
 2. Download your TriggerMesh configuration file by clicking on the `download` button in the upper right corner
 3. Save the file as $HOME/.tm/config.json and you are ready to use the `tm` CLI
 
-Examples:
+**On your own knative cluster:**
+
+Assuming you have access to the Kubernetes API and have a working `kubectl` setup, `tm` should work out of the box.
+
+### Examples
 
 Deploy service from Docker image
 ```
@@ -50,10 +54,52 @@ Moreover, for more complex deployments, tm CLI supports function definition pars
 tm deploy -f https://github.com/tzununbekov/serverless
 ```  
 
+## AWS Lambda
 
-**On your own knative cluster:**
+With triggermesh CLI you can easily deploy AWS Lambda functions on Kuberentes:
 
-Assuming you have access to the Kubernetes API and have a working `kubectl` setup, `tm` should work out of the box.
+Prepare local source for Golang function
+
+```
+mkdir lambda
+cd lambda
+cat > main.go <<EOF
+package main
+
+import (
+        "fmt"
+        "context"
+        "github.com/aws/aws-lambda-go/lambda"
+)
+
+type MyEvent struct {
+        Name string
+}
+
+func HandleRequest(ctx context.Context, name MyEvent) (string, error) {
+        return fmt.Sprintf("Hello %s!", name.Name ), nil
+}
+
+func main() {
+        lambda.Start(HandleRequest)
+}
+EOF
+```
+
+Deploy function using Knative lambda buildtemplate with Go runtime
+
+```
+tm deploy service go-lambda -f . --build-template https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/go-1.x/buildtemplate.yaml --wait
+```
+
+Lambda function available via http events
+
+```
+curl http://go-lambda.default.dev.triggermesh.io --data '{"Name": "Foo"}'
+"Hello Foo!"
+```
+
+[Here](https://github.com/triggermesh/knative-lambda-runtime) you can find more information about Knative lambda runtimes
 
 ### Support
 

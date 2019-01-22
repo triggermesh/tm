@@ -24,10 +24,13 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 )
 
-var service Service
-var build Build
-var buildtemplate Buildtemplate
-var channel Channel
+var (
+	service       Service
+	build         Build
+	buildtemplate Buildtemplate
+	channel       Channel
+	YAML          string
+)
 
 // NewDeployCmd returns deploy cobra command and its subcommands
 func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
@@ -35,16 +38,13 @@ func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(service.YAML) == 0 {
-				service.YAML = "serverless.yaml"
-			}
-			if _, err := service.DeployYAML(args, clientset); err != nil {
+			if _, err := service.DeployYAML(YAML, args, clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
 
-	deployCmd.Flags().StringVarP(&service.YAML, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
+	deployCmd.Flags().StringVarP(&YAML, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
 	deployCmd.Flags().BoolVarP(&service.Wait, "wait", "w", false, "Wait for each function deployment")
 
 	deployCmd.AddCommand(cmdDeployService(clientset))
@@ -83,6 +83,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&service.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&service.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployServiceCmd.Flags().StringSliceVar(&service.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
+	deployServiceCmd.Flags().StringSliceVar(&service.EnvSecrets, "env-secret", []string{}, "Name of k8s secrets to populate pod environment variables")
 	deployServiceCmd.Flags().StringSliceVarP(&service.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringSliceVarP(&service.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
 

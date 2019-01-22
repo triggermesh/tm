@@ -17,7 +17,9 @@ package deploy
 import (
 	"errors"
 	"fmt"
-	p "path"
+	"path"
+	"strings"
+	"sync"
 
 	"github.com/triggermesh/tm/cmd/delete"
 	"github.com/triggermesh/tm/pkg/client"
@@ -28,25 +30,22 @@ import (
 // TODO Cleanup and simplify
 
 // DeployYAML deploys functions defined in serverless.yaml file
-func (s *Service) DeployYAML(functions []string, clientset *client.ConfigSet) (services []Service, err error) {
-	var root bool
-	if s.YAML, err = getYAML(s.YAML); err != nil {
+func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset *client.ConfigSet) (services []Service, err error) {
+	if YAML, err = getYAML(YAML); err != nil {
 		return nil, err
 	}
-	definition, err := file.ParseServerlessYAML(s.YAML)
+	definition, err := file.ParseServerlessYAML(YAML)
 	if err != nil {
 		return nil, err
 	}
 	if len(definition.Provider.Name) != 0 && definition.Provider.Name != "triggermesh" {
 		return nil, fmt.Errorf("%s provider is not supported", definition.Provider.Name)
 	}
-	if len(s.Name) == 0 && len(definition.Service) == 0 {
+	if len(definition.Service) == 0 {
 		return nil, errors.New("Service name can't be empty")
 	}
 	if len(s.Name) == 0 {
-		root = true
-		s.Name = definition.Service
-		s.RegistrySecret = definition.Provider.RegistrySecret
+		s.setupParentVars(definition)
 	}
 	if len(definition.Provider.Registry) != 0 {
 		clientset.Registry = definition.Provider.Registry
@@ -57,29 +56,20 @@ func (s *Service) DeployYAML(functions []string, clientset *client.ConfigSet) (s
 	if len(definition.Provider.Runtime) != 0 {
 		s.Buildtemplate = definition.Provider.Runtime
 	}
-	workdir := p.Dir(s.YAML)
+	prefix := s.Name
+	if s.Name != definition.Service {
+		prefix = fmt.Sprintf("%s-%s", prefix, definition.Service)
+	}
+	workdir := path.Dir(YAML)
 
+	var wg sync.WaitGroup
 	for name, function := range definition.Functions {
-		pass := false
-		for _, v := range functions {
-			if v == name {
-				pass = true
-				break
-			}
-		}
-		if len(functions) != 0 && !pass {
+		if !inList(name, functionsToDeploy) {
 			continue
 		}
-		service := newService(function)
-		service.Wait = s.Wait
-		service.RegistrySecret = s.RegistrySecret
-		service.Name = name
-		if len(definition.Service) != 0 {
-			service.Name = fmt.Sprintf("%s-%s", definition.Service, service.Name)
-		}
-		if s.Name != definition.Service {
-			service.Name = fmt.Sprintf("%s-%s", s.Name, service.Name)
-		}
+		service := s.serviceObject(function)
+		service.Labels = append(service.Labels, "service:"+prefix)
+		service.Name = fmt.Sprintf("%s-%s", prefix, name)
 		if workdir != "." && workdir != "./." && !file.IsRemote(service.Source) {
 			service.Source = fmt.Sprintf("%s/%s", workdir, service.Source)
 		}
@@ -90,98 +80,140 @@ func (s *Service) DeployYAML(functions []string, clientset *client.ConfigSet) (s
 			service.Buildtemplate = s.Buildtemplate
 		}
 		if len(definition.Description) != 0 {
-			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", definition.Description, service.Annotations["Description"])
+			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], definition.Description)
 		}
-		if len(s.Annotations["Description"]) != 0 {
-			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", s.Annotations["Description"], service.Annotations["Description"])
+		if len(function.Description) != 0 {
+			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)
 		}
-		for k, v := range definition.Provider.Environment {
-			service.Env = append(service.Env, k+":"+v)
-		}
-		service.Env = append(service.Env, s.Env...)
 
-		if err := service.Deploy(clientset); err != nil {
-			return nil, err
-		}
+		wg.Add(1)
+		go func(service Service) {
+			defer wg.Done()
+			if err := service.Deploy(clientset); err != nil {
+				fmt.Printf("%s: %s\n", service.Name, err)
+			}
+		}(service)
 		services = append(services, service)
 	}
 
-	for _, include := range definition.Include {
-		s.YAML = workdir + "/" + include
-		if file.IsRemote(include) {
-			s.YAML = include
-		}
-		subServices, err := s.DeployYAML(functions, clientset)
-		if err != nil {
+	if len(functionsToDeploy) == 0 {
+		if err = removeOrphans(services, prefix, clientset); err != nil {
 			return nil, err
 		}
-		services = append(services, subServices...)
 	}
 
-	if root && len(functions) == 0 {
-		if err = s.removeOrphans(services, clientset); err != nil {
-			return nil, err
+	for _, include := range definition.Include {
+		YAML = workdir + "/" + include
+		if file.IsRemote(include) {
+			YAML = include
 		}
+		wg.Add(1)
+		go func(YAML string, functionsToDeploy []string) {
+			defer wg.Done()
+			if _, err := s.DeployYAML(YAML, functionsToDeploy, clientset); err != nil {
+				fmt.Printf("%s: %s\n", YAML, err)
+			}
+		}(YAML, functionsToDeploy)
 	}
+	wg.Wait()
+
 	return services, nil
 }
 
-func getYAML(path string) (string, error) {
-	if file.IsGit(path) {
-		// fmt.Printf("Cloning %s\n", path)
-		localPath, err := file.Clone(path)
+func inList(name string, functionsToDeploy []string) bool {
+	deployThis := true
+	if len(functionsToDeploy) != 0 {
+		deployThis = false
+		for _, v := range functionsToDeploy {
+			if v == name {
+				return true
+			}
+		}
+	}
+	return deployThis
+}
+
+func getYAML(filepath string) (string, error) {
+	if file.IsGit(filepath) {
+		localfilepath, err := file.Clone(filepath)
 		if err != nil {
 			return "", err
 		}
-		path = localPath + "/serverless.yaml"
+		filepath = localfilepath + "/serverless.yaml"
 	}
-	if !file.IsLocal(path) {
-		return "", fmt.Errorf("Can't read %s", service.YAML)
+	if !file.IsLocal(filepath) {
+		/* Add a secondary check against /serverless.yml */
+		filepath = strings.TrimSuffix(filepath, ".yaml")
+		filepath = filepath + ".yml"
+
+		if !file.IsLocal(filepath) {
+			return "", fmt.Errorf("Can't read %s", filepath)
+		}
 	}
-	return path, nil
+	return filepath, nil
 }
 
-func newService(function file.Function) Service {
+func (s *Service) setupParentVars(definition file.Definition) {
+	s.Name = definition.Service
+	s.RegistrySecret = definition.Provider.RegistrySecret
+	if len(definition.Description) != 0 {
+		s.Annotations = map[string]string{
+			"Description": definition.Description,
+		}
+	}
+	// workaround to get rid of double description
+	definition.Description = ""
+	for k, v := range definition.Provider.Environment {
+		s.Env = append(s.Env, k+":"+v)
+	}
+	s.EnvSecrets = definition.Provider.EnvSecrets
+}
+
+func (s *Service) serviceObject(function file.Function) Service {
 	service := Service{
 		Source:         function.Handler,
 		Buildtemplate:  function.Runtime,
-		Labels:         append(function.Labels, "service:"+service.Name),
+		Labels:         function.Labels,
 		ResultImageTag: "latest",
 		BuildArgs:      function.Buildargs,
-		Annotations:    make(map[string]string),
+		Wait:           s.Wait,
+		RegistrySecret: s.RegistrySecret,
+		Annotations: map[string]string{
+			"Description": s.Annotations["Description"],
+		},
 	}
-	service.Annotations["Description"] = function.Description
+	service.Env = s.Env
 	for k, v := range function.Environment {
 		service.Env = append(service.Env, k+":"+v)
 	}
+	service.EnvSecrets = append(s.EnvSecrets, function.EnvSecrets...)
+
 	return service
 }
 
-func (s *Service) removeOrphans(services []Service, clientset *client.ConfigSet) error {
-	list, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).List(metav1.ListOptions{
+func removeOrphans(created []Service, label string, clientset *client.ConfigSet) error {
+	list, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).List(metav1.ListOptions{
 		IncludeUninitialized: true,
-		LabelSelector:        "service=" + s.Name,
+		LabelSelector:        "service=" + label,
 	})
 	if err != nil {
 		return err
 	}
-	for _, oldService := range list.Items {
-		if len(oldService.OwnerReferences) != 1 {
-			continue
-		}
-		orphan := true
-		for _, newService := range services {
-			if newService.Name == oldService.OwnerReferences[0].Name {
-				orphan = false
+
+	for _, existing := range list.Items {
+		orphaned := true
+		for _, newService := range created {
+			if newService.Name == existing.Name {
+				orphaned = false
 				break
 			}
 		}
-		if orphan {
-			s := delete.Service{
-				Name: oldService.OwnerReferences[0].Name,
+		if orphaned {
+			orphan := delete.Service{
+				Name: existing.Name,
 			}
-			if err = s.DeleteService(clientset); err == nil {
-				fmt.Printf("Removing orphaned service: %s\n", s.Name)
+			if err = orphan.DeleteService(clientset); err == nil {
+				fmt.Printf("Removing orphaned service: %s\n", existing.Name)
 			}
 		}
 	}
