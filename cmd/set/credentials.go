@@ -44,10 +44,12 @@ func (c *Credentials) SetRegistryCreds(name string, stdin bool, clientset *clien
 		}
 	}
 	secret := fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
-	s, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(name, metav1.GetOptions{})
-	if err == nil {
+	if s, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(name, metav1.GetOptions{}); err == nil {
 		for k, v := range s.Data {
 			secrets[k] = string(v)
+		}
+		if err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Delete(name, &metav1.DeleteOptions{}); err != nil {
+			return err
 		}
 	}
 
@@ -69,15 +71,8 @@ func (c *Credentials) SetRegistryCreds(name string, stdin bool, clientset *clien
 		},
 		StringData: secrets,
 	}
-	if s.GetName() != "" {
-		newSecret.ObjectMeta.ResourceVersion = s.ObjectMeta.ResourceVersion
-		if _, err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Update(&newSecret); err != nil {
-			return err
-		}
-	} else {
-		if _, err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Create(&newSecret); err != nil {
-			return err
-		}
+	if _, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Create(&newSecret); err != nil {
+		return err
 	}
 
 	if c.Pull || c.Pull == c.Push {
