@@ -116,6 +116,9 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
 			Name:      s.Buildtemplate,
 			Arguments: getBuildArguments(image, s.BuildArgs),
+			Env: []corev1.EnvVar{
+				{Name: "timestamp", Value: time.Now().String()},
+			},
 		}
 	}
 
@@ -295,7 +298,7 @@ func mapFromSlice(slice []string) map[string]string {
 	return m
 }
 
-func serviceLatestRevision(name string, clientset *client.ConfigSet) (string, error) {
+func latestBuild(name string, clientset *client.ConfigSet) (string, error) {
 	var latestRevision string
 	for latestRevision == "" {
 		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
@@ -305,7 +308,14 @@ func serviceLatestRevision(name string, clientset *client.ConfigSet) (string, er
 		latestRevision = service.Status.LatestCreatedRevisionName
 		time.Sleep(1 * time.Second)
 	}
-	return latestRevision, nil
+	revision, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Get(latestRevision, metav1.GetOptions{IncludeUninitialized: true})
+	if err != nil {
+		return "", err
+	}
+	if revision.Spec.BuildRef == nil {
+		return "", errors.New("empty build reference")
+	}
+	return revision.Spec.BuildRef.Name, nil
 }
 
 func serviceBuildPod(name string, clientset *client.ConfigSet) (string, error) {
@@ -325,11 +335,11 @@ func serviceBuildPod(name string, clientset *client.ConfigSet) (string, error) {
 }
 
 func injectSources(name string, filepath string, clientset *client.ConfigSet) error {
-	latestRevision, err := serviceLatestRevision(name, clientset)
+	build, err := latestBuild(name, clientset)
 	if err != nil {
 		return err
 	}
-	buildPod, err := serviceBuildPod(latestRevision, clientset)
+	buildPod, err := serviceBuildPod(build, clientset)
 	if err != nil {
 		return err
 	}
@@ -348,10 +358,10 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 			if v.Name == "build-step-custom-source" {
 				if v.State.Terminated != nil {
 					// Looks like we got watch interface for "previous" service version, updating
-					if latestRevision, err = serviceLatestRevision(name, clientset); err != nil {
+					if build, err = latestBuild(name, clientset); err != nil {
 						return err
 					}
-					if buildPod, err = serviceBuildPod(latestRevision, clientset); err != nil {
+					if buildPod, err = serviceBuildPod(build, clientset); err != nil {
 						return err
 					}
 					if res, err = clientset.Core.CoreV1().Pods(clientset.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
