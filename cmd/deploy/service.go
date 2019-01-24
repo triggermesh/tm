@@ -40,7 +40,7 @@ import (
 const (
 	// Knative build timeout in minutes
 	timeout           = 10
-	uploadDoneTrigger = "/home/.done"
+	uploadDoneTrigger = "/home/.sourceuploaddone"
 )
 
 // Service represents knative service structure
@@ -382,7 +382,7 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 		Pod:         buildPod,
 		Container:   sourceContainer,
 		Source:      filepath,
-		Destination: "/home",
+		Destination: "/home/" + filepath,
 	}
 	if err := c.Upload(clientset); err != nil {
 		return err
