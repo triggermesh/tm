@@ -503,8 +503,8 @@ func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
 		return "", errors.New("credentials with multiple registries not supported")
 	}
 	for k, v := range config.Auths {
-		if username, ok := gitlabEnv(); ok {
-			return fmt.Sprintf("%s/%s/%s", k, username, s.Name), nil
+		if url, ok := gitlabEnv(); ok {
+			return fmt.Sprintf("%s/%s", url, s.Name), nil
 		}
 		return fmt.Sprintf("%s/%s/%s", k, v.Username, s.Name), nil
 	}
@@ -513,5 +513,5 @@ func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
 
 // hack to use correct username in image URL instead of "gitlab-ci-token" in Gitlab CI
 func gitlabEnv() (string, bool) {
-	return os.LookupEnv("GITLAB_USER_LOGIN")
+	return os.LookupEnv("CI_REGISTRY_IMAGE")
 }
