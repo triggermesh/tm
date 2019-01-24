@@ -36,9 +36,9 @@ type Credentials struct {
 }
 
 // SetRegistryCreds creates Secret with docker registry credentials json which later can be mounted as config.json file
-func (c *Credentials) SetRegistryCreds(name string, stdin bool, clientset *client.ConfigSet) error {
+func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet) error {
 	secrets := make(map[string]string)
-	if stdin {
+	if len(c.Password) == 0 || len(c.Host) == 0 || len(c.Username) == 0 {
 		if err := c.readStdin(); err != nil {
 			return err
 		}
