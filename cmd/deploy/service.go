@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -502,7 +503,15 @@ func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
 		return "", errors.New("credentials with multiple registries not supported")
 	}
 	for k, v := range config.Auths {
+		if username, ok := gitlabEnv(); ok {
+			return fmt.Sprintf("%s/%s/%s", k, username, s.Name), nil
+		}
 		return fmt.Sprintf("%s/%s/%s", k, v.Username, s.Name), nil
 	}
 	return "", errors.New("empty registry credentials")
+}
+
+// hack to use correct username in image URL instead of "gitlab-ci-token" in Gitlab CI
+func gitlabEnv() (string, bool) {
+	return os.LookupEnv("GITLAB_USER_LOGIN")
 }
