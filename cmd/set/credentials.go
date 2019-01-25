@@ -38,7 +38,7 @@ type Credentials struct {
 // SetRegistryCreds creates Secret with docker registry credentials json which later can be mounted as config.json file
 func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet) error {
 	secrets := make(map[string]string)
-	if len(c.Password) == 0 || len(c.Host) == 0 || len(c.Username) == 0 {
+	if !gitlabCI() && (len(c.Password) == 0 || len(c.Host) == 0 || len(c.Username) == 0) {
 		if err := c.readStdin(); err != nil {
 			return err
 		}
@@ -118,4 +118,11 @@ func (c *Credentials) readStdin() error {
 		c.Password = string(text)
 	}
 	return nil
+}
+
+func gitlabCI() bool {
+	if ci, _ := os.LookupEnv("GITLAB_CI"); ci == "true" {
+		return true
+	}
+	return false
 }
