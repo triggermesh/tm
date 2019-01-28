@@ -12,14 +12,14 @@ jobs:
       - run:
           name: Run validations
           command: make validation
-      # - run:
-      #     name: Run unit tests
-      #     command: |
-      #       mkdir tests
-      #       make test | tee go-test.out
-      #       go-junit-report <go-test.out > tests/go-test-report.xml
-      # - store_test_results:
-      #    path: tests
+      - run:
+          name: Run unit tests
+          command: |
+            mkdir tests
+            make test | tee go-test.out
+            # go-junit-report <go-test.out > tests/go-test-report.xml
+      - store_test_results:
+         path: tests
       - run:
           name: Build binaries
           command: |
