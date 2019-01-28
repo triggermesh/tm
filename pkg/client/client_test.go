@@ -14,7 +14,6 @@ limitations under the License.
 package client
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -54,24 +53,25 @@ func TestUsername(t *testing.T) {
 	os.Remove("default.json")
 
 }
-func TestNewClient(t *testing.T) {
 
-	err := os.Setenv("KUBECONFIG", "/tmp/test/config.json")
-	if err != nil {
-		t.Error(err)
-	}
+// func TestNewClient(t *testing.T) {
 
-	c := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"triggermesh","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
+// 	err := os.Setenv("KUBECONFIG", "/tmp/test/config.json")
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
 
-	path := os.Getenv("KUBECONFIG")
-	ioutil.WriteFile(path, c, 0644)
+// 	c := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"triggermesh","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
 
-	configSet, err := NewClient("", "testnamespace", "testregistry")
-	if err != nil {
-		t.Error(err)
-	}
+// 	path := os.Getenv("KUBECONFIG")
+// 	ioutil.WriteFile(path, c, 0644)
 
-	fmt.Println(configSet)
+// 	configSet, err := NewClient("", "testnamespace", "testregistry")
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
 
-	os.Remove(path)
-}
+// 	fmt.Println(configSet)
+
+// 	os.Remove(path)
+// }
