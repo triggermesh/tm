@@ -59,6 +59,9 @@ func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet)
 	if c.Push || c.Push == c.Pull {
 		secrets["config.json"] = secret
 	}
+	if _, ok := secrets[".dockerconfigjson"]; !ok {
+		secrets[".dockerconfigjson"] = "{}"
+	}
 	newSecret := corev1.Secret{
 		Type: "kubernetes.io/dockerconfigjson",
 		TypeMeta: metav1.TypeMeta{
