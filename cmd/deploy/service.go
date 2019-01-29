@@ -43,6 +43,10 @@ const (
 	uploadDoneTrigger = "/home/.sourceuploaddone"
 )
 
+var (
+	sourcedir string
+)
+
 // Service represents knative service structure
 type Service struct {
 	Name           string
@@ -87,8 +91,14 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	switch {
 	case file.IsLocal(s.Source):
+		if file.IsDir(s.Source) {
+			sourcedir = path.Base(s.Source)
+		} else {
+			sourcedir = path.Base(path.Dir(s.Source))
+			s.BuildArgs = append(s.BuildArgs, "HANDLER="+path.Base(s.Source))
+		}
+		s.BuildArgs = append(s.BuildArgs, "DIRECTORY="+sourcedir)
 		configuration = s.fromPath()
-		s.BuildArgs = append(s.BuildArgs, "DIRECTORY="+path.Base(s.Source))
 	case file.IsGit(s.Source):
 		if len(s.Revision) == 0 {
 			s.Revision = "master"
@@ -280,8 +290,8 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 					Custom: &corev1.Container{
 						Image:   "library/busybox",
 						Command: []string{"sh"},
-						Args: []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; mv /home/%s/* /workspace; sync;",
-							uploadDoneTrigger, path.Clean(s.Source))},
+						Args: []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; mv /home/%s /workspace/%s; sync;",
+							uploadDoneTrigger, path.Clean(s.Source), sourcedir)},
 					},
 				},
 			},

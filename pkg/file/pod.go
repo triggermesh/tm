@@ -38,13 +38,10 @@ type Copy struct {
 	Destination string
 }
 
-var (
-	uploadPath = "/tmp/tm/upload"
-	command    = "tar -xvf -"
-)
-
 // Upload receives Copy structure, creates tarball of local source path and uploads it to active (un)tar process on remote pod
 func (c *Copy) Upload(clientset *client.ConfigSet) error {
+	command := "tar -xvf -"
+	uploadPath := "/tmp/tm/upload"
 	if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
 		return err
 	}
