@@ -8,7 +8,7 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 )
 
-func TestDeploy(t *testing.T) {
+func TestChannelDeploy(t *testing.T) {
 	configSet, err := client.NewClient("")
 	assert.NoError(t, err)
 
