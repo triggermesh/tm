@@ -48,10 +48,10 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		s.setupParentVars(definition)
 	}
 	if len(definition.Provider.Registry) != 0 {
-		clientset.Registry = definition.Provider.Registry
+		client.Registry = definition.Provider.Registry
 	}
 	if len(definition.Provider.Namespace) != 0 {
-		clientset.Namespace = definition.Provider.Namespace
+		client.Namespace = definition.Provider.Namespace
 	}
 	if len(definition.Provider.Runtime) != 0 {
 		s.Buildtemplate = definition.Provider.Runtime
@@ -89,8 +89,11 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		wg.Add(1)
 		go func(service Service) {
 			defer wg.Done()
-			if err := service.Deploy(clientset); err != nil {
+			output, err := service.Deploy(clientset)
+			if err != nil {
 				fmt.Printf("%s: %s\n", service.Name, err)
+			} else {
+				fmt.Print(output)
 			}
 		}(service)
 		services = append(services, service)
@@ -176,7 +179,6 @@ func (s *Service) serviceObject(function file.Function) Service {
 		Labels:         function.Labels,
 		ResultImageTag: "latest",
 		BuildArgs:      function.Buildargs,
-		Wait:           s.Wait,
 		RegistrySecret: s.RegistrySecret,
 		Annotations: map[string]string{
 			"Description": s.Annotations["Description"],
@@ -192,7 +194,7 @@ func (s *Service) serviceObject(function file.Function) Service {
 }
 
 func removeOrphans(created []Service, label string, clientset *client.ConfigSet) error {
-	list, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).List(metav1.ListOptions{
+	list, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).List(metav1.ListOptions{
 		IncludeUninitialized: true,
 		LabelSelector:        "service=" + label,
 	})

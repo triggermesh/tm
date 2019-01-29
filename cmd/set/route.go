@@ -68,7 +68,7 @@ func (r *Route) SetPercentage(args []string, clientset *client.ConfigSet) error 
 		})
 	}
 
-	routeOld, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+	routeOld, err := clientset.Serving.ServingV1alpha1().Routes(client.Namespace).Get(args[0], metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (r *Route) SetPercentage(args []string, clientset *client.ConfigSet) error 
 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      args[0],
-			Namespace: clientset.Namespace,
+			Namespace: client.Namespace,
 			Labels: map[string]string{
 				"created-by":                  "tm",
 				"serving.knative.dev/service": args[0],
@@ -90,7 +90,7 @@ func (r *Route) SetPercentage(args []string, clientset *client.ConfigSet) error 
 	fmt.Printf("%+v\n", route)
 	route.ObjectMeta.ResourceVersion = routeOld.ObjectMeta.ResourceVersion
 	route.Spec.Traffic = targets
-	if _, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Update(&route); err != nil {
+	if _, err := clientset.Serving.ServingV1alpha1().Routes(client.Namespace).Update(&route); err != nil {
 		return err
 	}
 

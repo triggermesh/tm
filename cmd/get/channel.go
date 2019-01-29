@@ -49,7 +49,7 @@ func cmdListChannels(clientset *client.ConfigSet) *cobra.Command {
 
 // Channels returns list of knative build objects
 func Channels(clientset *client.ConfigSet) (string, error) {
-	list, err := clientset.Eventing.EventingV1alpha1().Channels(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Eventing.EventingV1alpha1().Channels(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}

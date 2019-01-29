@@ -44,10 +44,10 @@ func cmdDeleteService(clientset *client.ConfigSet) *cobra.Command {
 
 // DeleteService remove knative service object
 func (s Service) DeleteService(clientset *client.ConfigSet) error {
-	// if err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(s.Name+"-buildtemplate", &metav1.DeleteOptions{}); err != nil {
+	// if err := clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Delete(s.Name+"-buildtemplate", &metav1.DeleteOptions{}); err != nil {
 	// if !k8sErrors.IsNotFound(err) {
 	// fmt.Println(err)
 	// }
 	// }
-	return clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Delete(s.Name, &metav1.DeleteOptions{})
+	return clientset.Serving.ServingV1alpha1().Services(client.Namespace).Delete(s.Name, &metav1.DeleteOptions{})
 }

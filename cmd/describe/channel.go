@@ -47,7 +47,7 @@ func cmdDescribeChannel(clientset *client.ConfigSet) *cobra.Command {
 
 func listChannels(clientset *client.ConfigSet) ([]string, error) {
 	var channels []string
-	list, err := clientset.Eventing.EventingV1alpha1().Channels(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Eventing.EventingV1alpha1().Channels(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return channels, err
 	}
@@ -59,7 +59,7 @@ func listChannels(clientset *client.ConfigSet) ([]string, error) {
 
 // Channel describes knative channel object
 func Channel(name string, clientset *client.ConfigSet) ([]byte, error) {
-	channel, err := clientset.Eventing.EventingV1alpha1().Channels(clientset.Namespace).Get(name, metav1.GetOptions{})
+	channel, err := clientset.Eventing.EventingV1alpha1().Channels(client.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}

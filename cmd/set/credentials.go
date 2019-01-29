@@ -44,11 +44,11 @@ func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet)
 		}
 	}
 	secret := fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
-	if s, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(name, metav1.GetOptions{}); err == nil {
+	if s, err := clientset.Core.CoreV1().Secrets(client.Namespace).Get(name, metav1.GetOptions{}); err == nil {
 		for k, v := range s.Data {
 			secrets[k] = string(v)
 		}
-		if err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Delete(name, &metav1.DeleteOptions{}); err != nil {
+		if err = clientset.Core.CoreV1().Secrets(client.Namespace).Delete(name, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
@@ -70,23 +70,23 @@ func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet)
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: clientset.Namespace,
+			Namespace: client.Namespace,
 		},
 		StringData: secrets,
 	}
-	if _, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Create(&newSecret); err != nil {
+	if _, err := clientset.Core.CoreV1().Secrets(client.Namespace).Create(&newSecret); err != nil {
 		return err
 	}
 
 	if c.Pull || c.Pull == c.Push {
-		sa, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Get("default", metav1.GetOptions{})
+		sa, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Get("default", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		sa.ImagePullSecrets = []corev1.LocalObjectReference{
 			{Name: name},
 		}
-		if _, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Update(sa); err != nil {
+		if _, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Update(sa); err != nil {
 			return err
 		}
 	}

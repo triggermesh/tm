@@ -51,7 +51,7 @@ func cmdDescribeService(clientset *client.ConfigSet) *cobra.Command {
 
 func listService(clientset *client.ConfigSet) ([]string, error) {
 	var services []string
-	list, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return services, err
 	}
@@ -63,7 +63,7 @@ func listService(clientset *client.ConfigSet) ([]string, error) {
 
 // Service describes knative service object
 func Service(name string, clientset *client.ConfigSet) ([]byte, error) {
-	service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{})
+	service, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}

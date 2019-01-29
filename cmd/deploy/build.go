@@ -48,7 +48,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) error {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.Name,
-			Namespace: clientset.Namespace,
+			Namespace: client.Namespace,
 			CreationTimestamp: metav1.Time{
 				time.Now(),
 			},
@@ -59,7 +59,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) error {
 		build.Spec = b.fromBuildtemplate(b.Buildtemplate, mapFromSlice(b.Args))
 	case len(b.Step) != 0:
 		steps := build.Spec.Steps
-		existingBuild, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(b.Name, metav1.GetOptions{})
+		existingBuild, err := clientset.Build.BuildV1alpha1().Builds(client.Namespace).Get(b.Name, metav1.GetOptions{})
 		if err == nil {
 			steps = existingBuild.Spec.Steps
 		}
@@ -75,12 +75,12 @@ func (b *Build) Deploy(clientset *client.ConfigSet) error {
 		},
 	}
 
-	buildOld, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(build.ObjectMeta.Name, metav1.GetOptions{})
+	buildOld, err := clientset.Build.BuildV1alpha1().Builds(client.Namespace).Get(build.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil {
 		build.ObjectMeta.ResourceVersion = buildOld.ObjectMeta.ResourceVersion
-		_, err = clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Update(&build)
+		_, err = clientset.Build.BuildV1alpha1().Builds(client.Namespace).Update(&build)
 	} else if k8sErrors.IsNotFound(err) {
-		_, err = clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Create(&build)
+		_, err = clientset.Build.BuildV1alpha1().Builds(client.Namespace).Create(&build)
 	}
 	return err
 }

@@ -49,7 +49,7 @@ func cmdDescribeBuild(clientset *client.ConfigSet) *cobra.Command {
 
 func listBuilds(clientset *client.ConfigSet) ([]string, error) {
 	var builds []string
-	list, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Build.BuildV1alpha1().Builds(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return builds, err
 	}
@@ -61,7 +61,7 @@ func listBuilds(clientset *client.ConfigSet) ([]string, error) {
 
 // Build describes knative build object
 func Build(name string, clientset *client.ConfigSet) ([]byte, error) {
-	build, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(name, metav1.GetOptions{})
+	build, err := clientset.Build.BuildV1alpha1().Builds(client.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}

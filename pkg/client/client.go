@@ -38,6 +38,15 @@ const (
 	confPath = "/.tm/config.json"
 )
 
+var (
+	Namespace string
+	Registry  string
+	Output    string
+	Debug     bool
+	Dry       bool
+	Wait      bool
+)
+
 // ConfigSet contains different information that may be needed by underlying functions
 type ConfigSet struct {
 	Core     *kubernetes.Clientset
@@ -46,9 +55,6 @@ type ConfigSet struct {
 	Eventing *eventingApi.Clientset
 
 	Config *rest.Config
-
-	Namespace string
-	Registry  string
 }
 
 type confStruct struct {
@@ -90,7 +96,7 @@ func username(cfgFile string) (string, error) {
 }
 
 // NewClient returns ConfigSet created from available configuration file or from in-cluster environment
-func NewClient(cfgFile, namespace, registry string) (ConfigSet, error) {
+func NewClient(cfgFile string) (ConfigSet, error) {
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {
 		homeDir = dir
@@ -114,8 +120,8 @@ func NewClient(cfgFile, namespace, registry string) (ConfigSet, error) {
 	}
 
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
-	if err == nil && len(namespace) == 0 {
-		if namespace, err = username(cfgFile); err != nil {
+	if err == nil && len(Namespace) == 0 {
+		if Namespace, err = username(cfgFile); err != nil {
 			return ConfigSet{}, err
 		}
 	} else if err != nil {
@@ -128,9 +134,7 @@ func NewClient(cfgFile, namespace, registry string) (ConfigSet, error) {
 	}
 
 	c := ConfigSet{
-		Namespace: namespace,
-		Registry:  registry,
-		Config:    config,
+		Config: config,
 	}
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
