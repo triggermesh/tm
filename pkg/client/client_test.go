@@ -54,10 +54,7 @@ func TestUsername(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	_, err := NewClient("")
-	assert.NoError(t, err)
-
-	_, err = NewClient("test.json")
+	_, err := NewClient("test.json")
 	assert.NoError(t, err)
 
 	os.Setenv("KUBECONFIG", "test.json")
