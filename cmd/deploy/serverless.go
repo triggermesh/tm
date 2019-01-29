@@ -68,6 +68,11 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 			continue
 		}
 		service := s.serviceObject(function)
+		if len(function.Handler) != 0 {
+			fmt.Printf("Warning! Please change \"handler:%s\" to \"source:%s\" for function \"%s\" in serverless.yaml. Parameter \"handler\" will be deprecated soon\n",
+				function.Handler, function.Handler, name)
+			service.Source = function.Handler
+		}
 		service.Labels = append(service.Labels, "service:"+prefix)
 		service.Name = fmt.Sprintf("%s-%s", prefix, name)
 		if workdir != "." && workdir != "./." && !file.IsRemote(service.Source) {
@@ -174,7 +179,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 
 func (s *Service) serviceObject(function file.Function) Service {
 	service := Service{
-		Source:         function.Handler,
+		Source:         function.Source,
 		Buildtemplate:  function.Runtime,
 		Labels:         function.Labels,
 		ResultImageTag: "latest",

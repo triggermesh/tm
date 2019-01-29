@@ -29,6 +29,7 @@ type Definition struct {
 // Function describes function definition in serverless format
 type Function struct {
 	Handler     string
+	Source      string
 	Runtime     string
 	Buildargs   []string
 	Description string
