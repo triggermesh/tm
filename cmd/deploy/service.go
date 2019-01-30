@@ -290,8 +290,14 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 					Custom: &corev1.Container{
 						Image:   "library/busybox",
 						Command: []string{"sh"},
-						Args: []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; mv /home/%s /workspace/%s; sync;",
-							uploadDoneTrigger, path.Clean(s.Source), sourcedir)},
+						Args: []string{"-c", fmt.Sprintf(`
+						while [ ! -f %s ]; do 
+							sleep 1; 
+						done; 
+						sync; 
+						mv /home/%s/* /workspace; 
+						sync;`,
+							uploadDoneTrigger, path.Clean(s.Source))},
 					},
 				},
 			},
@@ -361,6 +367,9 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 	if err != nil {
 		return err
 	}
+	if res == nil {
+		return errors.New("nil watch interface")
+	}
 	defer res.Stop()
 
 	var sourceContainer string
@@ -395,7 +404,7 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 		Pod:         buildPod,
 		Container:   sourceContainer,
 		Source:      filepath,
-		Destination: "/home" + filepath,
+		Destination: "/home/" + filepath,
 	}
 	if err := c.Upload(clientset); err != nil {
 		return err
