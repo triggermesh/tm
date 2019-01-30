@@ -379,6 +379,7 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 		case e := <-res.ResultChan():
 			if e.Object == nil {
 				fmt.Println("Restarting pod watch interface")
+				res.Stop()
 				if res, err = clientset.Core.CoreV1().Pods(client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
 					return err
 				}
@@ -401,6 +402,7 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 						if buildPod, err = serviceBuildPod(build, clientset); err != nil {
 							return err
 						}
+						res.Stop()
 						if res, err = clientset.Core.CoreV1().Pods(client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
 							return err
 						}
@@ -452,7 +454,8 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 			return "", errors.New("Service status wait timeout")
 		case event := <-res.ResultChan():
 			if event.Object == nil {
-				fmt.Println("Restarting watch interface")
+				fmt.Println("Restarting service watch interface")
+				res.Stop()
 				if res, err = clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
 					FieldSelector: fmt.Sprintf("metadata.name=%s", service),
 				}); err != nil {
@@ -474,6 +477,7 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 				if v.IsFalse() {
 					if v.Reason == "RevisionFailed" && firstError {
 						time.Sleep(time.Second * 3)
+						res.Stop()
 						if res, err = clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
 							FieldSelector: fmt.Sprintf("metadata.name=%s", service),
 						}); err != nil {
