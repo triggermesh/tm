@@ -25,6 +25,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type Channel struct {
+	Name      string
+	Namespace string
+}
+
+var c Channel
+
 func cmdDeleteChannel(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "channel",
@@ -32,7 +39,9 @@ func cmdDeleteChannel(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Delete knative channel resource",
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := Channel(args, clientset); err != nil {
+			c.Name = args[0]
+			c.Namespace = client.Namespace
+			if err := c.DeleteChan(args, clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Channel is being deleted")
@@ -40,7 +49,7 @@ func cmdDeleteChannel(clientset *client.ConfigSet) *cobra.Command {
 	}
 }
 
-// Channel removes knative build object
-func Channel(args []string, clientset *client.ConfigSet) error {
-	return clientset.Eventing.EventingV1alpha1().Channels(client.Namespace).Delete(args[0], &metav1.DeleteOptions{})
+// DeleteChan removes knative build object
+func (c *Channel) DeleteChan(args []string, clientset *client.ConfigSet) error {
+	return clientset.Eventing.EventingV1alpha1().Channels(c.Namespace).Delete(c.Name, &metav1.DeleteOptions{})
 }

@@ -27,7 +27,8 @@ import (
 
 // Service structure has minimal required set of fields to delete service
 type Service struct {
-	Name string
+	Name      string
+	Namespace string
 }
 
 // DeleteYAML removes functions defined in serverless.yaml file

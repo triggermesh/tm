@@ -34,6 +34,7 @@ func cmdDeleteService(clientset *client.ConfigSet) *cobra.Command {
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Name = args[0]
+			s.Namespace = client.Namespace
 			if err := s.DeleteService(clientset); err != nil {
 				log.Fatalln(err)
 			}
@@ -49,5 +50,5 @@ func (s Service) DeleteService(clientset *client.ConfigSet) error {
 	// fmt.Println(err)
 	// }
 	// }
-	return clientset.Serving.ServingV1alpha1().Services(client.Namespace).Delete(s.Name, &metav1.DeleteOptions{})
+	return clientset.Serving.ServingV1alpha1().Services(s.Namespace).Delete(s.Name, &metav1.DeleteOptions{})
 }
