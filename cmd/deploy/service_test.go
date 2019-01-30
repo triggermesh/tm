@@ -32,10 +32,20 @@ func TestServiceDeploy(t *testing.T) {
 	assert.NoError(t, err)
 
 	newService := Service{
-		Name: "Test",
+		Name:   "Test",
+		Source: "testbuildtemplate.yaml",
 	}
 
 	services, err := newService.Deploy(&configSet)
 	assert.NoError(t, err)
 	logrus.Info(services)
+
+	newServiceFromRepo := Service{
+		Name:   "Test",
+		Source: "git@github.com:anatoliyfedorenko/testserverlessyaml.git",
+	}
+
+	servicesGit, err := newServiceFromRepo.Deploy(&configSet)
+	assert.NoError(t, err)
+	logrus.Info(servicesGit)
 }
