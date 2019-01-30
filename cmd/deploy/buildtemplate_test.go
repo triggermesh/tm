@@ -12,6 +12,9 @@ func TestReadYAML(t *testing.T) {
 	buildTemplate, err := readYAML("testbuildtemplate.yaml")
 	assert.NoError(t, err)
 	assert.Equal(t, "nodejs-runtime", buildTemplate.ObjectMeta.Name)
+
+	_, err = readYAML("randomfile.yaml")
+	assert.Error(t, err)
 }
 
 func TestSetEnvConfig(t *testing.T) {
@@ -29,11 +32,22 @@ func TestAddSecretVolume(t *testing.T) {
 func TestCreateBuildTemplate(t *testing.T) {
 	configSet, err := client.NewClient("")
 	assert.NoError(t, err)
+
 	buildTemplate, err := readYAML("testbuildtemplate.yaml")
 	assert.NoError(t, err)
 
 	err = createBuildTemplate(buildTemplate, &configSet)
 	assert.NoError(t, err)
+
+	fake2bt, err := readYAML("fake2.yaml")
+	assert.NoError(t, err)
+	err = createBuildTemplate(fake2bt, &configSet)
+	assert.Error(t, err)
+
+	fake1bt, err := readYAML("fake1.yaml")
+	assert.NoError(t, err)
+	err = createBuildTemplate(fake1bt, &configSet)
+	assert.Error(t, err)
 
 	err = delete.BuildTemplate([]string{"nodejs-runtime"}, &configSet)
 	assert.NoError(t, err)
