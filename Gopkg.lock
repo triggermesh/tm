@@ -146,6 +146,11 @@
   version = "v0.2.0"
 
 [[projects]]
+  name = "github.com/google/go-containerregistry"
+  packages = ["pkg/name"]
+  revision = "5f7b0e4895413d785ff15b84d218d73e8a47866a"
+
+[[projects]]
   branch = "master"
   digest = "1:3ee90c0d94da31b442dde97c99635aaafec68d0b8a3c12ee2075c6bdabeec6bb"
   name = "github.com/google/gofuzz"
@@ -203,9 +208,8 @@
   digest = "1:8eb1de8112c9924d59bf1d3e5c26f5eaa2bfc2a5fcbb92dc1c2e4546d695f277"
   name = "github.com/imdario/mergo"
   packages = ["."]
-  pruneopts = "UT"
-  revision = "9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4"
-  version = "v0.3.6"
+  revision = "7c29201646fa3de8506f701213473dd407f19646"
+  version = "v0.3.7"
 
 [[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
@@ -291,8 +295,7 @@
     "logging/logkey",
     "webhook",
   ]
-  pruneopts = "UT"
-  revision = "8e50d82e5b31fc7a31548be551779e609bcdd557"
+  revision = "298debc821c24bef5375b22ff7513079603df4dc"
 
 [[projects]]
   digest = "1:00fc30eb7d9bffb487263880b75883070c04d31469d38e5774a400bd3b55dc7a"
@@ -310,9 +313,8 @@
     "pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
   ]
-  pruneopts = "UT"
-  revision = "5cbee406446031df3105ca2ac90ce4e9369207dd"
-  version = "v0.2.3"
+  revision = "4d198db8756db2f8a3c228302a97fb3a216a9475"
+  version = "v0.3.0"
 
 [[projects]]
   digest = "1:3804a3a02964db8e6db3e5e7960ac1c1a9b12835642dd4f4ac4e56c749ec73eb"
@@ -350,9 +352,8 @@
   digest = "1:78bbb1ba5b7c3f2ed0ea1eab57bdd3859aec7e177811563edc41198a760b06af"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  pruneopts = "UT"
-  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
-  version = "v1.0.0"
+  revision = "af06845cf3004701891bf4fdb884bfe4920b3727"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
@@ -553,8 +554,7 @@
     "ssh/knownhosts",
     "ssh/terminal",
   ]
-  pruneopts = "UT"
-  revision = "057139ce5d2bdbe6fe73c53679e24e9cf007f637"
+  revision = "b01c7a72566457eb1420261cdafef86638fc3861"
 
 [[projects]]
   branch = "master"
@@ -568,8 +568,7 @@
     "http2/hpack",
     "idna",
   ]
-  pruneopts = "UT"
-  revision = "ed066c81e75eba56dd9bd2139ade88125b855585"
+  revision = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf"
 
 [[projects]]
   branch = "master"
@@ -582,8 +581,7 @@
     "jws",
     "jwt",
   ]
-  pruneopts = "UT"
-  revision = "5dab4167f31cbd76b407f1486c86b40748bc5073"
+  revision = "99b60b757ec124ebb7d6b7e97f153b19c10ce163"
 
 [[projects]]
   branch = "master"
@@ -593,8 +591,7 @@
     "unix",
     "windows",
   ]
-  pruneopts = "UT"
-  revision = "c6b37f3e92850b723493d63fd35aad34e19e048d"
+  revision = "302c3dd5f1cc82baae8e44d9c3178e89b6e2b345"
 
 [[projects]]
   digest = "1:a2ab62866c75542dd18d2b069fec854577a20211d7c0ea6ae746072a1dccdd18"
@@ -899,30 +896,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = [
-    "github.com/ghodss/yaml",
-    "github.com/gosuri/uitable",
-    "github.com/knative/build/pkg/apis/build/v1alpha1",
-    "github.com/knative/build/pkg/client/clientset/versioned",
-    "github.com/knative/eventing/pkg/apis/eventing/v1alpha1",
-    "github.com/knative/eventing/pkg/client/clientset/versioned",
-    "github.com/knative/serving/pkg/apis/serving/v1alpha1",
-    "github.com/knative/serving/pkg/client/clientset/versioned",
-    "github.com/mholt/archiver",
-    "github.com/spf13/cobra",
-    "github.com/stretchr/testify/assert",
-    "golang.org/x/crypto/ssh/terminal",
-    "gopkg.in/src-d/go-git.v4",
-    "gopkg.in/yaml.v2",
-    "k8s.io/api/core/v1",
-    "k8s.io/apimachinery/pkg/api/errors",
-    "k8s.io/apimachinery/pkg/apis/meta/v1",
-    "k8s.io/apimachinery/pkg/watch",
-    "k8s.io/client-go/kubernetes",
-    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
-    "k8s.io/client-go/rest",
-    "k8s.io/client-go/tools/clientcmd",
-    "k8s.io/client-go/tools/remotecommand",
-  ]
+  inputs-digest = "e1577fc72764be67ff76b63f272cb9c123f8f6d23c755c43bbbe09f970bb4d1c"
   solver-name = "gps-cdcl"
   solver-version = 1
