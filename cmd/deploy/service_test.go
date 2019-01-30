@@ -17,9 +17,9 @@ limitations under the License.
 package deploy
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/triggermesh/tm/pkg/client"
 )
@@ -38,7 +38,7 @@ func TestServiceDeploy(t *testing.T) {
 
 	services, err := newService.Deploy(&configSet)
 	assert.NoError(t, err)
-	logrus.Info(services)
+	fmt.Println(services)
 
 	newServiceFromRepo := Service{
 		Name:   "Test",
@@ -47,5 +47,5 @@ func TestServiceDeploy(t *testing.T) {
 
 	servicesGit, err := newServiceFromRepo.Deploy(&configSet)
 	assert.NoError(t, err)
-	logrus.Info(servicesGit)
+	fmt.Println(servicesGit)
 }
