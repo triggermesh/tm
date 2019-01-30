@@ -355,6 +355,7 @@ func serviceBuildPod(name string, clientset *client.ConfigSet) (string, error) {
 }
 
 func injectSources(name string, filepath string, clientset *client.ConfigSet) error {
+	quit := time.After(timeout * time.Minute)
 	build, err := latestBuild(name, clientset)
 	if err != nil {
 		return err
@@ -374,33 +375,37 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 
 	var sourceContainer string
 	for sourceContainer == "" {
-		e := <-res.ResultChan()
-		if e.Object == nil {
-			fmt.Println("nil object in pod watch interface")
-			continue
-		}
-		pod, ok := e.Object.(*corev1.Pod)
-		if !ok {
-			continue
-		}
-		for _, v := range pod.Status.InitContainerStatuses {
-			if v.Name == "build-step-custom-source" {
-				if v.State.Terminated != nil {
-					// Looks like we got watch interface for "previous" service version, updating
-					if build, err = latestBuild(name, clientset); err != nil {
-						return err
+		select {
+		case <-quit:
+			return errors.New("Source injection timeout")
+		case e := <-res.ResultChan():
+			if e.Object == nil {
+				fmt.Println("nil object in pod watch interface")
+				continue
+			}
+			pod, ok := e.Object.(*corev1.Pod)
+			if !ok {
+				continue
+			}
+			for _, v := range pod.Status.InitContainerStatuses {
+				if v.Name == "build-step-custom-source" {
+					if v.State.Terminated != nil {
+						// Looks like we got watch interface for "previous" service version, updating
+						if build, err = latestBuild(name, clientset); err != nil {
+							return err
+						}
+						if buildPod, err = serviceBuildPod(build, clientset); err != nil {
+							return err
+						}
+						if res, err = clientset.Core.CoreV1().Pods(client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
+							return err
+						}
+						break
 					}
-					if buildPod, err = serviceBuildPod(build, clientset); err != nil {
-						return err
+					if v.State.Running != nil {
+						sourceContainer = v.Name
+						break
 					}
-					if res, err = clientset.Core.CoreV1().Pods(client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
-						return err
-					}
-					break
-				}
-				if v.State.Running != nil {
-					sourceContainer = v.Name
-					break
 				}
 			}
 		}
@@ -444,7 +449,6 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 	for {
 		select {
 		case <-quit:
-			fmt.Println("Service status wait timeout")
 			return "", errors.New("Service status wait timeout")
 		case event := <-res.ResultChan():
 			if event.Object == nil {
