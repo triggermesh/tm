@@ -376,10 +376,13 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 	for sourceContainer == "" {
 		e := <-res.ResultChan()
 		if e.Object == nil {
+			fmt.Println("nil object in pod watch interface")
 			continue
 		}
-		pod := e.Object.(*corev1.Pod)
-
+		pod, ok := e.Object.(*corev1.Pod)
+		if !ok {
+			continue
+		}
 		for _, v := range pod.Status.InitContainerStatuses {
 			if v.Name == "build-step-custom-source" {
 				if v.State.Terminated != nil {
@@ -456,22 +459,23 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 				break
 			}
 			serviceEvent, ok := event.Object.(*servingv1alpha1.Service)
-			if ok {
-				if serviceEvent.Status.IsReady() {
-					return serviceEvent.Status.Domain, nil
-				}
-				for _, v := range serviceEvent.Status.Conditions {
-					if v.IsFalse() {
-						if v.Reason == "RevisionFailed" && firstError {
-							time.Sleep(time.Second * 3)
-							if res, err = watchService(service, clientset); err != nil {
-								return "", err
-							}
-							firstError = false
-							break
+			if !ok {
+				continue
+			}
+			if serviceEvent.Status.IsReady() {
+				return serviceEvent.Status.Domain, nil
+			}
+			for _, v := range serviceEvent.Status.Conditions {
+				if v.IsFalse() {
+					if v.Reason == "RevisionFailed" && firstError {
+						time.Sleep(time.Second * 3)
+						if res, err = watchService(service, clientset); err != nil {
+							return "", err
 						}
-						return "", errors.New(v.Message)
+						firstError = false
+						break
 					}
+					return "", errors.New(v.Message)
 				}
 			}
 		}
