@@ -26,8 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/watch"
-
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -380,7 +378,13 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 			return errors.New("Source injection timeout")
 		case e := <-res.ResultChan():
 			if e.Object == nil {
-				fmt.Println("nil object in pod watch interface")
+				fmt.Println("Restarting pod watch interface")
+				if res, err = clientset.Core.CoreV1().Pods(client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
+					return err
+				}
+				if res == nil {
+					return errors.New("nil watch interface")
+				}
 				continue
 			}
 			pod, ok := e.Object.(*corev1.Pod)
@@ -428,15 +432,11 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 	return nil
 }
 
-func watchService(service string, clientset *client.ConfigSet) (watch.Interface, error) {
-	return clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", service),
-	})
-}
-
 func waitService(service string, clientset *client.ConfigSet) (string, error) {
 	quit := time.After(timeout * time.Minute)
-	res, err := watchService(service, clientset)
+	res, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", service),
+	})
 	if err != nil {
 		return "", err
 	}
@@ -453,8 +453,9 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 		case event := <-res.ResultChan():
 			if event.Object == nil {
 				fmt.Println("Restarting watch interface")
-				res.Stop()
-				if res, err = watchService(service, clientset); err != nil {
+				if res, err = clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("metadata.name=%s", service),
+				}); err != nil {
 					return "", err
 				}
 				if res == nil {
@@ -473,8 +474,13 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 				if v.IsFalse() {
 					if v.Reason == "RevisionFailed" && firstError {
 						time.Sleep(time.Second * 3)
-						if res, err = watchService(service, clientset); err != nil {
+						if res, err = clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
+							FieldSelector: fmt.Sprintf("metadata.name=%s", service),
+						}); err != nil {
 							return "", err
+						}
+						if res != nil {
+							return "", errors.New("nil watch interface")
 						}
 						firstError = false
 						break
