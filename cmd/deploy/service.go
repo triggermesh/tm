@@ -375,6 +375,9 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 	var sourceContainer string
 	for sourceContainer == "" {
 		e := <-res.ResultChan()
+		if e.Object == nil {
+			continue
+		}
 		pod := e.Object.(*corev1.Pod)
 
 		for _, v := range pod.Status.InitContainerStatuses {
@@ -464,7 +467,6 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 			}
 		}
 	}
-	return "", nil
 }
 
 func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.ConfigSet) (string, error) {
