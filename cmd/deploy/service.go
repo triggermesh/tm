@@ -20,12 +20,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"regexp"
 	"strings"
 	"time"
-
-	"k8s.io/apimachinery/pkg/watch"
 
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
@@ -39,7 +38,11 @@ import (
 const (
 	// Knative build timeout in minutes
 	timeout           = 10
-	uploadDoneTrigger = "/home/.done"
+	uploadDoneTrigger = "/home/.sourceuploaddone"
+)
+
+var (
+	sourcedir string
 )
 
 // Service represents knative service structure
@@ -56,7 +59,6 @@ type Service struct {
 	Annotations    map[string]string
 	Labels         []string
 	BuildArgs      []string
-	Wait           bool
 }
 
 type registryAuths struct {
@@ -71,22 +73,29 @@ type credentials struct {
 type registry map[string]credentials
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
-func (s *Service) Deploy(clientset *client.ConfigSet) error {
+func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	fmt.Printf("Creating %s function\n", s.Name)
 	configuration := servingv1alpha1.ConfigurationSpec{}
 
 	clusterBuildtemplate, err := s.isClusterBuildtemplate(clientset)
 	if err != nil {
 		if s.Buildtemplate, err = s.deployBuildtemplate(clientset); err != nil {
-			return err
+			return "", err
 		}
 	} else if s.Buildtemplate, err = s.cloneBuildtemplate(clusterBuildtemplate, clientset); err != nil {
-		return err
+		return "", err
 	}
-	defer clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(s.Name+"-buildtemplate", &metav1.DeleteOptions{})
+	defer clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Delete(s.Name+"-buildtemplate", &metav1.DeleteOptions{})
 
 	switch {
 	case file.IsLocal(s.Source):
+		if file.IsDir(s.Source) {
+			sourcedir = path.Base(s.Source)
+		} else {
+			sourcedir = path.Base(path.Dir(s.Source))
+			s.BuildArgs = append(s.BuildArgs, "HANDLER="+path.Base(s.Source))
+		}
+		s.BuildArgs = append(s.BuildArgs, "DIRECTORY="+sourcedir)
 		configuration = s.fromPath()
 	case file.IsGit(s.Source):
 		if len(s.Revision) == 0 {
@@ -99,7 +108,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 
 	image, err := s.imageName(clientset)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if configuration.Build != nil {
@@ -142,7 +151,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              s.Name,
 			Labels:            configuration.RevisionTemplate.ObjectMeta.Labels,
-			Namespace:         clientset.Namespace,
+			Namespace:         client.Namespace,
 			CreationTimestamp: metav1.Time{time.Now()},
 		},
 		Spec: servingv1alpha1.ServiceSpec{
@@ -152,26 +161,29 @@ func (s *Service) Deploy(clientset *client.ConfigSet) error {
 		},
 	}
 
-	if err := s.createOrUpdate(serviceObject, clientset); err != nil {
-		return err
+	if client.Dry {
+		j, err := json.MarshalIndent(serviceObject, "", " ")
+		return string(j), err
 	}
 
+	if err := s.createOrUpdate(serviceObject, clientset); err != nil {
+		return "", err
+	}
 	if file.IsLocal(s.Source) {
 		if err := injectSources(s.Name, path.Clean(s.Source), clientset); err != nil {
-			return err
+			return "", err
 		}
 	}
-	fmt.Printf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", clientset.Namespace, s.Name)
+	if !client.Wait {
+		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", client.Namespace, s.Name), nil
+	}
 
-	if s.Wait {
-		fmt.Printf("Waiting for %s ready state\n", s.Name)
-		domain, err := waitService(s.Name, clientset)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Service %s URL: http://%s\n", s.Name, domain)
+	fmt.Printf("Waiting for %s ready state\n", s.Name)
+	domain, err := waitService(s.Name, clientset)
+	if err != nil {
+		return "", err
 	}
-	return nil
+	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), nil
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {
@@ -207,7 +219,7 @@ func (s *Service) isClusterBuildtemplate(clientset *client.ConfigSet) (bool, err
 	if len(s.Buildtemplate) == 0 {
 		return false, nil
 	}
-	_, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{})
+	_, err := clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Get(s.Buildtemplate, metav1.GetOptions{})
 	if err == nil {
 		return false, nil
 	}
@@ -228,14 +240,14 @@ func (s *Service) deployBuildtemplate(clientset *client.ConfigSet) (string, erro
 }
 
 func (s *Service) createOrUpdate(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
-	_, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Create(&serviceObject)
+	_, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).Create(&serviceObject)
 	if k8sErrors.IsAlreadyExists(err) {
-		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
+		service, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		serviceObject.ObjectMeta.ResourceVersion = service.GetResourceVersion()
-		_, err = clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Update(&serviceObject)
+		_, err = clientset.Serving.ServingV1alpha1().Services(client.Namespace).Update(&serviceObject)
 		return err
 	}
 	return err
@@ -276,8 +288,14 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 					Custom: &corev1.Container{
 						Image:   "library/busybox",
 						Command: []string{"sh"},
-						Args: []string{"-c", fmt.Sprintf("while [ -z \"$(ls %s)\" ]; do sleep 1; done; sync; ls -lah /home/; mv /home/%s/* /workspace; sync",
-							uploadDoneTrigger, path.Base(path.Clean(s.Source)))},
+						Args: []string{"-c", fmt.Sprintf(`
+						while [ ! -f %s ]; do 
+							sleep 1; 
+						done; 
+						sync; 
+						mv /home/%s/* /workspace; 
+						sync;`,
+							uploadDoneTrigger, path.Clean(s.Source))},
 					},
 				},
 			},
@@ -301,14 +319,14 @@ func mapFromSlice(slice []string) map[string]string {
 func latestBuild(name string, clientset *client.ConfigSet) (string, error) {
 	var latestRevision string
 	for latestRevision == "" {
-		service, err := clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		service, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			return "", err
 		}
 		latestRevision = service.Status.LatestCreatedRevisionName
 		time.Sleep(1 * time.Second)
 	}
-	revision, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Get(latestRevision, metav1.GetOptions{IncludeUninitialized: true})
+	revision, err := clientset.Serving.ServingV1alpha1().Revisions(client.Namespace).Get(latestRevision, metav1.GetOptions{IncludeUninitialized: true})
 	if err != nil {
 		return "", err
 	}
@@ -321,7 +339,7 @@ func latestBuild(name string, clientset *client.ConfigSet) (string, error) {
 func serviceBuildPod(name string, clientset *client.ConfigSet) (string, error) {
 	var buildPod string
 	for buildPod == "" {
-		build, err := clientset.Build.BuildV1alpha1().Builds(clientset.Namespace).Get(name, metav1.GetOptions{})
+		build, err := clientset.Build.BuildV1alpha1().Builds(client.Namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			return "", err
 		}
@@ -335,6 +353,7 @@ func serviceBuildPod(name string, clientset *client.ConfigSet) (string, error) {
 }
 
 func injectSources(name string, filepath string, clientset *client.ConfigSet) error {
+	quit := time.After(timeout * time.Minute)
 	build, err := latestBuild(name, clientset)
 	if err != nil {
 		return err
@@ -343,35 +362,56 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 	if err != nil {
 		return err
 	}
-	res, err := clientset.Core.CoreV1().Pods(clientset.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod})
+	res, err := clientset.Core.CoreV1().Pods(client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod})
 	if err != nil {
 		return err
+	}
+	if res == nil {
+		return errors.New("nil watch interface")
 	}
 	defer res.Stop()
 
 	var sourceContainer string
 	for sourceContainer == "" {
-		e := <-res.ResultChan()
-		pod := e.Object.(*corev1.Pod)
-
-		for _, v := range pod.Status.InitContainerStatuses {
-			if v.Name == "build-step-custom-source" {
-				if v.State.Terminated != nil {
-					// Looks like we got watch interface for "previous" service version, updating
-					if build, err = latestBuild(name, clientset); err != nil {
-						return err
-					}
-					if buildPod, err = serviceBuildPod(build, clientset); err != nil {
-						return err
-					}
-					if res, err = clientset.Core.CoreV1().Pods(clientset.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
-						return err
-					}
-					break
+		select {
+		case <-quit:
+			return errors.New("Source injection timeout")
+		case e := <-res.ResultChan():
+			if e.Object == nil {
+				fmt.Println("Restarting pod watch interface")
+				res.Stop()
+				if res, err = clientset.Core.CoreV1().Pods(client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
+					return err
 				}
-				if v.State.Running != nil {
-					sourceContainer = v.Name
-					break
+				if res == nil {
+					return errors.New("nil watch interface")
+				}
+				continue
+			}
+			pod, ok := e.Object.(*corev1.Pod)
+			if !ok {
+				continue
+			}
+			for _, v := range pod.Status.InitContainerStatuses {
+				if v.Name == "build-step-custom-source" {
+					if v.State.Terminated != nil {
+						// Looks like we got watch interface for "previous" service version, updating
+						if build, err = latestBuild(name, clientset); err != nil {
+							return err
+						}
+						if buildPod, err = serviceBuildPod(build, clientset); err != nil {
+							return err
+						}
+						res.Stop()
+						if res, err = clientset.Core.CoreV1().Pods(client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
+							return err
+						}
+						break
+					}
+					if v.State.Running != nil {
+						sourceContainer = v.Name
+						break
+					}
 				}
 			}
 		}
@@ -381,7 +421,7 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 		Pod:         buildPod,
 		Container:   sourceContainer,
 		Source:      filepath,
-		Destination: "/home",
+		Destination: "/home/" + filepath,
 	}
 	if err := c.Upload(clientset); err != nil {
 		return err
@@ -394,17 +434,16 @@ func injectSources(name string, filepath string, clientset *client.ConfigSet) er
 	return nil
 }
 
-func watchService(service string, clientset *client.ConfigSet) (watch.Interface, error) {
-	return clientset.Serving.ServingV1alpha1().Services(clientset.Namespace).Watch(metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", service),
-	})
-}
-
 func waitService(service string, clientset *client.ConfigSet) (string, error) {
 	quit := time.After(timeout * time.Minute)
-	res, err := watchService(service, clientset)
+	res, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", service),
+	})
 	if err != nil {
 		return "", err
+	}
+	if res == nil {
+		return "", errors.New("nil watch interface")
 	}
 	defer res.Stop()
 
@@ -415,33 +454,46 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 			return "", errors.New("Service status wait timeout")
 		case event := <-res.ResultChan():
 			if event.Object == nil {
-				if res, err = watchService(service, clientset); err != nil {
+				fmt.Println("Restarting service watch interface")
+				res.Stop()
+				if res, err = clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("metadata.name=%s", service),
+				}); err != nil {
 					return "", err
+				}
+				if res == nil {
+					return "", errors.New("nil watch interface")
 				}
 				break
 			}
 			serviceEvent, ok := event.Object.(*servingv1alpha1.Service)
-			if ok {
-				if serviceEvent.Status.IsReady() {
-					return serviceEvent.Status.Domain, nil
-				}
-				for _, v := range serviceEvent.Status.Conditions {
-					if v.IsFalse() {
-						if v.Reason == "RevisionFailed" && firstError {
-							time.Sleep(time.Second * 3)
-							if res, err = watchService(service, clientset); err != nil {
-								return "", err
-							}
-							firstError = false
-							break
+			if !ok {
+				continue
+			}
+			if serviceEvent.Status.IsReady() {
+				return serviceEvent.Status.Domain, nil
+			}
+			for _, v := range serviceEvent.Status.Conditions {
+				if v.IsFalse() {
+					if v.Reason == "RevisionFailed" && firstError {
+						time.Sleep(time.Second * 3)
+						res.Stop()
+						if res, err = clientset.Serving.ServingV1alpha1().Services(client.Namespace).Watch(metav1.ListOptions{
+							FieldSelector: fmt.Sprintf("metadata.name=%s", service),
+						}); err != nil {
+							return "", err
 						}
-						return "", errors.New(v.Message)
+						if res != nil {
+							return "", errors.New("nil watch interface")
+						}
+						firstError = false
+						break
 					}
+					return "", errors.New(v.Message)
 				}
 			}
 		}
 	}
-	return "", nil
 }
 
 func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.ConfigSet) (string, error) {
@@ -461,9 +513,9 @@ func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.Con
 			TypeMeta:   cbt.TypeMeta,
 			Spec:       cbt.Spec,
 		}
-		bt.Namespace = clientset.Namespace
+		bt.Namespace = client.Namespace
 	} else {
-		if bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err != nil {
+		if bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err != nil {
 			return "", err
 		}
 	}
@@ -476,8 +528,8 @@ func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.Con
 	bt.Name = s.Buildtemplate + "-buildtemplate"
 	bt.ObjectMeta.ResourceVersion = ""
 
-	clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Delete(bt.Name, &metav1.DeleteOptions{})
-	if bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Create(bt); err != nil {
+	clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Delete(bt.Name, &metav1.DeleteOptions{})
+	if bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Create(bt); err != nil {
 		return "", err
 	}
 
@@ -486,9 +538,9 @@ func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.Con
 
 func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
 	if len(s.RegistrySecret) == 0 {
-		return fmt.Sprintf("%s/%s/%s", clientset.Registry, clientset.Namespace, s.Name), nil
+		return fmt.Sprintf("%s/%s/%s", client.Registry, client.Namespace, s.Name), nil
 	}
-	secret, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(s.RegistrySecret, metav1.GetOptions{})
+	secret, err := clientset.Core.CoreV1().Secrets(client.Namespace).Get(s.RegistrySecret, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -502,7 +554,15 @@ func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
 		return "", errors.New("credentials with multiple registries not supported")
 	}
 	for k, v := range config.Auths {
+		if url, ok := gitlabEnv(); ok {
+			return fmt.Sprintf("%s/%s", url, s.Name), nil
+		}
 		return fmt.Sprintf("%s/%s/%s", k, v.Username, s.Name), nil
 	}
 	return "", errors.New("empty registry credentials")
+}
+
+// hack to use correct username in image URL instead of "gitlab-ci-token" in Gitlab CI
+func gitlabEnv() (string, bool) {
+	return os.LookupEnv("CI_REGISTRY_IMAGE")
 }

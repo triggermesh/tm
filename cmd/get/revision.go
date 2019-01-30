@@ -51,7 +51,7 @@ func cmdListRevision(clientset *client.ConfigSet) *cobra.Command {
 
 // Revisions returns list of knative revision objects
 func Revisions(clientset *client.ConfigSet) (string, error) {
-	list, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Serving.ServingV1alpha1().Revisions(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}

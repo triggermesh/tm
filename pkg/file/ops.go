@@ -50,6 +50,15 @@ func IsLocal(path string) bool {
 	return true
 }
 
+// IsDir return true if path is directory
+func IsDir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
 // IsRemote return true if path is URL
 func IsRemote(path string) bool {
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "git@") {

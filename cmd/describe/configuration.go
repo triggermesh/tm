@@ -49,7 +49,7 @@ func cmdDescribeConfiguration(clientset *client.ConfigSet) *cobra.Command {
 
 func listConfigurations(clientset *client.ConfigSet) ([]string, error) {
 	var configurations []string
-	list, err := clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Serving.ServingV1alpha1().Configurations(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return configurations, err
 	}
@@ -61,7 +61,7 @@ func listConfigurations(clientset *client.ConfigSet) ([]string, error) {
 
 // Configuration describes knative configuration object
 func Configuration(name string, clientset *client.ConfigSet) ([]byte, error) {
-	configuration, err := clientset.Serving.ServingV1alpha1().Configurations(clientset.Namespace).Get(name, metav1.GetOptions{})
+	configuration, err := clientset.Serving.ServingV1alpha1().Configurations(client.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}

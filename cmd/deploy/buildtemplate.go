@@ -121,12 +121,12 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 	if !hasImage {
 		return errors.New("Build template \"IMAGE\" parameter is missing")
 	}
-	btOld, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(template.ObjectMeta.Name, metav1.GetOptions{})
+	btOld, err := clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Get(template.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil {
 		template.ObjectMeta.ResourceVersion = btOld.ObjectMeta.ResourceVersion
-		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Update(&template)
+		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Update(&template)
 	} else if k8sErrors.IsNotFound(err) {
-		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Create(&template)
+		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Create(&template)
 	}
 	return err
 }

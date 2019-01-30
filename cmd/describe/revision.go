@@ -49,7 +49,7 @@ func cmdDescribeRevision(clientset *client.ConfigSet) *cobra.Command {
 
 func listRevisions(clientset *client.ConfigSet) ([]string, error) {
 	var revisions []string
-	list, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Serving.ServingV1alpha1().Revisions(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return revisions, err
 	}
@@ -61,7 +61,7 @@ func listRevisions(clientset *client.ConfigSet) ([]string, error) {
 
 // Revision describes knative revision object
 func Revision(name string, clientset *client.ConfigSet) ([]byte, error) {
-	revisions, err := clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Get(name, metav1.GetOptions{})
+	revisions, err := clientset.Serving.ServingV1alpha1().Revisions(client.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}

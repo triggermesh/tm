@@ -38,13 +38,10 @@ type Copy struct {
 	Destination string
 }
 
-var (
-	uploadPath = "/tmp/tm/upload"
-	command    = "tar -xvf -"
-)
-
 // Upload receives Copy structure, creates tarball of local source path and uploads it to active (un)tar process on remote pod
 func (c *Copy) Upload(clientset *client.ConfigSet) error {
+	command := "tar -xvf -"
+	uploadPath := "/tmp/tm/upload"
 	if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
 		return err
 	}
@@ -60,15 +57,13 @@ func (c *Copy) Upload(clientset *client.ConfigSet) error {
 	}
 
 	if c.Destination != "" {
+		if _, _, err = c.RemoteExec(clientset, "mkdir -p "+c.Destination, nil); err != nil {
+			return err
+		}
 		command = fmt.Sprintf("%s -C %s", command, c.Destination)
 	}
-
-	stdout, stderr, err := c.RemoteExec(clientset, command, fileReader)
-	if err != nil {
-		fmt.Printf("Stdout: %s\nStderr: %s\nErr: %s\n", stdout, stderr, err)
-		return err
-	}
-	return nil
+	_, _, err = c.RemoteExec(clientset, command, fileReader)
+	return err
 }
 
 // RemoteExec executes command on remote pod and returns stdout and stderr output
@@ -86,7 +81,7 @@ func (c *Copy) RemoteExec(clientset *client.ConfigSet, command string, file io.R
 	}
 	// workaround to form correct URL
 	urlAndParams := strings.Split(clientset.Core.RESTClient().Post().URL().String(), "?")
-	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s/exec?stderr=true&stdin=%s&stdout=true%s", urlAndParams[0], clientset.Namespace, c.Pod, stdin, commandLine)
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s/exec?stderr=true&stdin=%s&stdout=true%s", urlAndParams[0], client.Namespace, c.Pod, stdin, commandLine)
 	if len(urlAndParams) == 2 {
 		url = fmt.Sprintf("%s&%s", url, urlAndParams[1])
 	}

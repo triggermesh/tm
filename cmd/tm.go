@@ -34,12 +34,8 @@ import (
 
 var (
 	version   string
-	debug     bool
 	err       error
 	cfgFile   string
-	namespace string
-	registry  string
-	output    string
 	clientset client.ConfigSet
 )
 
@@ -60,9 +56,11 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	tmCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "k8s config file")
-	tmCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "User namespace")
-	tmCmd.PersistentFlags().StringVar(&registry, "registry-host", "knative.registry.svc.cluster.local", "Docker registry host address")
-	tmCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "Output format")
+	tmCmd.PersistentFlags().StringVarP(&client.Namespace, "namespace", "n", "", "User namespace")
+	tmCmd.PersistentFlags().StringVar(&client.Registry, "registry-host", "knative.registry.svc.cluster.local", "Docker registry host address")
+	tmCmd.PersistentFlags().StringVarP(&client.Output, "output", "o", "", "Output format")
+	tmCmd.PersistentFlags().BoolVar(&client.Wait, "wait", false, "Wait for the operation to complete")
+	tmCmd.PersistentFlags().BoolVar(&client.Dry, "dry", false, "Do not create k8s objects, just print its structure")
 
 	tmCmd.AddCommand(versionCmd)
 	tmCmd.AddCommand(set.NewSetCmd(&clientset))
@@ -81,10 +79,10 @@ var versionCmd = &cobra.Command{
 }
 
 func initConfig() {
-	describe.Format(&output)
-	get.Format(&output)
+	describe.Format(&client.Output)
+	get.Format(&client.Output)
 
-	if clientset, err = client.NewClient(cfgFile, namespace, registry); err != nil {
+	if clientset, err = client.NewClient(cfgFile); err != nil {
 		log.Fatalln(err)
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -35,12 +36,12 @@ type Route struct {
 func split(slice []string) map[string]int {
 	m := make(map[string]int)
 	for _, s := range slice {
-		t := regexp.MustCompile("[:=]").Split(s, 2)
+		t := regexp.MustCompile("[:=]").Split(strings.TrimSpace(s), 2)
 		if len(t) != 2 {
 			fmt.Printf("Can't parse target %s\n", s)
 			continue
 		}
-		percent, err := strconv.Atoi(t[1])
+		percent, err := strconv.Atoi(strings.TrimSpace(t[1]))
 		if err != nil {
 			fmt.Printf("Invalid traffic percent value %s\n", t[1])
 			continue
@@ -67,7 +68,7 @@ func (r *Route) SetPercentage(args []string, clientset *client.ConfigSet) error 
 		})
 	}
 
-	routeOld, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(args[0], metav1.GetOptions{})
+	routeOld, err := clientset.Serving.ServingV1alpha1().Routes(client.Namespace).Get(args[0], metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func (r *Route) SetPercentage(args []string, clientset *client.ConfigSet) error 
 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      args[0],
-			Namespace: clientset.Namespace,
+			Namespace: client.Namespace,
 			Labels: map[string]string{
 				"created-by":                  "tm",
 				"serving.knative.dev/service": args[0],
@@ -89,7 +90,7 @@ func (r *Route) SetPercentage(args []string, clientset *client.ConfigSet) error 
 	fmt.Printf("%+v\n", route)
 	route.ObjectMeta.ResourceVersion = routeOld.ObjectMeta.ResourceVersion
 	route.Spec.Traffic = targets
-	if _, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Update(&route); err != nil {
+	if _, err := clientset.Serving.ServingV1alpha1().Routes(client.Namespace).Update(&route); err != nil {
 		return err
 	}
 

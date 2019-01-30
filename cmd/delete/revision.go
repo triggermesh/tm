@@ -42,5 +42,5 @@ func cmdDeleteRevision(clientset *client.ConfigSet) *cobra.Command {
 
 // Revision remove knative revision object
 func Revision(args []string, clientset *client.ConfigSet) error {
-	return clientset.Serving.ServingV1alpha1().Revisions(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
+	return clientset.Serving.ServingV1alpha1().Revisions(client.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

@@ -42,5 +42,5 @@ func cmdDeleteRoute(clientset *client.ConfigSet) *cobra.Command {
 
 // Route removes knative route object
 func Route(args []string, clientset *client.ConfigSet) error {
-	return clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
+	return clientset.Serving.ServingV1alpha1().Routes(client.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

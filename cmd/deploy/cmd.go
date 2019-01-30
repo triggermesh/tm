@@ -45,8 +45,6 @@ func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	}
 
 	deployCmd.Flags().StringVarP(&YAML, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
-	deployCmd.Flags().BoolVarP(&service.Wait, "wait", "w", false, "Wait for each function deployment")
-
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployChannel(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
@@ -64,9 +62,11 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 		Example: "tm -n default deploy service foo --build-template kaniko --from-image gcr.io/google-samples/hello-app:1.0",
 		Run: func(cmd *cobra.Command, args []string) {
 			service.Name = args[0]
-			if err := service.Deploy(clientset); err != nil {
+			output, err := service.Deploy(clientset)
+			if err != nil {
 				log.Fatal(err)
 			}
+			fmt.Println(output)
 		},
 	}
 
@@ -77,7 +77,6 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 
 	deployServiceCmd.Flags().StringVarP(&service.Source, "from", "f", "", "Service source to deploy: local folder with sources, git repository or docker image")
 	deployServiceCmd.Flags().StringVar(&service.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
-	deployServiceCmd.Flags().BoolVar(&service.Wait, "wait", false, "Wait for successful service deployment")
 	deployServiceCmd.Flags().StringVar(&service.Buildtemplate, "build-template", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
 	deployServiceCmd.Flags().StringVar(&service.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
 	deployServiceCmd.Flags().StringVar(&service.ResultImageTag, "tag", "latest", "Image tag to build")

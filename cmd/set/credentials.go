@@ -36,18 +36,20 @@ type Credentials struct {
 }
 
 // SetRegistryCreds creates Secret with docker registry credentials json which later can be mounted as config.json file
-func (c *Credentials) SetRegistryCreds(name string, stdin bool, clientset *client.ConfigSet) error {
+func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet) error {
 	secrets := make(map[string]string)
-	if stdin {
+	if !gitlabCI() && (len(c.Password) == 0 || len(c.Host) == 0 || len(c.Username) == 0) {
 		if err := c.readStdin(); err != nil {
 			return err
 		}
 	}
 	secret := fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
-	s, err := clientset.Core.CoreV1().Secrets(clientset.Namespace).Get(name, metav1.GetOptions{})
-	if err == nil {
+	if s, err := clientset.Core.CoreV1().Secrets(client.Namespace).Get(name, metav1.GetOptions{}); err == nil {
 		for k, v := range s.Data {
 			secrets[k] = string(v)
+		}
+		if err = clientset.Core.CoreV1().Secrets(client.Namespace).Delete(name, &metav1.DeleteOptions{}); err != nil {
+			return err
 		}
 	}
 
@@ -57,6 +59,9 @@ func (c *Credentials) SetRegistryCreds(name string, stdin bool, clientset *clien
 	if c.Push || c.Push == c.Pull {
 		secrets["config.json"] = secret
 	}
+	if _, ok := secrets[".dockerconfigjson"]; !ok {
+		secrets[".dockerconfigjson"] = "{}"
+	}
 	newSecret := corev1.Secret{
 		Type: "kubernetes.io/dockerconfigjson",
 		TypeMeta: metav1.TypeMeta{
@@ -65,30 +70,23 @@ func (c *Credentials) SetRegistryCreds(name string, stdin bool, clientset *clien
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: clientset.Namespace,
+			Namespace: client.Namespace,
 		},
 		StringData: secrets,
 	}
-	if s.GetName() != "" {
-		newSecret.ObjectMeta.ResourceVersion = s.ObjectMeta.ResourceVersion
-		if _, err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Update(&newSecret); err != nil {
-			return err
-		}
-	} else {
-		if _, err = clientset.Core.CoreV1().Secrets(clientset.Namespace).Create(&newSecret); err != nil {
-			return err
-		}
+	if _, err := clientset.Core.CoreV1().Secrets(client.Namespace).Create(&newSecret); err != nil {
+		return err
 	}
 
 	if c.Pull || c.Pull == c.Push {
-		sa, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Get("default", metav1.GetOptions{})
+		sa, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Get("default", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		sa.ImagePullSecrets = []corev1.LocalObjectReference{
 			{Name: name},
 		}
-		if _, err := clientset.Core.CoreV1().ServiceAccounts(clientset.Namespace).Update(sa); err != nil {
+		if _, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Update(sa); err != nil {
 			return err
 		}
 	}
@@ -123,4 +121,11 @@ func (c *Credentials) readStdin() error {
 		c.Password = string(text)
 	}
 	return nil
+}
+
+func gitlabCI() bool {
+	if ci, _ := os.LookupEnv("GITLAB_CI"); ci == "true" {
+		return true
+	}
+	return false
 }

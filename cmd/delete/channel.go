@@ -42,5 +42,5 @@ func cmdDeleteChannel(clientset *client.ConfigSet) *cobra.Command {
 
 // Channel removes knative build object
 func Channel(args []string, clientset *client.ConfigSet) error {
-	return clientset.Eventing.EventingV1alpha1().Channels(clientset.Namespace).Delete(args[0], &metav1.DeleteOptions{})
+	return clientset.Eventing.EventingV1alpha1().Channels(client.Namespace).Delete(args[0], &metav1.DeleteOptions{})
 }

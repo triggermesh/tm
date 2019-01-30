@@ -49,7 +49,7 @@ func cmdDescribeBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 
 func listBuildTemplates(clientset *client.ConfigSet) ([]string, error) {
 	var buildtemplates []string
-	list, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		fmt.Println("Can't read BuildTemplates")
 	}
@@ -68,7 +68,7 @@ func listBuildTemplates(clientset *client.ConfigSet) ([]string, error) {
 
 // BuildTemplate describes knative buildtemplate
 func BuildTemplate(name string, clientset *client.ConfigSet) ([]byte, error) {
-	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(clientset.Namespace).Get(name, metav1.GetOptions{})
+	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Get(name, metav1.GetOptions{})
 	if err == nil {
 		return encode(buildtemplate)
 	}

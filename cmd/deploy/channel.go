@@ -42,7 +42,7 @@ func (c *Channel) newObject(clientset *client.ConfigSet) eventingApi.Channel {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      c.Name,
-			Namespace: clientset.Namespace,
+			Namespace: client.Namespace,
 		},
 		Spec: eventingApi.ChannelSpec{
 			Provisioner: &corev1.ObjectReference{
@@ -55,14 +55,14 @@ func (c *Channel) newObject(clientset *client.ConfigSet) eventingApi.Channel {
 }
 
 func (c *Channel) createOrUpdate(channelObject eventingApi.Channel, clientset *client.ConfigSet) error {
-	_, err := clientset.Eventing.EventingV1alpha1().Channels(clientset.Namespace).Create(&channelObject)
+	_, err := clientset.Eventing.EventingV1alpha1().Channels(client.Namespace).Create(&channelObject)
 	if k8sErrors.IsAlreadyExists(err) {
-		channel, err := clientset.Eventing.EventingV1alpha1().Channels(clientset.Namespace).Get(channelObject.ObjectMeta.Name, metav1.GetOptions{})
+		channel, err := clientset.Eventing.EventingV1alpha1().Channels(client.Namespace).Get(channelObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		channelObject.ObjectMeta.ResourceVersion = channel.GetResourceVersion()
-		_, err = clientset.Eventing.EventingV1alpha1().Channels(clientset.Namespace).Update(&channelObject)
+		_, err = clientset.Eventing.EventingV1alpha1().Channels(client.Namespace).Update(&channelObject)
 	}
 	return err
 }

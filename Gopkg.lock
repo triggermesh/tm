@@ -118,6 +118,11 @@
   version = "v0.2.0"
 
 [[projects]]
+  name = "github.com/google/go-containerregistry"
+  packages = ["pkg/name"]
+  revision = "5f7b0e4895413d785ff15b84d218d73e8a47866a"
+
+[[projects]]
   branch = "master"
   name = "github.com/google/gofuzz"
   packages = ["."]
@@ -164,8 +169,8 @@
 [[projects]]
   name = "github.com/imdario/mergo"
   packages = ["."]
-  revision = "9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4"
-  version = "v0.3.6"
+  revision = "7c29201646fa3de8506f701213473dd407f19646"
+  version = "v0.3.7"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -236,7 +241,7 @@
     "logging/logkey",
     "webhook"
   ]
-  revision = "8e50d82e5b31fc7a31548be551779e609bcdd557"
+  revision = "298debc821c24bef5375b22ff7513079603df4dc"
 
 [[projects]]
   name = "github.com/knative/serving"
@@ -253,8 +258,8 @@
     "pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1"
   ]
-  revision = "5cbee406446031df3105ca2ac90ce4e9369207dd"
-  version = "v0.2.3"
+  revision = "4d198db8756db2f8a3c228302a97fb3a216a9475"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/markbates/inflect"
@@ -283,8 +288,8 @@
 [[projects]]
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
-  version = "v1.0.0"
+  revision = "af06845cf3004701891bf4fdb884bfe4920b3727"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/modern-go/concurrent"
@@ -434,7 +439,7 @@
     "ssh/knownhosts",
     "ssh/terminal"
   ]
-  revision = "057139ce5d2bdbe6fe73c53679e24e9cf007f637"
+  revision = "b01c7a72566457eb1420261cdafef86638fc3861"
 
 [[projects]]
   branch = "master"
@@ -447,7 +452,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "ed066c81e75eba56dd9bd2139ade88125b855585"
+  revision = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf"
 
 [[projects]]
   branch = "master"
@@ -459,7 +464,7 @@
     "jws",
     "jwt"
   ]
-  revision = "5dab4167f31cbd76b407f1486c86b40748bc5073"
+  revision = "99b60b757ec124ebb7d6b7e97f153b19c10ce163"
 
 [[projects]]
   branch = "master"
@@ -468,7 +473,7 @@
     "unix",
     "windows"
   ]
-  revision = "c6b37f3e92850b723493d63fd35aad34e19e048d"
+  revision = "302c3dd5f1cc82baae8e44d9c3178e89b6e2b345"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -751,6 +756,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5411c306700bc44fc683605a5b0df668ffd5218e59a1ee4b5d991b424f813eb6"
+  inputs-digest = "e1577fc72764be67ff76b63f272cb9c123f8f6d23c755c43bbbe09f970bb4d1c"
   solver-name = "gps-cdcl"
   solver-version = 1

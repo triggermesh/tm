@@ -49,7 +49,7 @@ func cmdDescribeRoute(clientset *client.ConfigSet) *cobra.Command {
 
 func listRoutes(clientset *client.ConfigSet) ([]string, error) {
 	var routes []string
-	list, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).List(metav1.ListOptions{})
+	list, err := clientset.Serving.ServingV1alpha1().Routes(client.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return routes, err
 	}
@@ -61,7 +61,7 @@ func listRoutes(clientset *client.ConfigSet) ([]string, error) {
 
 // Route dedscribes knative route object
 func Route(name string, clientset *client.ConfigSet) ([]byte, error) {
-	routes, err := clientset.Serving.ServingV1alpha1().Routes(clientset.Namespace).Get(name, metav1.GetOptions{})
+	routes, err := clientset.Serving.ServingV1alpha1().Routes(client.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return []byte{}, err
 	}
