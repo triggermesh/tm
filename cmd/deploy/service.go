@@ -421,6 +421,7 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 
 	c := file.Copy{
 		Pod:         buildPod,
+		Namespace:   s.Namespace,
 		Container:   sourceContainer,
 		Source:      path.Clean(s.Source),
 		Destination: "/home/" + path.Clean(s.Source),
