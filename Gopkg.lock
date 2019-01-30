@@ -118,6 +118,11 @@
   version = "v0.2.0"
 
 [[projects]]
+  name = "github.com/google/go-containerregistry"
+  packages = ["pkg/name"]
+  revision = "5f7b0e4895413d785ff15b84d218d73e8a47866a"
+
+[[projects]]
   branch = "master"
   name = "github.com/google/gofuzz"
   packages = ["."]
@@ -253,8 +258,8 @@
     "pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1"
   ]
-  revision = "5cbee406446031df3105ca2ac90ce4e9369207dd"
-  version = "v0.2.3"
+  revision = "4d198db8756db2f8a3c228302a97fb3a216a9475"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/markbates/inflect"
@@ -434,7 +439,7 @@
     "ssh/knownhosts",
     "ssh/terminal"
   ]
-  revision = "ccddf3741a0cfcee0a62d34c18c2c5417a3761af"
+  revision = "b01c7a72566457eb1420261cdafef86638fc3861"
 
 [[projects]]
   branch = "master"
@@ -751,6 +756,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5411c306700bc44fc683605a5b0df668ffd5218e59a1ee4b5d991b424f813eb6"
+  inputs-digest = "e1577fc72764be67ff76b63f272cb9c123f8f6d23c755c43bbbe09f970bb4d1c"
   solver-name = "gps-cdcl"
   solver-version = 1

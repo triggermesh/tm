@@ -432,17 +432,26 @@ func waitService(service string, clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if res == nil {
+		return "", errors.New("nil watch interface")
+	}
 	defer res.Stop()
 
 	firstError := true
 	for {
 		select {
 		case <-quit:
+			fmt.Println("Service status wait timeout")
 			return "", errors.New("Service status wait timeout")
 		case event := <-res.ResultChan():
 			if event.Object == nil {
+				fmt.Println("Restarting watch interface")
+				res.Stop()
 				if res, err = watchService(service, clientset); err != nil {
 					return "", err
+				}
+				if res == nil {
+					return "", errors.New("nil watch interface")
 				}
 				break
 			}
