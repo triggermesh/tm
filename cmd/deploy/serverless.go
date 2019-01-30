@@ -180,6 +180,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 func (s *Service) serviceObject(function file.Function) Service {
 	service := Service{
 		Source:         function.Source,
+		Namespace:      s.Namespace,
 		Buildtemplate:  function.Runtime,
 		Labels:         function.Labels,
 		ResultImageTag: "latest",

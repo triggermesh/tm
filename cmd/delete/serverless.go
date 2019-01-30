@@ -81,6 +81,7 @@ func (s *Service) DeleteYAML(filepath string, functions []string, clientset *cli
 		service := Service{
 			Name: fmt.Sprintf("%s-%s", s.Name, name),
 		}
+		service.Namespace = s.Namespace
 
 		wg.Add(1)
 		fmt.Printf("Deleting %s\n", service.Name)
