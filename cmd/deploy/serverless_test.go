@@ -9,6 +9,7 @@ import (
 )
 
 func TestDeployYaml(t *testing.T) {
+
 	configSet, err := client.NewClient("")
 	assert.NoError(t, err)
 
