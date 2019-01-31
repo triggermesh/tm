@@ -111,8 +111,8 @@ func NewClient(cfgFile string) (ConfigSet, error) {
 	kubeconfig := os.Getenv("KUBECONFIG")
 	if len(cfgFile) != 0 {
 		// using config file passed with --config argument
-	} else if _, err := os.Stat(homeDir + "/.tm/config.json"); err == nil {
-		cfgFile = homeDir + "/.tm/config.json"
+	} else if _, err := os.Stat(homeDir + confPath); err == nil {
+		cfgFile = homeDir + confPath
 	} else if _, err := os.Stat(kubeconfig); err == nil {
 		cfgFile = kubeconfig
 	} else {

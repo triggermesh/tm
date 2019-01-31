@@ -5,6 +5,26 @@ jobs:
     docker:
       - image: circleci/golang
     steps:
+      - run:
+          name: Install gcloud SDK
+          command: |
+            echo "deb http://packages.cloud.google.com/apt cloud-sdk-stretch main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+            go get -u github.com/jstemmer/go-junit-report
+            sudo apt-get update -y
+            sudo apt-get install google-cloud-sdk -y
+      - run:
+          name: Store Service Account
+          command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
+      - run:
+          name: Setup credentials 
+          command: |
+            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+            gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+            gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+            gcloud --quiet container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
+            mkdir -p ${HOME}/.tm/
+            cp ${HOME}/.kube/config ${HOME}/.tm/config.json
       - checkout
       - restore_cache:
           keys:
@@ -17,7 +37,7 @@ jobs:
           command: |
             mkdir tests
             make test | tee go-test.out
-            # go-junit-report <go-test.out > tests/go-test-report.xml
+            go-junit-report <go-test.out > tests/go-test-report.xml
       - store_test_results:
          path: tests
       - run:

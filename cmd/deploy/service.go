@@ -169,6 +169,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err := s.createOrUpdate(serviceObject, clientset); err != nil {
 		return "", err
 	}
+
 	if file.IsLocal(s.Source) {
 		if err := injectSources(s.Name, path.Clean(s.Source), clientset); err != nil {
 			return "", err
