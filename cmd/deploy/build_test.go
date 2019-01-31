@@ -10,7 +10,7 @@ import (
 )
 
 func TestBuildDeploy(t *testing.T) {
-	configSet, err := client.NewClient("conf.json")
+	configSet, err := client.NewClient("")
 	assert.NoError(t, err)
 	build := Build{
 		Name:          "testbuild",
