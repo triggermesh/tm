@@ -48,7 +48,7 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		s.setupParentVars(definition)
 	}
 	if len(definition.Provider.Registry) != 0 {
-		client.Registry = definition.Provider.Registry
+		s.Registry = definition.Provider.Registry
 	}
 	if len(definition.Provider.Namespace) != 0 {
 		s.Namespace = definition.Provider.Namespace
