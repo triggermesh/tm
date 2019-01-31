@@ -17,9 +17,13 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUsername(t *testing.T) {
+	assert := assert.New(t)
+
 	c := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"triggermesh","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
 	d := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"test","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
 
@@ -40,38 +44,24 @@ func TestUsername(t *testing.T) {
 	for _, tc := range testCases {
 		namespace, err := username(tc.input)
 		if err != nil {
-			if err.Error() != tc.err {
-				t.Errorf("Error does not match! Expecting [%s], got [%s]", tc.err, err.Error())
-			}
+			assert.Equal(tc.err, err.Error())
 		}
-		if namespace != tc.output {
-			t.Errorf("Namespace does not match! Expecting %s, got %s", tc.output, namespace)
-		}
+		assert.Equal(tc.output, namespace)
 	}
 
 	os.Remove("config.json")
 	os.Remove("default.json")
-
 }
 
-// func TestNewClient(t *testing.T) {
+func TestNewClient(t *testing.T) {
+	// _, err := NewClient("")
+	// assert.NoError(t, err)
 
-// 	err := os.Setenv("KUBECONFIG", "/tmp/test/config.json")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+	_, err := NewClient("test.json")
+	assert.NoError(t, err)
 
-// 	c := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"triggermesh","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
-
-// 	path := os.Getenv("KUBECONFIG")
-// 	ioutil.WriteFile(path, c, 0644)
-
-// 	configSet, err := NewClient("", "testnamespace", "testregistry")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-
-// 	fmt.Println(configSet)
-
-// 	os.Remove(path)
-// }
+	os.Setenv("KUBECONFIG", "test.json")
+	_, err = NewClient("")
+	assert.NoError(t, err)
+	os.Unsetenv("KUBECONFIG")
+}
