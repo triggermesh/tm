@@ -36,6 +36,8 @@ func TestCreateBuildTemplate(t *testing.T) {
 	buildTemplate, err := readYAML("testbuildtemplate.yaml")
 	assert.NoError(t, err)
 
+	buildTemplate.Namespace = "test"
+
 	err = createBuildTemplate(buildTemplate, &configSet)
 	assert.NoError(t, err)
 
@@ -49,7 +51,11 @@ func TestCreateBuildTemplate(t *testing.T) {
 	err = createBuildTemplate(fake1bt, &configSet)
 	assert.Error(t, err)
 
-	err = delete.BuildTemplate([]string{"nodejs-runtime"}, &configSet)
+	testBuildtemplate := delete.Buildtemplate{
+		Name:      "nodejs-runtime",
+		Namespace: "test",
+	}
+	err = testBuildtemplate.DeleteBuildtemplate(&configSet)
 	assert.NoError(t, err)
 }
 
@@ -63,6 +69,7 @@ func TestGetBuildArguments(t *testing.T) {
 func TestfBuildTemplateDeploy(t *testing.T) {
 	bt := Buildtemplate{
 		Name:           "testbuildTemplate",
+		Namespace:      "test",
 		File:           "testFile",
 		RegistrySecret: "testSecret",
 	}
@@ -74,6 +81,10 @@ func TestfBuildTemplateDeploy(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "testbuildTemplate", name)
 
-	err = delete.BuildTemplate([]string{"nodejs-runtime"}, &configSet)
+	testBuildtemplate := delete.Buildtemplate{
+		Name:      "nodejs-runtime",
+		Namespace: "test",
+	}
+	err = testBuildtemplate.DeleteBuildtemplate(&configSet)
 	assert.NoError(t, err)
 }

@@ -381,7 +381,6 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 			return errors.New("Source injection timeout")
 		case e := <-res.ResultChan():
 			if e.Object == nil {
-				fmt.Println("Restarting pod watch interface")
 				res.Stop()
 				if res, err = clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
 					return err

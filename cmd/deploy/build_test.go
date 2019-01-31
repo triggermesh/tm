@@ -14,6 +14,7 @@ func TestBuildDeploy(t *testing.T) {
 	assert.NoError(t, err)
 	build := Build{
 		Name:          "testbuild",
+		Namespace:     "test",
 		Buildtemplate: "knative-go-runtime",
 		Step:          "buildStep",
 	}
@@ -21,14 +22,18 @@ func TestBuildDeploy(t *testing.T) {
 	assert.NoError(t, err)
 
 	buildWithStep := Build{
-		Name:  "testbuild",
-		Step:  "buildStep",
-		Image: "gcr.io/example-builders/build-example",
+		Name:      "testbuild",
+		Namespace: "test",
+		Step:      "buildStep",
+		Image:     "gcr.io/example-builders/build-example",
 	}
 	err = buildWithStep.Deploy(&configSet)
 	assert.NoError(t, err)
 
-	err = delete.Build([]string{"testbuild"}, &configSet)
+	testbuild := delete.Build{
+		Name: "testbuild",
+	}
+	testbuild.DeleteBuild(&configSet)
 	assert.NoError(t, err)
 
 	buildWithErr := Build{
