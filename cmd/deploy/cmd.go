@@ -38,6 +38,7 @@ func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
+			service.Namespace = client.Namespace
 			if _, err := service.DeployYAML(YAML, args, clientset); err != nil {
 				log.Fatal(err)
 			}
@@ -62,6 +63,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 		Example: "tm -n default deploy service foo --build-template kaniko --from-image gcr.io/google-samples/hello-app:1.0",
 		Run: func(cmd *cobra.Command, args []string) {
 			service.Name = args[0]
+			service.Namespace = client.Namespace
 			output, err := service.Deploy(clientset)
 			if err != nil {
 				log.Fatal(err)
@@ -96,6 +98,7 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Deploy knative build template",
 		Example: "tm -n default deploy buildtemplate -f https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
 		Run: func(cmd *cobra.Command, args []string) {
+			buildtemplate.Namespace = client.Namespace
 			if _, err := buildtemplate.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
@@ -121,6 +124,7 @@ func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 		Example: "tm deploy build foo-builder --source git-repo --buildtemplate kaniko --args IMAGE=knative-local-registry:5000/foo-image",
 		Run: func(cmd *cobra.Command, args []string) {
 			build.Name = args[0]
+			build.Namespace = client.Namespace
 			if err := build.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
@@ -147,6 +151,7 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Deploy knative eventing channel",
 		Run: func(cmd *cobra.Command, args []string) {
 			channel.Name = args[0]
+			channel.Namespace = client.Namespace
 			if err := channel.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}

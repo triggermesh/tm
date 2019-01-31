@@ -25,6 +25,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type Buildtemplate struct {
+	Name      string
+	Namespace string
+}
+
+var bt Buildtemplate
+
 func cmdDeleteBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "buildtemplate",
@@ -32,7 +39,9 @@ func cmdDeleteBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Delete knative buildtemplate resource",
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := BuildTemplate(args, clientset); err != nil {
+			bt.Name = args[0]
+			bt.Namespace = client.Namespace
+			if err := bt.DeleteBuildtemplate(clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("BuildTemplate is being deleted")
@@ -41,6 +50,6 @@ func cmdDeleteBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 }
 
 // BuildTemplate removes knative buildtemplate
-func BuildTemplate(args []string, clientset *client.ConfigSet) error {
-	return clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Delete(args[0], &metav1.DeleteOptions{})
+func (bt *Buildtemplate) DeleteBuildtemplate(clientset *client.ConfigSet) error {
+	return clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).Delete(bt.Name, &metav1.DeleteOptions{})
 }

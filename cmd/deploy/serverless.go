@@ -51,7 +51,7 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		client.Registry = definition.Provider.Registry
 	}
 	if len(definition.Provider.Namespace) != 0 {
-		client.Namespace = definition.Provider.Namespace
+		s.Namespace = definition.Provider.Namespace
 	}
 	if len(definition.Provider.Runtime) != 0 {
 		s.Buildtemplate = definition.Provider.Runtime
@@ -105,7 +105,7 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 	}
 
 	if len(functionsToDeploy) == 0 {
-		if err = removeOrphans(services, prefix, clientset); err != nil {
+		if err = s.removeOrphans(services, prefix, clientset); err != nil {
 			return nil, err
 		}
 	}
@@ -180,6 +180,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 func (s *Service) serviceObject(function file.Function) Service {
 	service := Service{
 		Source:         function.Source,
+		Namespace:      s.Namespace,
 		Buildtemplate:  function.Runtime,
 		Labels:         function.Labels,
 		ResultImageTag: "latest",
@@ -198,8 +199,8 @@ func (s *Service) serviceObject(function file.Function) Service {
 	return service
 }
 
-func removeOrphans(created []Service, label string, clientset *client.ConfigSet) error {
-	list, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).List(metav1.ListOptions{
+func (s *Service) removeOrphans(created []Service, label string, clientset *client.ConfigSet) error {
+	list, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{
 		IncludeUninitialized: true,
 		LabelSelector:        "service=" + label,
 	})

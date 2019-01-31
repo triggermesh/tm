@@ -34,6 +34,7 @@ import (
 type Copy struct {
 	Pod         string
 	Container   string
+	Namespace   string
 	Source      string
 	Destination string
 }
@@ -81,7 +82,7 @@ func (c *Copy) RemoteExec(clientset *client.ConfigSet, command string, file io.R
 	}
 	// workaround to form correct URL
 	urlAndParams := strings.Split(clientset.Core.RESTClient().Post().URL().String(), "?")
-	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s/exec?stderr=true&stdin=%s&stdout=true%s", urlAndParams[0], client.Namespace, c.Pod, stdin, commandLine)
+	url := fmt.Sprintf("%sapi/v1/namespaces/%s/pods/%s/exec?stderr=true&stdin=%s&stdout=true%s", urlAndParams[0], c.Namespace, c.Pod, stdin, commandLine)
 	if len(urlAndParams) == 2 {
 		url = fmt.Sprintf("%s&%s", url, urlAndParams[1])
 	}

@@ -32,8 +32,9 @@ func TestServiceDeploy(t *testing.T) {
 	assert.NoError(t, err)
 
 	newService := Service{
-		Name:   "Test",
-		Source: "testbuildtemplate.yaml",
+		Name:      "Test",
+		Namespace: "test",
+		Source:    "testbuildtemplate.yaml",
 	}
 
 	services, err := newService.Deploy(&configSet)
@@ -41,8 +42,9 @@ func TestServiceDeploy(t *testing.T) {
 	fmt.Println(services)
 
 	newServiceFromRepo := Service{
-		Name:   "Test",
-		Source: "git@github.com:anatoliyfedorenko/testserverlessyaml.git",
+		Name:      "Test",
+		Namespace: "test",
+		Source:    "git@github.com:anatoliyfedorenko/testserverlessyaml.git",
 	}
 
 	servicesGit, err := newServiceFromRepo.Deploy(&configSet)

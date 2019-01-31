@@ -32,6 +32,7 @@ func NewDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 		Use:   "delete",
 		Short: "Delete knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
+			s.Namespace = client.Namespace
 			if err := s.DeleteYAML(file, args, clientset); err != nil {
 				log.Fatal(err)
 			}

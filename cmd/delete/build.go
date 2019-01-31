@@ -25,6 +25,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type Build struct {
+	Name      string
+	Namespace string
+}
+
+var b Build
+
 func cmdDeleteBuild(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
 		Use:     "build",
@@ -32,7 +39,9 @@ func cmdDeleteBuild(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Delete knative build resource",
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := Build(args, clientset); err != nil {
+			b.Name = args[0]
+			b.Namespace = client.Namespace
+			if err := b.DeleteBuild(clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Build is being deleted")
@@ -40,7 +49,7 @@ func cmdDeleteBuild(clientset *client.ConfigSet) *cobra.Command {
 	}
 }
 
-// Build removes knative build object
-func Build(args []string, clientset *client.ConfigSet) error {
-	return clientset.Build.BuildV1alpha1().Builds(client.Namespace).Delete(args[0], &metav1.DeleteOptions{})
+// DeleteBuild removes knative build object
+func (b *Build) DeleteBuild(clientset *client.ConfigSet) error {
+	return clientset.Build.BuildV1alpha1().Builds(b.Namespace).Delete(b.Name, &metav1.DeleteOptions{})
 }

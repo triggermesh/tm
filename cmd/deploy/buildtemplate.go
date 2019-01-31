@@ -33,6 +33,7 @@ import (
 // Buildtemplate contains information about knative buildtemplate definition
 type Buildtemplate struct {
 	Name           string
+	Namespace      string
 	File           string
 	RegistrySecret string
 }
@@ -57,6 +58,7 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (string, error) {
 	if len(b.Name) != 0 {
 		bt.ObjectMeta.Name = b.Name
 	}
+	bt.ObjectMeta.Namespace = b.Namespace
 
 	if len(b.RegistrySecret) != 0 {
 		addSecretVolume(b.RegistrySecret, &bt)
@@ -121,12 +123,12 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 	if !hasImage {
 		return errors.New("Build template \"IMAGE\" parameter is missing")
 	}
-	btOld, err := clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Get(template.ObjectMeta.Name, metav1.GetOptions{})
+	btOld, err := clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Get(template.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil {
 		template.ObjectMeta.ResourceVersion = btOld.ObjectMeta.ResourceVersion
-		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Update(&template)
+		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Update(&template)
 	} else if k8sErrors.IsNotFound(err) {
-		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(client.Namespace).Create(&template)
+		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Create(&template)
 	}
 	return err
 }

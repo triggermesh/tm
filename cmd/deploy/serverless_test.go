@@ -9,11 +9,13 @@ import (
 )
 
 func TestDeployYaml(t *testing.T) {
-
+	client.Dry = true
 	configSet, err := client.NewClient("")
 	assert.NoError(t, err)
 
-	newService := Service{}
+	newService := Service{
+		Namespace: "test",
+	}
 
 	services, err := newService.DeployYAML("git@github.com:anatoliyfedorenko/testserverlessyaml.git", []string{"get", "post"}, &configSet)
 	assert.NoError(t, err)
@@ -28,12 +30,14 @@ func TestRemoveOrphans(t *testing.T) {
 	configSet, err := client.NewClient("")
 	assert.NoError(t, err)
 
-	newService := Service{}
+	newService := Service{
+		Namespace: "test",
+	}
 
 	services, err := newService.DeployYAML("git@github.com:anatoliyfedorenko/testserverlessyaml.git", []string{"get", "post"}, &configSet)
 	assert.NoError(t, err)
 
-	err = removeOrphans(services, "", &configSet)
+	err = newService.removeOrphans(services, "", &configSet)
 	assert.NoError(t, err)
 }
 
