@@ -45,7 +45,7 @@ func TestBuildDeploy(t *testing.T) {
 	assert.Error(t, err)
 
 	testbuild.DeleteBuild(&configSet)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestFromBuildTemplate(t *testing.T) {
