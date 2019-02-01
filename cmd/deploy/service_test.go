@@ -25,15 +25,13 @@ import (
 )
 
 func TestServiceDeploy(t *testing.T) {
-
 	client.Dry = true
-
 	configSet, err := client.NewClient("")
 	assert.NoError(t, err)
 
 	newService := Service{
 		Name:      "Test",
-		Namespace: "test",
+		Namespace: client.Namespace,
 		Source:    "testbuildtemplate.yaml",
 	}
 
@@ -43,7 +41,7 @@ func TestServiceDeploy(t *testing.T) {
 
 	newServiceFromRepo := Service{
 		Name:      "Test",
-		Namespace: "test",
+		Namespace: client.Namespace,
 		Source:    "git@github.com:anatoliyfedorenko/testserverlessyaml.git",
 	}
 

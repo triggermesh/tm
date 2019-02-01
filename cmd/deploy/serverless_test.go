@@ -14,7 +14,7 @@ func TestDeployYaml(t *testing.T) {
 	assert.NoError(t, err)
 
 	newService := Service{
-		Namespace: "test",
+		Namespace: client.Namespace,
 	}
 
 	services, err := newService.DeployYAML("git@github.com:anatoliyfedorenko/testserverlessyaml.git", []string{"get", "post"}, &configSet)
@@ -31,7 +31,7 @@ func TestRemoveOrphans(t *testing.T) {
 	assert.NoError(t, err)
 
 	newService := Service{
-		Namespace: "test",
+		Namespace: client.Namespace,
 	}
 
 	services, err := newService.DeployYAML("git@github.com:anatoliyfedorenko/testserverlessyaml.git", []string{"get", "post"}, &configSet)

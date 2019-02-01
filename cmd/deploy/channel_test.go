@@ -14,7 +14,7 @@ func TestChannelDeploy(t *testing.T) {
 
 	channel := Channel{
 		Name:        "example.com",
-		Namespace:   "test",
+		Namespace:   client.Namespace,
 		Provisioner: "in-memory-channel",
 	}
 
@@ -22,7 +22,7 @@ func TestChannelDeploy(t *testing.T) {
 	assert.NoError(t, err)
 	testChannel := delete.Channel{
 		Name:      "example.com",
-		Namespace: "test",
+		Namespace: client.Namespace,
 	}
 	err = testChannel.DeleteChan(&configSet)
 	assert.NoError(t, err)
@@ -34,7 +34,7 @@ func TestNewObject(t *testing.T) {
 
 	channel := Channel{
 		Name:        "example.com",
-		Namespace:   "test",
+		Namespace:   client.Namespace,
 		Provisioner: "in-memory-channel",
 	}
 
@@ -50,7 +50,7 @@ func TestCreateOrUpdate(t *testing.T) {
 
 	channel := Channel{
 		Name:        "testexample.com",
-		Namespace:   "test",
+		Namespace:   client.Namespace,
 		Provisioner: "in-memory-channel",
 	}
 	newChannel := channel.newObject(&configSet)
@@ -61,7 +61,7 @@ func TestCreateOrUpdate(t *testing.T) {
 	assert.Error(t, err)
 	testChannel := delete.Channel{
 		Name:      "testexample.com",
-		Namespace: "test",
+		Namespace: client.Namespace,
 	}
 	err = testChannel.DeleteChan(&configSet)
 	assert.NoError(t, err)
