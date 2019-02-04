@@ -2,6 +2,8 @@ package deploy
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	eventingv1alpha1 "github.com/knative/eventing-sources/pkg/apis/sources/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -11,6 +13,10 @@ import (
 )
 
 func (s *Service) CreateCronjobSource(clientset *client.ConfigSet) error {
+	crontab, err := parseRate(s.Cronjob.Schedule)
+	if err != nil {
+		return err
+	}
 	cronjob := eventingv1alpha1.CronJobSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      s.Name + "-cronjob",
@@ -21,7 +27,7 @@ func (s *Service) CreateCronjobSource(clientset *client.ConfigSet) error {
 			APIVersion: "sources.eventing.knative.dev/v1alpha1",
 		},
 		Spec: eventingv1alpha1.CronJobSourceSpec{
-			Schedule: s.Cronjob.Schedule,
+			Schedule: crontab,
 			Data:     s.Cronjob.Data,
 			Sink: &corev1.ObjectReference{
 				APIVersion: "serving.knative.dev/v1alpha1",
@@ -35,7 +41,7 @@ func (s *Service) CreateCronjobSource(clientset *client.ConfigSet) error {
 		fmt.Println(cronjob)
 		return nil
 	}
-	_, err := clientset.EventSources.SourcesV1alpha1().CronJobSources(s.Namespace).Create(&cronjob)
+	_, err = clientset.EventSources.SourcesV1alpha1().CronJobSources(s.Namespace).Create(&cronjob)
 	if k8sErrors.IsAlreadyExists(err) {
 		oldSource, err := clientset.EventSources.SourcesV1alpha1().CronJobSources(s.Namespace).Get(cronjob.Name, metav1.GetOptions{})
 		if err != nil {
@@ -49,4 +55,28 @@ func (s *Service) CreateCronjobSource(clientset *client.ConfigSet) error {
 		return err
 	}
 	return nil
+}
+
+func parseRate(schedule string) (string, error) {
+	if !strings.HasPrefix(schedule, "rate") {
+		return schedule, nil
+	}
+	rx := regexp.MustCompile(`\((.*?)\)`)
+	rate := rx.FindStringSubmatch(schedule)
+	if len(rate) != 2 {
+		return "", fmt.Errorf("invalid rate format")
+	}
+	value := strings.Fields(rate[1])
+	if len(value) != 2 {
+		return "", fmt.Errorf("rate must contain two parameters")
+	}
+	switch string(value[1][0]) {
+	case "m":
+		return fmt.Sprintf("*/%s * * * *", value[0]), nil
+	case "h":
+		return fmt.Sprintf("* */%s * * *", value[0]), nil
+	case "d":
+		return fmt.Sprintf("* * */%s * *", value[0]), nil
+	}
+	return "", fmt.Errorf("unknown value \"%s\"", value[1])
 }

@@ -21,10 +21,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ghodss/yaml"
 	"github.com/triggermesh/tm/cmd/delete"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
+	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -93,7 +93,7 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)
 		}
 
-		service.parseEvents(function.Events)
+		service.parseSchedule(function.Events)
 
 		wg.Add(1)
 		go func(service Service) {
@@ -145,7 +145,7 @@ func inList(name string, functionsToDeploy []string) bool {
 	return deployThis
 }
 
-func (service *Service) parseEvents(events []map[string]interface{}) {
+func (s *Service) parseSchedule(events []map[string]interface{}) {
 	for _, v := range events {
 		for eventType, event := range v {
 			eventBody, err := yaml.Marshal(event)
@@ -158,8 +158,8 @@ func (service *Service) parseEvents(events []map[string]interface{}) {
 				if err := yaml.Unmarshal(eventBody, &cron); err != nil {
 					continue
 				}
-				service.Cronjob.Schedule = cron.Rate
-				service.Cronjob.Data = cron.Data
+				s.Cronjob.Schedule = cron.Rate
+				s.Cronjob.Data = cron.Data
 			}
 		}
 	}
