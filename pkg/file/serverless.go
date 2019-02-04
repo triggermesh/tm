@@ -36,6 +36,12 @@ type Function struct {
 	Labels      []string
 	Environment map[string]string
 	EnvSecrets  []string `yaml:"env-secrets"`
+	Events      []map[string]interface{}
+}
+
+type Schedule struct {
+	Rate string
+	Data string
 }
 
 // ParseServerlessYAML accepts serverless yaml file path and returns decoded structure

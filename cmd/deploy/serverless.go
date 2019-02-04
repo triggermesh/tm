@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ghodss/yaml"
 	"github.com/triggermesh/tm/cmd/delete"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
@@ -67,6 +68,7 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		if !inList(name, functionsToDeploy) {
 			continue
 		}
+
 		service := s.serviceObject(function)
 		if len(function.Handler) != 0 {
 			fmt.Printf("Warning! Please change \"handler:%s\" to \"source:%s\" for function \"%s\" in serverless.yaml. Parameter \"handler\" will be deprecated soon\n",
@@ -90,6 +92,8 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		if len(function.Description) != 0 {
 			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)
 		}
+
+		service.parseEvents(function.Events)
 
 		wg.Add(1)
 		go func(service Service) {
@@ -139,6 +143,26 @@ func inList(name string, functionsToDeploy []string) bool {
 		}
 	}
 	return deployThis
+}
+
+func (service *Service) parseEvents(events []map[string]interface{}) {
+	for _, v := range events {
+		for eventType, event := range v {
+			eventBody, err := yaml.Marshal(event)
+			if err != nil {
+				continue
+			}
+			switch eventType {
+			case "schedule":
+				var cron file.Schedule
+				if err := yaml.Unmarshal(eventBody, &cron); err != nil {
+					continue
+				}
+				service.Cronjob.Schedule = cron.Rate
+				service.Cronjob.Data = cron.Data
+			}
+		}
+	}
 }
 
 func getYAML(filepath string) (string, error) {

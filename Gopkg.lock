@@ -211,8 +211,8 @@
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/build/v1alpha1"
   ]
-  revision = "94859753e2c6724df2be86f6a254f810895fa3eb"
-  version = "v0.2.0"
+  revision = "695fd25502db3d040ae4c690d7c53a7b842500d3"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/knative/eventing"
@@ -225,6 +225,17 @@
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1"
   ]
   revision = "4712e3a42fccad12a37f3ee07fc407fa5b0c4506"
+  version = "v0.3.0"
+
+[[projects]]
+  name = "github.com/knative/eventing-sources"
+  packages = [
+    "pkg/apis/sources/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/sources/v1alpha1"
+  ]
+  revision = "9236f7c159cd4cf7e66a270429c699631833d460"
   version = "v0.3.0"
 
 [[projects]]
@@ -765,9 +776,14 @@
   revision = "2cefa64ff137e128daeddbd1775cd775708a05bf"
   version = "kubernetes-1.11.3"
 
+[[projects]]
+  name = "sigs.k8s.io/controller-runtime"
+  packages = ["pkg/runtime/scheme"]
+  revision = "0f0740db56812f732d90ff7df3520a291a9f04c9"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7f0f48a027d3b78f096e1324a256ad0aa95d1cf0ba655e77cd7eaec5db8edcc5"
+  inputs-digest = "98c55438a2c485b3acea9a2a9fe25119fd455c3ab1ac3c6a1ee2c0789b01e35d"
   solver-name = "gps-cdcl"
   solver-version = 1

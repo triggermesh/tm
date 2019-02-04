@@ -25,18 +25,14 @@
 #   unused-packages = true
 
 [[constraint]]
-  name = "github.com/knative/build"
-  version = "v0.2.0"
-
-[[constraint]]
   name = "github.com/spf13/cobra"
   version = "0.0.3"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.11.3"
 
-[[constraint]]
+[[override]]
   name = "k8s.io/client-go"
   version = "kubernetes-1.11.3"
 
@@ -48,10 +44,13 @@
   go-tests = true
   unused-packages = true
 
-[[constraint]]
+[[override]]
   name = "github.com/knative/serving"
   version = "v0.3.0"
 
+[[override]]
+  name = "github.com/knative/build"
+  version = "v0.3.0"
 
 [[constraint]]
   name = "github.com/stretchr/testify"

@@ -61,6 +61,10 @@ type Service struct {
 	Annotations    map[string]string
 	Labels         []string
 	BuildArgs      []string
+	Cronjob        struct {
+		Schedule string
+		Data     string
+	}
 }
 
 type registryAuths struct {
@@ -147,7 +151,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	serviceObject := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
-			APIVersion: "serving.knative.dev/servingv1alpha1",
+			APIVersion: "serving.knative.dev/v1alpha1",
 		},
 
 		ObjectMeta: metav1.ObjectMeta{
@@ -177,6 +181,14 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 			return "", err
 		}
 	}
+
+	// TODO Add cronjob yaml into --dry output
+	if len(s.Cronjob.Schedule) != 0 {
+		if err := s.CreateCronjobSource(clientset); err != nil {
+			return "", err
+		}
+	}
+
 	if !client.Wait {
 		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", s.Namespace, s.Name), nil
 	}
@@ -340,18 +352,18 @@ func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string,
 	return revision.Spec.BuildRef.Name, nil
 }
 
-func (s *Service) serviceBuildPod(name string, clientset *client.ConfigSet) (string, error) {
+func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet) (string, error) {
 	var buildPod string
 	for buildPod == "" {
-		build, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).Get(name, metav1.GetOptions{})
+		build, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).Get(buildName, metav1.GetOptions{})
 		if err != nil {
 			return "", err
 		}
-
-		if build.Status.Cluster != nil {
-			buildPod = build.Status.Cluster.PodName
+		if build.Status.Cluster == nil {
+			continue
 		}
-		time.Sleep(1 * time.Second)
+		buildPod = build.Status.Cluster.PodName
+		time.Sleep(time.Second * 1)
 	}
 	return buildPod, nil
 }
