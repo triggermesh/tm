@@ -39,6 +39,7 @@ func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Short: "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
 			service.Namespace = client.Namespace
+			service.Registry = client.Registry
 			if _, err := service.DeployYAML(YAML, args, clientset); err != nil {
 				log.Fatal(err)
 			}
@@ -64,6 +65,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			service.Name = args[0]
 			service.Namespace = client.Namespace
+			service.Registry = client.Registry
 			output, err := service.Deploy(clientset)
 			if err != nil {
 				log.Fatal(err)

@@ -49,6 +49,7 @@ var (
 type Service struct {
 	Name           string
 	Namespace      string
+	Registry       string
 	Source         string
 	Revision       string
 	PullPolicy     string
@@ -540,7 +541,7 @@ func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.Con
 
 func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
 	if len(s.RegistrySecret) == 0 {
-		return fmt.Sprintf("%s/%s/%s", client.Registry, s.Namespace, s.Name), nil
+		return fmt.Sprintf("%s/%s/%s", s.Registry, s.Namespace, s.Name), nil
 	}
 	secret, err := clientset.Core.CoreV1().Secrets(s.Namespace).Get(s.RegistrySecret, metav1.GetOptions{})
 	if err != nil {

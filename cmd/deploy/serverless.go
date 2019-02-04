@@ -48,7 +48,7 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		s.setupParentVars(definition)
 	}
 	if len(definition.Provider.Registry) != 0 {
-		client.Registry = definition.Provider.Registry
+		s.Registry = definition.Provider.Registry
 	}
 	if len(definition.Provider.Namespace) != 0 {
 		s.Namespace = definition.Provider.Namespace
@@ -180,6 +180,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 func (s *Service) serviceObject(function file.Function) Service {
 	service := Service{
 		Source:         function.Source,
+		Registry:       s.Registry,
 		Namespace:      s.Namespace,
 		Buildtemplate:  function.Runtime,
 		Labels:         function.Labels,
