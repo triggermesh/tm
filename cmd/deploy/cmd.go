@@ -46,7 +46,7 @@ func NewDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		},
 	}
 
-	deployCmd.Flags().StringVarP(&YAML, "file", "f", "serverless.yaml", "Deploy functions defined in yaml")
+	deployCmd.Flags().StringVarP(&YAML, "from", "f", "serverless.yaml", "Deploy functions defined in yaml")
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployChannel(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))

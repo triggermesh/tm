@@ -365,7 +365,7 @@ func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet)
 			continue
 		}
 		buildPod = build.Status.Cluster.PodName
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Millisecond * 300)
 	}
 	return buildPod, nil
 }

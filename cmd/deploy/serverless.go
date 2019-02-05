@@ -30,6 +30,8 @@ import (
 
 // TODO Cleanup and simplify
 
+var yamlFile = "serverless.yaml"
+
 // DeployYAML deploys functions defined in serverless.yaml file
 func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset *client.ConfigSet) (services []Service, err error) {
 	if YAML, err = getYAML(YAML); err != nil {
@@ -166,12 +168,16 @@ func (s *Service) parseSchedule(events []map[string]interface{}) {
 }
 
 func getYAML(filepath string) (string, error) {
+	if repository, pathToFile := file.IsGitFile(filepath); len(repository) != 0 {
+		filepath = repository
+		yamlFile = pathToFile
+	}
 	if file.IsGit(filepath) {
 		localfilepath, err := file.Clone(filepath)
 		if err != nil {
 			return "", err
 		}
-		filepath = localfilepath + "/serverless.yaml"
+		filepath = path.Join(localfilepath, yamlFile)
 	}
 	if !file.IsLocal(filepath) {
 		/* Add a secondary check against /serverless.yml */

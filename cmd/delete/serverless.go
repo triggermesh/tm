@@ -25,6 +25,8 @@ import (
 	"github.com/triggermesh/tm/pkg/file"
 )
 
+var yamlFile = "serverless.yaml"
+
 // Service structure has minimal required set of fields to delete service
 type Service struct {
 	Name      string
@@ -34,21 +36,8 @@ type Service struct {
 // DeleteYAML removes functions defined in serverless.yaml file
 func (s *Service) DeleteYAML(filepath string, functions []string, clientset *client.ConfigSet) (err error) {
 	var wg sync.WaitGroup
-	if file.IsGit(filepath) {
-		// fmt.Printf("Cloning %s\n", path)
-		if filepath, err = file.Clone(filepath); err != nil {
-			return err
-		}
-		filepath = filepath + "/serverless.yaml"
-	}
-	if !file.IsLocal(filepath) {
-		/* Add a secondary check against serverless.yml */
-		filepath = strings.TrimSuffix(filepath, ".yaml")
-		filepath = filepath + ".yml"
-
-		if !file.IsLocal(filepath) {
-			return errors.New("Can't get YAML file")
-		}
+	if filepath, err = getYAML(filepath); err != nil {
+		return err
 	}
 	definition, err := file.ParseServerlessYAML(filepath)
 	if err != nil {
@@ -110,4 +99,28 @@ func (s *Service) DeleteYAML(filepath string, functions []string, clientset *cli
 	}
 	wg.Wait()
 	return nil
+}
+
+func getYAML(filepath string) (string, error) {
+	if repository, pathToFile := file.IsGitFile(filepath); len(repository) != 0 {
+		filepath = repository
+		yamlFile = pathToFile
+	}
+	if file.IsGit(filepath) {
+		localfilepath, err := file.Clone(filepath)
+		if err != nil {
+			return "", err
+		}
+		filepath = path.Join(localfilepath, yamlFile)
+	}
+	if !file.IsLocal(filepath) {
+		/* Add a secondary check against /serverless.yml */
+		filepath = strings.TrimSuffix(filepath, ".yaml")
+		filepath = filepath + ".yml"
+
+		if !file.IsLocal(filepath) {
+			return "", fmt.Errorf("Can't read %s", filepath)
+		}
+	}
+	return filepath, nil
 }
