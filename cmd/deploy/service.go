@@ -354,6 +354,8 @@ func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string,
 
 func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet) (string, error) {
 	var buildPod string
+	// Workaround not to get dummy build pod name
+	time.Sleep(time.Second * 2)
 	for buildPod == "" {
 		build, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).Get(buildName, metav1.GetOptions{})
 		if err != nil {
