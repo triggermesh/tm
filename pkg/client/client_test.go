@@ -54,13 +54,13 @@ func TestUsername(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	// _, err := NewClient("")
-	// assert.NoError(t, err)
-
-	_, err := NewClient("test.json")
+	_, err := NewClient("")
 	assert.NoError(t, err)
 
-	os.Setenv("KUBECONFIG", "test.json")
+	_, err = NewClient("../../testfiles/cfgfile-test.json")
+	assert.NoError(t, err)
+
+	os.Setenv("KUBECONFIG", "../../testfiles/cfgfile-test.json")
 	_, err = NewClient("")
 	assert.NoError(t, err)
 	os.Unsetenv("KUBECONFIG")

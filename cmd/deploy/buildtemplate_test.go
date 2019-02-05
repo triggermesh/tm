@@ -9,7 +9,7 @@ import (
 )
 
 func TestReadYAML(t *testing.T) {
-	buildTemplate, err := readYAML("testbuildtemplate.yaml")
+	buildTemplate, err := readYAML("../../testfiles/buildtemplate-test.yaml")
 	assert.NoError(t, err)
 	assert.Equal(t, "nodejs-runtime", buildTemplate.ObjectMeta.Name)
 
@@ -18,13 +18,13 @@ func TestReadYAML(t *testing.T) {
 }
 
 func TestSetEnvConfig(t *testing.T) {
-	buildTemplate, err := readYAML("testbuildtemplate.yaml")
+	buildTemplate, err := readYAML("../../testfiles/buildtemplate-test.yaml")
 	assert.NoError(t, err)
 	setEnvConfig("secret", &buildTemplate)
 }
 
 func TestAddSecretVolume(t *testing.T) {
-	buildTemplate, err := readYAML("testbuildtemplate.yaml")
+	buildTemplate, err := readYAML("../../testfiles/buildtemplate-test.yaml")
 	assert.NoError(t, err)
 	addSecretVolume("secretVolume", &buildTemplate)
 }
@@ -33,7 +33,7 @@ func TestCreateBuildTemplate(t *testing.T) {
 	configSet, err := client.NewClient("")
 	assert.NoError(t, err)
 
-	buildTemplate, err := readYAML("testbuildtemplate.yaml")
+	buildTemplate, err := readYAML("../../testfiles/buildtemplate-test.yaml")
 	assert.NoError(t, err)
 
 	buildTemplate.Namespace = client.Namespace
@@ -41,12 +41,12 @@ func TestCreateBuildTemplate(t *testing.T) {
 	err = createBuildTemplate(buildTemplate, &configSet)
 	assert.NoError(t, err)
 
-	fake2bt, err := readYAML("fake2.yaml")
+	fake2bt, err := readYAML("../../testfiles/buildtemplate-err2-test.yaml")
 	assert.NoError(t, err)
 	err = createBuildTemplate(fake2bt, &configSet)
 	assert.Error(t, err)
 
-	fake1bt, err := readYAML("fake1.yaml")
+	fake1bt, err := readYAML("../../testfiles/buildtemplate-err1-test.yaml")
 	assert.NoError(t, err)
 	err = createBuildTemplate(fake1bt, &configSet)
 	assert.Error(t, err)

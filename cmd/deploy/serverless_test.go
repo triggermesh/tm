@@ -1,7 +1,6 @@
 package deploy
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,11 +16,11 @@ func TestDeployYaml(t *testing.T) {
 		Namespace: client.Namespace,
 	}
 
-	services, err := newService.DeployYAML("git@github.com:anatoliyfedorenko/testserverlessyaml.git", []string{"get", "post"}, &configSet)
+	services, err := newService.DeployYAML("../../testfiles/serverless-test.yaml", []string{"bar", "remote"}, &configSet)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(services))
 
-	services, err = newService.DeployYAML("git@github.com:anatoliyfedorenko/testserverlessyaml.git", []string{"get", "put"}, &configSet)
+	services, err = newService.DeployYAML("../../testfiles/serverless-test.yaml", []string{"bar", "put"}, &configSet)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(services))
 }
@@ -34,7 +33,7 @@ func TestRemoveOrphans(t *testing.T) {
 		Namespace: client.Namespace,
 	}
 
-	services, err := newService.DeployYAML("git@github.com:anatoliyfedorenko/testserverlessyaml.git", []string{"get", "post"}, &configSet)
+	services, err := newService.DeployYAML("../../testfiles/serverless-test.yaml", []string{"bar", "remote"}, &configSet)
 	assert.NoError(t, err)
 
 	err = newService.removeOrphans(services, "", &configSet)
@@ -42,16 +41,11 @@ func TestRemoveOrphans(t *testing.T) {
 }
 
 func TestGetYAML(t *testing.T) {
-	path, err := getYAML("https://github.com/anatoliyfedorenko/testserverless")
-	assert.Error(t, err)
 
-	path, err = getYAML("git@github.com:anatoliyfedorenko/testserverlessyaml.git")
+	path, err := getYAML("../../testfiles/serverless-test.yaml")
 	assert.NoError(t, err)
 
 	path, err = getYAML(path)
-	assert.NoError(t, err)
-
-	err = os.Remove(path)
 	assert.NoError(t, err)
 
 	_, err = getYAML("/nofile.yaml")
