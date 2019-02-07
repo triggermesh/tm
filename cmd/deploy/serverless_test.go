@@ -16,11 +16,11 @@ func TestDeployYaml(t *testing.T) {
 		Namespace: client.Namespace,
 	}
 
-	services, err := newService.DeployYAML("../../testfiles/serverless-test.yaml", []string{"bar", "remote"}, &configSet)
+	services, err := newService.DeployYAML("https://github.com/triggermesh/tm/blob/master/testfiles/serverless-test.yaml", []string{"bar", "remote"}, &configSet)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(services))
 
-	services, err = newService.DeployYAML("../../testfiles/serverless-test.yaml", []string{"bar", "put"}, &configSet)
+	services, err = newService.DeployYAML("https://github.com/triggermesh/tm/blob/master/testfiles/serverless-test.yaml", []string{"bar", "put"}, &configSet)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(services))
 }
@@ -33,7 +33,7 @@ func TestRemoveOrphans(t *testing.T) {
 		Namespace: client.Namespace,
 	}
 
-	services, err := newService.DeployYAML("../../testfiles/serverless-test.yaml", []string{"bar", "remote"}, &configSet)
+	services, err := newService.DeployYAML("https://github.com/triggermesh/tm/blob/master/testfiles/serverless-test.yaml", []string{"bar", "remote"}, &configSet)
 	assert.NoError(t, err)
 
 	err = newService.removeOrphans(services, "", &configSet)
@@ -42,7 +42,7 @@ func TestRemoveOrphans(t *testing.T) {
 
 func TestGetYAML(t *testing.T) {
 
-	path, err := getYAML("../../testfiles/serverless-test.yaml")
+	path, err := getYAML("https://github.com/triggermesh/tm/blob/master/testfiles/serverless-test.yaml")
 	assert.NoError(t, err)
 
 	path, err = getYAML(path)
