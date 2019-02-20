@@ -42,7 +42,7 @@ func TestServiceDeploy(t *testing.T) {
 	newServiceFromRepo := Service{
 		Name:      "Test",
 		Namespace: client.Namespace,
-		Source:    "../../testfiles/serverless-test.yaml",
+		Source:    "https://github.com/triggermesh/tm/blob/master/testfiles/serverless-test.yaml",
 	}
 
 	servicesGit, err := newServiceFromRepo.Deploy(&configSet)
