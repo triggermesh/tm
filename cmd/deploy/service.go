@@ -53,6 +53,7 @@ type Service struct {
 	Source         string
 	Revision       string
 	PullPolicy     string
+	Concurrency    int
 	ResultImageTag string
 	Buildtemplate  string
 	RegistrySecret string // Does not belong to the service, need to be deleted
@@ -144,6 +145,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		Labels:            mapFromSlice(s.Labels),
 	}
 
+	configuration.RevisionTemplate.Spec.ContainerConcurrency = servingv1alpha1.RevisionContainerConcurrencyType(s.Concurrency)
 	configuration.RevisionTemplate.Spec.Container.Env = s.setupEnv()
 	configuration.RevisionTemplate.Spec.Container.EnvFrom = s.setupEnvSecrets()
 	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
@@ -354,8 +356,6 @@ func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string,
 
 func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet) (string, error) {
 	var buildPod string
-	// Workaround not to get dummy build pod name
-	time.Sleep(time.Second * 2)
 	for buildPod == "" {
 		build, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).Get(buildName, metav1.GetOptions{})
 		if err != nil {
@@ -385,7 +385,7 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 		return err
 	}
 	if res == nil {
-		return errors.New("nil watch interface")
+		return errors.New("can't get watch interface, please check build status")
 	}
 	defer res.Stop()
 
@@ -401,7 +401,7 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 					return err
 				}
 				if res == nil {
-					return errors.New("nil watch interface")
+					return errors.New("can't get watch interface, please check build status")
 				}
 				continue
 			}
@@ -461,7 +461,7 @@ func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
 		return "", err
 	}
 	if res == nil {
-		return "", errors.New("nil watch interface")
+		return "", errors.New("can't get watch interface, please check service status")
 	}
 	defer res.Stop()
 
@@ -479,7 +479,7 @@ func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
 					return "", err
 				}
 				if res == nil {
-					return "", errors.New("nil watch interface")
+					return "", errors.New("can't get watch interface, please check service status")
 				}
 				break
 			}
@@ -500,8 +500,8 @@ func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
 						}); err != nil {
 							return "", err
 						}
-						if res != nil {
-							return "", errors.New("nil watch interface")
+						if res == nil {
+							return "", errors.New("can't get watch interface, please check service status")
 						}
 						firstError = false
 						break

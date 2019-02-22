@@ -85,6 +85,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&service.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
 	deployServiceCmd.Flags().StringVar(&service.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&service.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
+	deployServiceCmd.Flags().IntVar(&service.Concurrency, "concurrency", 0, "Number of concurrent events per container: 0 - multiple events, 1 - single event, N - particular number of events")
 	deployServiceCmd.Flags().StringSliceVar(&service.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVar(&service.EnvSecrets, "env-secret", []string{}, "Name of k8s secrets to populate pod environment variables")
 	deployServiceCmd.Flags().StringSliceVarP(&service.Labels, "label", "l", []string{}, "Service labels")

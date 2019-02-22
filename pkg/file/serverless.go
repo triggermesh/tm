@@ -16,6 +16,7 @@ type Definition struct {
 		Name           string
 		Registry       string
 		RegistrySecret string `yaml:"registry-secret"`
+		PullPolicy     string `yaml:"pull-policy"`
 		Namespace      string
 		Runtime        string
 		Environment    map[string]string
@@ -31,6 +32,7 @@ type Function struct {
 	Handler     string
 	Source      string
 	Runtime     string
+	Concurrency int
 	Buildargs   []string
 	Description string
 	Labels      []string

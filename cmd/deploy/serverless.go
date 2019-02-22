@@ -88,6 +88,7 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 		if len(service.Buildtemplate) == 0 {
 			service.Buildtemplate = s.Buildtemplate
 		}
+
 		if len(definition.Description) != 0 {
 			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], definition.Description)
 		}
@@ -205,6 +206,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 		s.Env = append(s.Env, k+":"+v)
 	}
 	s.EnvSecrets = definition.Provider.EnvSecrets
+	s.PullPolicy = definition.Provider.PullPolicy
 }
 
 func (s *Service) serviceObject(function file.Function) Service {
@@ -212,8 +214,10 @@ func (s *Service) serviceObject(function file.Function) Service {
 		Source:         function.Source,
 		Registry:       s.Registry,
 		Namespace:      s.Namespace,
+		Concurrency:    function.Concurrency,
 		Buildtemplate:  function.Runtime,
 		Labels:         function.Labels,
+		PullPolicy:     s.PullPolicy,
 		ResultImageTag: "latest",
 		BuildArgs:      function.Buildargs,
 		RegistrySecret: s.RegistrySecret,
