@@ -89,9 +89,6 @@ func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset 
 			service.Buildtemplate = s.Buildtemplate
 		}
 
-		if len(definition.Description) != 0 {
-			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], definition.Description)
-		}
 		if len(function.Description) != 0 {
 			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)
 		}
@@ -195,14 +192,13 @@ func getYAML(filepath string) (string, error) {
 func (s *Service) setupParentVars(definition file.Definition) {
 	s.Name = definition.Service
 	s.RegistrySecret = definition.Provider.RegistrySecret
-	s.Annotations = definition.Provider.Annotations
-	if len(definition.Description) != 0 {
-		s.Annotations = map[string]string{
-			"Description": definition.Description,
-		}
+	s.Annotations = make(map[string]string)
+	for k, v := range definition.Provider.Annotations {
+		s.Annotations[k] = v
 	}
-	// workaround to get rid of double description
-	definition.Description = ""
+	if len(definition.Description) != 0 {
+		s.Annotations["Description"] = definition.Description
+	}
 	for k, v := range definition.Provider.Environment {
 		s.Env = append(s.Env, k+":"+v)
 	}
@@ -222,12 +218,15 @@ func (s *Service) serviceObject(function file.Function) Service {
 		ResultImageTag: "latest",
 		BuildArgs:      function.Buildargs,
 		RegistrySecret: s.RegistrySecret,
-		Annotations:    s.Annotations,
 		Env:            s.Env,
 		EnvSecrets:     append(s.EnvSecrets, function.EnvSecrets...),
 	}
+	service.Annotations = make(map[string]string)
 	for k, v := range function.Environment {
 		service.Env = append(service.Env, k+":"+v)
+	}
+	for k, v := range s.Annotations {
+		service.Annotations[k] = v
 	}
 	for k, v := range function.Annotations {
 		service.Annotations[k] = v
