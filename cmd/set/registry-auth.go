@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Credentials contains docker registry credentials
-type Credentials struct {
+// RegistryCreds contains docker registry credentials
+type RegistryCreds struct {
 	Host     string
 	Username string
 	Password string
@@ -36,7 +36,7 @@ type Credentials struct {
 }
 
 // SetRegistryCreds creates Secret with docker registry credentials json which later can be mounted as config.json file
-func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet) error {
+func (c *RegistryCreds) SetRegistryCreds(name string, clientset *client.ConfigSet) error {
 	secrets := make(map[string]string)
 	if !gitlabCI() && (len(c.Password) == 0 || len(c.Host) == 0 || len(c.Username) == 0) {
 		if err := c.readStdin(); err != nil {
@@ -93,7 +93,7 @@ func (c *Credentials) SetRegistryCreds(name string, clientset *client.ConfigSet)
 	return nil
 }
 
-func (c *Credentials) readStdin() error {
+func (c *RegistryCreds) readStdin() error {
 	reader := bufio.NewReader(os.Stdin)
 	if len(c.Host) == 0 {
 		fmt.Printf("Registry: ")

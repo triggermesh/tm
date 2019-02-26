@@ -195,6 +195,7 @@ func getYAML(filepath string) (string, error) {
 func (s *Service) setupParentVars(definition file.Definition) {
 	s.Name = definition.Service
 	s.RegistrySecret = definition.Provider.RegistrySecret
+	s.Annotations = definition.Provider.Annotations
 	if len(definition.Description) != 0 {
 		s.Annotations = map[string]string{
 			"Description": definition.Description,
@@ -221,16 +222,16 @@ func (s *Service) serviceObject(function file.Function) Service {
 		ResultImageTag: "latest",
 		BuildArgs:      function.Buildargs,
 		RegistrySecret: s.RegistrySecret,
-		Annotations: map[string]string{
-			"Description": s.Annotations["Description"],
-		},
+		Annotations:    s.Annotations,
+		Env:            s.Env,
+		EnvSecrets:     append(s.EnvSecrets, function.EnvSecrets...),
 	}
-	service.Env = s.Env
 	for k, v := range function.Environment {
 		service.Env = append(service.Env, k+":"+v)
 	}
-	service.EnvSecrets = append(s.EnvSecrets, function.EnvSecrets...)
-
+	for k, v := range function.Annotations {
+		service.Annotations[k] = v
+	}
 	return service
 }
 

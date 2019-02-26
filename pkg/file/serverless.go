@@ -21,6 +21,7 @@ type Definition struct {
 		Runtime        string
 		Environment    map[string]string
 		EnvSecrets     []string `yaml:"env-secrets"`
+		Annotations    map[string]string
 	}
 	Repository string
 	Functions  map[string]Function
@@ -38,6 +39,7 @@ type Function struct {
 	Labels      []string
 	Environment map[string]string
 	EnvSecrets  []string `yaml:"env-secrets"`
+	Annotations map[string]string
 	Events      []map[string]interface{}
 }
 

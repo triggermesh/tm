@@ -9,7 +9,8 @@ import (
 )
 
 var r Route
-var c Credentials
+var c RegistryCreds
+var g GitCreds
 
 // setCmd represents the set command
 var setCmd = &cobra.Command{
@@ -21,6 +22,7 @@ var setCmd = &cobra.Command{
 func NewSetCmd(clientset *client.ConfigSet) *cobra.Command {
 	setCmd.AddCommand(cmdSetRoutes(clientset))
 	setCmd.AddCommand(cmdSetRegistryCreds(clientset))
+	setCmd.AddCommand(cmdSetGitCreds(clientset))
 	return setCmd
 }
 
@@ -61,4 +63,22 @@ func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
 	setRegistryCredsCmd.Flags().BoolVar(&c.Pull, "pull", false, "Indicates if this token must be used for pull operations only")
 	setRegistryCredsCmd.Flags().BoolVar(&c.Push, "push", false, "Indicates if this token must be used for push operations only")
 	return setRegistryCredsCmd
+}
+
+func cmdSetGitCreds(clientset *client.ConfigSet) *cobra.Command {
+	setGitCredsCmd := &cobra.Command{
+		Use:   "git-auth",
+		Short: "Create secret with git credentials",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := g.SetGitCreds(clientset); err != nil {
+				log.Fatalln(err)
+			}
+			fmt.Println("Git credentials created")
+		},
+	}
+
+	// Use one ssh key for all git sources for now
+	// setGitCredsCmd.Flags().StringVar(&g.Host, "host", "", "Git host address")
+	// setGitCredsCmd.Flags().StringVar(&g.Key, "key", "", "SSH private key")
+	return setGitCredsCmd
 }
