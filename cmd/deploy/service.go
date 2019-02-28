@@ -17,9 +17,13 @@ limitations under the License.
 package deploy
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -89,10 +93,11 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		if s.Buildtemplate, err = s.deployBuildtemplate(clientset); err != nil {
 			return "", err
 		}
-	} else if s.Buildtemplate, err = s.cloneBuildtemplate(clusterBuildtemplate, clientset); err != nil {
+	}
+	if s.Buildtemplate, err = s.cloneBuildtemplate(clusterBuildtemplate, clientset); err != nil {
 		return "", err
 	}
-	defer clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Delete(s.Name+"-buildtemplate", &metav1.DeleteOptions{})
+	defer clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Delete(s.Buildtemplate, &metav1.DeleteOptions{})
 
 	switch {
 	case file.IsLocal(s.Source):
@@ -542,10 +547,13 @@ func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.Con
 		setEnvConfig(s.RegistrySecret, bt)
 	}
 
-	bt.Name = s.Buildtemplate + "-buildtemplate"
+	rand, err := uniqueString()
+	if err != nil {
+		return "", err
+	}
+	bt.Name = fmt.Sprintf("%s-%s", s.Buildtemplate, rand)
 	bt.ObjectMeta.ResourceVersion = ""
 
-	clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Delete(bt.Name, &metav1.DeleteOptions{})
 	if bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Create(bt); err != nil {
 		return "", err
 	}
@@ -582,4 +590,12 @@ func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
 // hack to use correct username in image URL instead of "gitlab-ci-token" in Gitlab CI
 func gitlabEnv() (string, bool) {
 	return os.LookupEnv("CI_REGISTRY_IMAGE")
+}
+
+func uniqueString() (string, error) {
+	b, err := ioutil.ReadAll(io.LimitReader(rand.Reader, 3))
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
