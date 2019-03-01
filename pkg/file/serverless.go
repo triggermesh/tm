@@ -19,6 +19,7 @@ type Definition struct {
 		PullPolicy     string `yaml:"pull-policy"`
 		Namespace      string
 		Runtime        string
+		Buildtimeout   string
 		Environment    map[string]string
 		EnvSecrets     []string `yaml:"env-secrets"`
 		Annotations    map[string]string

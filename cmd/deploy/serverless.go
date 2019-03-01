@@ -204,6 +204,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 	}
 	s.EnvSecrets = definition.Provider.EnvSecrets
 	s.PullPolicy = definition.Provider.PullPolicy
+	s.BuildTimeout = definition.Provider.Buildtimeout
 }
 
 func (s *Service) serviceObject(function file.Function) Service {
@@ -217,6 +218,7 @@ func (s *Service) serviceObject(function file.Function) Service {
 		PullPolicy:     s.PullPolicy,
 		ResultImageTag: "latest",
 		BuildArgs:      function.Buildargs,
+		BuildTimeout:   s.BuildTimeout,
 		RegistrySecret: s.RegistrySecret,
 		Env:            s.Env,
 		EnvSecrets:     append(s.EnvSecrets, function.EnvSecrets...),

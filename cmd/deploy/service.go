@@ -40,8 +40,6 @@ import (
 )
 
 const (
-	// Knative build timeout in minutes
-	timeout           = 10
 	uploadDoneTrigger = "/home/.sourceuploaddone"
 )
 
@@ -66,6 +64,7 @@ type Service struct {
 	Annotations    map[string]string
 	Labels         []string
 	BuildArgs      []string
+	BuildTimeout   string
 	Cronjob        struct {
 		Schedule string
 		Data     string
@@ -123,6 +122,12 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", err
 	}
 
+	timeout, err := time.ParseDuration(s.BuildTimeout)
+	if err != nil {
+		fmt.Printf("Can't parse timeout value %q: %s\n", s.BuildTimeout, err)
+		timeout = 10 * time.Minute
+	}
+
 	if configuration.Build != nil {
 		configuration.RevisionTemplate = servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
@@ -131,15 +136,15 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 				},
 			},
 		}
-	}
-
-	if configuration.Build != nil && len(s.Buildtemplate) != 0 {
-		configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
-			Name:      s.Buildtemplate,
-			Arguments: getBuildArguments(image, s.BuildArgs),
-			Env: []corev1.EnvVar{
-				{Name: "timestamp", Value: time.Now().String()},
-			},
+		if configuration.Build.BuildSpec != nil {
+			configuration.Build.BuildSpec.Timeout = &metav1.Duration{timeout}
+			configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
+				Name:      s.Buildtemplate,
+				Arguments: getBuildArguments(image, s.BuildArgs),
+				Env: []corev1.EnvVar{
+					{Name: "timestamp", Value: time.Now().String()},
+				},
+			}
 		}
 	}
 
@@ -197,7 +202,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	if !client.Wait {
-		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see the details\n", s.Namespace, s.Name), nil
+		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
 	}
 
 	fmt.Printf("Waiting for %s ready state\n", s.Name)
@@ -341,7 +346,7 @@ func mapFromSlice(slice []string) map[string]string {
 
 func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string, error) {
 	var revision *servingv1alpha1.Revision
-	for {
+	for i := 0; i < 5; i++ {
 		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			return "", err
@@ -354,7 +359,10 @@ func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string,
 			revision = r
 			break
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(time.Second)
+	}
+	if revision == nil {
+		return "", errors.New("can't get active build revision")
 	}
 	if revision.Spec.BuildRef == nil {
 		return "", errors.New("empty build reference")
@@ -379,7 +387,6 @@ func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet)
 }
 
 func (s *Service) injectSources(clientset *client.ConfigSet) error {
-	quit := time.After(timeout * time.Minute)
 	build, err := s.latestBuild(s.Name, clientset)
 	if err != nil {
 		return err
@@ -400,44 +407,40 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 
 	var sourceContainer string
 	for sourceContainer == "" {
-		select {
-		case <-quit:
-			return errors.New("Source injection timeout")
-		case e := <-res.ResultChan():
-			if e.Object == nil {
-				res.Stop()
-				if res, err = clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
-					return err
-				}
-				if res == nil {
-					return errors.New("can't get watch interface, please check build status")
-				}
-				continue
+		event := <-res.ResultChan()
+		if event.Object == nil {
+			res.Stop()
+			if res, err = clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
+				return err
 			}
-			pod, ok := e.Object.(*corev1.Pod)
-			if !ok {
-				continue
+			if res == nil {
+				return errors.New("can't get watch interface, please check build status")
 			}
-			for _, v := range pod.Status.InitContainerStatuses {
-				if v.Name == "build-step-custom-source" {
-					if v.State.Terminated != nil {
-						// Looks like we got watch interface for "previous" service version, updating
-						if build, err = s.latestBuild(s.Name, clientset); err != nil {
-							return err
-						}
-						if buildPod, err = s.serviceBuildPod(build, clientset); err != nil {
-							return err
-						}
-						res.Stop()
-						if res, err = clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
-							return err
-						}
-						break
+			continue
+		}
+		pod, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			continue
+		}
+		for _, v := range pod.Status.InitContainerStatuses {
+			if v.Name == "build-step-custom-source" {
+				if v.State.Terminated != nil {
+					// Looks like we got watch interface for "previous" service version, updating
+					if build, err = s.latestBuild(s.Name, clientset); err != nil {
+						return err
 					}
-					if v.State.Running != nil {
-						sourceContainer = v.Name
-						break
+					if buildPod, err = s.serviceBuildPod(build, clientset); err != nil {
+						return err
 					}
+					res.Stop()
+					if res, err = clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
+						return err
+					}
+					break
+				}
+				if v.State.Running != nil {
+					sourceContainer = v.Name
+					break
 				}
 			}
 		}
@@ -462,7 +465,6 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 }
 
 func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
-	quit := time.After(timeout * time.Minute)
 	res, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 	})
@@ -476,47 +478,43 @@ func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
 
 	firstError := true
 	for {
-		select {
-		case <-quit:
-			return "", errors.New("Service status wait timeout")
-		case event := <-res.ResultChan():
-			if event.Object == nil {
-				res.Stop()
-				if res, err = clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
-					FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
-				}); err != nil {
-					return "", err
-				}
-				if res == nil {
-					return "", errors.New("can't get watch interface, please check service status")
-				}
-				break
+		event := <-res.ResultChan()
+		if event.Object == nil {
+			res.Stop()
+			if res, err = clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
+			}); err != nil {
+				return "", err
 			}
-			serviceEvent, ok := event.Object.(*servingv1alpha1.Service)
-			if !ok {
-				continue
+			if res == nil {
+				return "", errors.New("can't get watch interface, please check service status")
 			}
-			if serviceEvent.Status.IsReady() {
-				return serviceEvent.Status.Domain, nil
-			}
-			for _, v := range serviceEvent.Status.Conditions {
-				if v.IsFalse() {
-					if v.Reason == "RevisionFailed" && firstError {
-						time.Sleep(time.Second * 3)
-						res.Stop()
-						if res, err = clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
-							FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
-						}); err != nil {
-							return "", err
-						}
-						if res == nil {
-							return "", errors.New("can't get watch interface, please check service status")
-						}
-						firstError = false
-						break
+			continue
+		}
+		serviceEvent, ok := event.Object.(*servingv1alpha1.Service)
+		if !ok {
+			continue
+		}
+		if serviceEvent.Status.IsReady() {
+			return serviceEvent.Status.Domain, nil
+		}
+		for _, v := range serviceEvent.Status.Conditions {
+			if v.IsFalse() {
+				if v.Reason == "RevisionFailed" && firstError {
+					time.Sleep(time.Second * 3)
+					res.Stop()
+					if res, err = clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
+						FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
+					}); err != nil {
+						return "", err
 					}
-					return "", errors.New(v.Message)
+					if res == nil {
+						return "", errors.New("can't get watch interface, please check service status")
+					}
+					firstError = false
+					break
 				}
+				return "", errors.New(v.Message)
 			}
 		}
 	}
