@@ -341,7 +341,7 @@ func mapFromSlice(slice []string) map[string]string {
 
 func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string, error) {
 	var revision *servingv1alpha1.Revision
-	for revision == nil {
+	for {
 		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			return "", err
@@ -350,7 +350,7 @@ func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string,
 		if err != nil {
 			return "", err
 		}
-		if cond := r.Status.GetCondition(buildv1alpha1.BuildSucceeded); cond != nil && cond.Reason == "Building" {
+		if cond := r.Status.GetCondition(servingv1alpha1.RevisionConditionBuildSucceeded); cond != nil && cond.Reason == "Building" {
 			revision = r
 			break
 		}
