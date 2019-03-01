@@ -340,18 +340,21 @@ func mapFromSlice(slice []string) map[string]string {
 }
 
 func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string, error) {
-	var latestRevision string
-	for latestRevision == "" {
+	var revision *servingv1alpha1.Revision
+	for revision == nil {
 		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			return "", err
 		}
-		latestRevision = service.Status.LatestCreatedRevisionName
-		time.Sleep(1 * time.Second)
-	}
-	revision, err := clientset.Serving.ServingV1alpha1().Revisions(s.Namespace).Get(latestRevision, metav1.GetOptions{IncludeUninitialized: true})
-	if err != nil {
-		return "", err
+		r, err := clientset.Serving.ServingV1alpha1().Revisions(s.Namespace).Get(service.Status.LatestCreatedRevisionName, metav1.GetOptions{IncludeUninitialized: true})
+		if err != nil {
+			return "", err
+		}
+		if cond := r.Status.GetCondition(buildv1alpha1.BuildSucceeded); cond != nil && cond.Reason == "Building" {
+			revision = r
+			break
+		}
+		time.Sleep(2 * time.Second)
 	}
 	if revision.Spec.BuildRef == nil {
 		return "", errors.New("empty build reference")
@@ -361,8 +364,6 @@ func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string,
 
 func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet) (string, error) {
 	var buildPod string
-	// Workaround to wait for build pod to start
-	time.Sleep(3 * time.Second)
 	for buildPod == "" {
 		build, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).Get(buildName, metav1.GetOptions{})
 		if err != nil {
