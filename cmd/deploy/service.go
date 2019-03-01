@@ -361,6 +361,8 @@ func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string,
 
 func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet) (string, error) {
 	var buildPod string
+	// Workaround to wait for build pod to start
+	time.Sleep(3 * time.Second)
 	for buildPod == "" {
 		build, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).Get(buildName, metav1.GetOptions{})
 		if err != nil {
@@ -385,6 +387,7 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Uploading sources to %s\n", buildPod)
 	res, err := clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod})
 	if err != nil {
 		return err
