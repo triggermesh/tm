@@ -14,10 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package channel
 
-import "github.com/triggermesh/tm/cli"
+import (
+	"github.com/triggermesh/tm/pkg/client"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
-func main() {
-	cli.Execute()
+// DeleteChan removes knative build object
+func (c *Channel) Delete(clientset *client.ConfigSet) error {
+	return clientset.Eventing.EventingV1alpha1().Channels(c.Namespace).Delete(c.Name, &metav1.DeleteOptions{})
 }

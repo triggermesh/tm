@@ -5,8 +5,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func List(clientset *client.ConfigSet) ([]byte, error) {
-	list, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).List(metav1.ListOptions{})
+func (s *Service) List(clientset *client.ConfigSet) ([]byte, error) {
+	list, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return []byte{}, err
 	}

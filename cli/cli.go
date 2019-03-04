@@ -1,18 +1,16 @@
-/*
-Copyright (c) 2018 TriggerMesh, Inc
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+// Copyright 2019 TriggerMesh, Inc
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package cli
 
@@ -21,6 +19,10 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	"github.com/triggermesh/tm/cmd/build"
+	"github.com/triggermesh/tm/cmd/buildtemplate"
+	"github.com/triggermesh/tm/cmd/channel"
+	"github.com/triggermesh/tm/cmd/service"
 	"github.com/triggermesh/tm/pkg/client"
 
 	// Required for configs with gcp auth provider
@@ -32,6 +34,12 @@ var (
 	err       error
 	cfgFile   string
 	clientset client.ConfigSet
+
+	YAML string
+	b    build.Build
+	c    channel.Channel
+	s    service.Service
+	bt   buildtemplate.Buildtemplate
 )
 
 // tmCmd represents the base command when called without any subcommands
@@ -41,7 +49,6 @@ var tmCmd = &cobra.Command{
 	Version: version,
 }
 
-// Execute runs cobra CLI commands
 func Execute() {
 	if err := tmCmd.Execute(); err != nil {
 		log.Fatalln(err)
@@ -59,9 +66,9 @@ func init() {
 
 	tmCmd.AddCommand(versionCmd)
 	tmCmd.AddCommand(newDeployCmd(&clientset))
-	// tmCmd.AddCommand(newDeleteCmd(&clientset))
-	// tmCmd.AddCommand(newGetCmd(&clientset))
-	// tmCmd.AddCommand(newDescribeCmd(&clientset))
+	tmCmd.AddCommand(newDeleteCmd(&clientset))
+	tmCmd.AddCommand(newGetCmd(&clientset))
+	tmCmd.AddCommand(newDescribeCmd(&clientset))
 }
 
 var versionCmd = &cobra.Command{

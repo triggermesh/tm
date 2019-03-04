@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2018 TriggerMesh, Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,4 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cli
+package channel
+
+import (
+	"encoding/json"
+
+	"github.com/triggermesh/tm/pkg/client"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func (c *Channel) Describe(clientset *client.ConfigSet) ([]byte, error) {
+	channel, err := clientset.Eventing.EventingV1alpha1().Channels(c.Namespace).Get(c.Name, metav1.GetOptions{})
+	if err != nil {
+		return []byte{}, err
+	}
+	return json.Marshal(channel)
+}
