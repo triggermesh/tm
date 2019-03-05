@@ -124,7 +124,6 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	timeout, err := time.ParseDuration(s.BuildTimeout)
 	if err != nil {
-		fmt.Printf("Can't parse timeout value %q: %s\n", s.BuildTimeout, err)
 		timeout = 10 * time.Minute
 	}
 
@@ -344,10 +343,10 @@ func mapFromSlice(slice []string) map[string]string {
 	return m
 }
 
-func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string, error) {
+func (s *Service) latestBuild(clientset *client.ConfigSet) (string, error) {
 	var revision *servingv1alpha1.Revision
-	for i := 0; i < 5; i++ {
-		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+	for i := 0; i < 10; i++ {
+		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(s.Name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			return "", err
 		}
@@ -387,7 +386,7 @@ func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet)
 }
 
 func (s *Service) injectSources(clientset *client.ConfigSet) error {
-	build, err := s.latestBuild(s.Name, clientset)
+	build, err := s.latestBuild(clientset)
 	if err != nil {
 		return err
 	}
@@ -426,7 +425,7 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 			if v.Name == "build-step-custom-source" {
 				if v.State.Terminated != nil {
 					// Looks like we got watch interface for "previous" service version, updating
-					if build, err = s.latestBuild(s.Name, clientset); err != nil {
+					if build, err = s.latestBuild(clientset); err != nil {
 						return err
 					}
 					if buildPod, err = s.serviceBuildPod(build, clientset); err != nil {
