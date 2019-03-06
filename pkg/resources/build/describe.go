@@ -14,10 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package build
 
-import "github.com/triggermesh/tm/cmd"
+import (
+	"encoding/json"
 
-func main() {
-	cmd.Execute()
+	"github.com/triggermesh/tm/pkg/client"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// Describe describes knative build object
+func (b *Build) Describe(clientset *client.ConfigSet) ([]byte, error) {
+	build, err := clientset.Build.BuildV1alpha1().Builds(b.Namespace).Get(b.Name, metav1.GetOptions{})
+	if err != nil {
+		return []byte{}, err
+	}
+	return json.MarshalIndent(build, "", "    ")
 }
