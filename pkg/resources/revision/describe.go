@@ -15,17 +15,11 @@
 package revision
 
 import (
-	"encoding/json"
-
+	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Revision describes knative revision object
-func (r *Revision) Describe(clientset *client.ConfigSet) ([]byte, error) {
-	revisions, err := clientset.Serving.ServingV1alpha1().Revisions(r.Namespace).Get(r.Name, metav1.GetOptions{})
-	if err != nil {
-		return []byte{}, err
-	}
-	return json.Marshal(revisions)
+func (r *Revision) Describe(clientset *client.ConfigSet) (*servingv1alpha1.Revision, error) {
+	return clientset.Serving.ServingV1alpha1().Revisions(r.Namespace).Get(r.Name, metav1.GetOptions{})
 }

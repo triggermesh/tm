@@ -70,7 +70,7 @@ type config struct {
 	CurrentContext string `json:"current-context"`
 }
 
-func username(kubeCfgFile string) string {
+func getNamespace(kubeCfgFile string) string {
 	namespace := "default"
 	data, err := ioutil.ReadFile(kubeCfgFile)
 	if err != nil {
@@ -93,8 +93,15 @@ func username(kubeCfgFile string) string {
 	return namespace
 }
 
-// NewClient returns ConfigSet created from available configuration file or from in-cluster environment
-func NewClient(cfgFile string) (ConfigSet, error) {
+func getInClusterNamespace() string {
+	data, err := ioutil.ReadFile("/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		return "default"
+	}
+	return string(data)
+}
+
+func ConfigPath(cfgFile string) string {
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {
 		homeDir = dir
@@ -116,15 +123,22 @@ func NewClient(cfgFile string) (ConfigSet, error) {
 	} else {
 		cfgFile = homeDir + "/.kube/config"
 	}
+	return cfgFile
+}
 
+// NewClient returns ConfigSet created from available configuration file or from in-cluster environment
+func NewClient(cfgFile string) (ConfigSet, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
 	if err != nil {
+		log.Printf("%s, falling back to in-cluster configuration\n", err)
 		if config, err = rest.InClusterConfig(); err != nil {
 			log.Fatalln("Can't read config file")
 		}
-		log.Printf("%s, falling back to in-cluster configuration\n", err)
+		if len(Namespace) == 0 {
+			Namespace = getInClusterNamespace()
+		}
 	} else if len(Namespace) == 0 {
-		Namespace = username(cfgFile)
+		Namespace = getNamespace(cfgFile)
 	}
 
 	c := ConfigSet{

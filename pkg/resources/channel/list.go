@@ -15,23 +15,11 @@
 package channel
 
 import (
-	"encoding/json"
-
+	eventingApi "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Channel) List(clientset *client.ConfigSet) ([]byte, error) {
-	list, err := clientset.Eventing.EventingV1alpha1().Channels(c.Namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return []byte{}, err
-	}
-	// if output == "" {
-	// 	table.AddRow("NAMESPACE", "CHANNEL")
-	// 	for _, item := range list.Items {
-	// 		table.AddRow(item.Namespace, item.Name)
-	// 	}
-	// 	return table.String(), err
-	// }
-	return json.Marshal(list)
+func (c *Channel) List(clientset *client.ConfigSet) (*eventingApi.ChannelList, error) {
+	return clientset.Eventing.EventingV1alpha1().Channels(c.Namespace).List(metav1.ListOptions{})
 }

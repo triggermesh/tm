@@ -22,16 +22,17 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/output"
 )
 
-// var (
-// table *uitable.Table
-// )
+var (
+	data string
+)
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:     "get",
-	Aliases: []string{"list"},
+	Aliases: []string{"list", "describe"},
 	Short:   "Retrieve resources from k8s cluster",
 }
 
@@ -44,31 +45,8 @@ func newGetCmd(clientset *client.ConfigSet) *cobra.Command {
 	getCmd.AddCommand(cmdListRoute(clientset))
 	getCmd.AddCommand(cmdListService(clientset))
 	getCmd.AddCommand(cmdListChannels(clientset))
-
-	// table = uitable.New()
-	// table.Wrap = true
-	// table.MaxColWidth = 50
-
 	return getCmd
 }
-
-// // Format sets Get command output format
-// func Format(encode *string) {
-// 	if encode == nil || string(*encode) == "json" {
-// 		output = "json"
-// 	} else if encode != nil && string(*encode) == "yaml" {
-// 		output = "yaml"
-// 	}
-// }
-
-// func encode(data interface{}) (string, error) {
-// 	if output == "yaml" {
-// 		o, err := yaml.Marshal(data)
-// 		return string(o), err
-// 	}
-// 	o, err := json.MarshalIndent(data, "", "    ")
-// 	return string(o), err
-// }
 
 func cmdListBuild(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
@@ -78,19 +56,26 @@ func cmdListBuild(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			b.Namespace = client.Namespace
 			if len(args) == 0 {
-				output, err := b.List(clientset)
+				list, err := b.List(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
 				b.Name = args[0]
-				output, err := b.Describe(clientset)
+				build, err := b.Describe(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.Describe(build, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
+			fmt.Println(data)
 		},
 	}
 }
@@ -103,19 +88,26 @@ func cmdListBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			bt.Namespace = client.Namespace
 			if len(args) == 0 {
-				output, err := bt.List(clientset)
+				list, err := bt.List(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
 				bt.Name = args[0]
-				output, err := bt.Describe(clientset)
+				buildtemplate, err := bt.Describe(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.Describe(buildtemplate, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
+			fmt.Println(data)
 		},
 	}
 }
@@ -128,19 +120,26 @@ func cmdListChannels(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			c.Namespace = client.Namespace
 			if len(args) == 0 {
-				output, err := c.List(clientset)
+				list, err := c.List(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
 				c.Name = args[0]
-				output, err := c.Describe(clientset)
+				channel, err := c.Describe(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.Describe(channel, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
+			fmt.Println(data)
 		},
 	}
 }
@@ -153,19 +152,26 @@ func cmdListService(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
 			if len(args) == 0 {
-				output, err := s.List(clientset)
+				list, err := s.List(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
 				s.Name = args[0]
-				output, err := s.Describe(clientset)
+				service, err := s.Describe(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.Describe(service, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
+			fmt.Println(data)
 		},
 	}
 }
@@ -178,19 +184,26 @@ func cmdListConfigurations(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cf.Namespace = client.Namespace
 			if len(args) == 0 {
-				output, err := cf.List(clientset)
+				list, err := cf.List(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(output)
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
 				cf.Name = args[0]
-				output, err := cf.Describe(clientset)
+				configuration, err := cf.Describe(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.Describe(configuration, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
+			fmt.Println(data)
 		},
 	}
 }
@@ -203,19 +216,26 @@ func cmdListRevision(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			r.Namespace = client.Namespace
 			if len(args) == 0 {
-				output, err := r.List(clientset)
+				list, err := r.List(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(output)
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
 				r.Name = args[0]
-				output, err := r.Describe(clientset)
+				revision, err := r.Describe(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.Describe(revision, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
+			fmt.Println(data)
 		},
 	}
 }
@@ -228,19 +248,26 @@ func cmdListRoute(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			rt.Namespace = client.Namespace
 			if len(args) == 0 {
-				output, err := rt.List(clientset)
+				list, err := rt.List(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(output)
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			} else {
 				rt.Name = args[0]
-				output, err := rt.Describe(clientset)
+				route, err := r.Describe(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				fmt.Println(string(output))
+				data, err = output.Describe(route, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
+			fmt.Println(data)
 		},
 	}
 }

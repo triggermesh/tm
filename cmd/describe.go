@@ -15,15 +15,8 @@
 package cmd
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-)
-
-var (
-	output string
 )
 
 // describeCmd represents the describe command
@@ -52,14 +45,13 @@ func cmdDescribeBuild(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			b.Name = args[0]
 			b.Namespace = client.Namespace
-			output, err := b.Describe(clientset)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Println(string(output))
 		},
 	}
 }
+
+//
+// This command is not used. Please see list.go
+//
 
 func cmdDescribeBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
@@ -70,11 +62,6 @@ func cmdDescribeBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			bt.Name = args[0]
 			bt.Namespace = client.Namespace
-			output, err := bt.Describe(clientset)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Println(string(output))
 		},
 	}
 }
@@ -88,11 +75,6 @@ func cmdDescribeChannel(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			c.Name = args[0]
 			c.Namespace = client.Namespace
-			output, err := c.Describe(clientset)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Println(string(output))
 		},
 	}
 }
@@ -106,11 +88,6 @@ func cmdDescribeService(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Name = args[0]
 			s.Namespace = client.Namespace
-			output, err := s.Describe(clientset)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Println(string(output))
 		},
 	}
 }
@@ -124,11 +101,6 @@ func cmdDescribeConfiguration(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cf.Name = args[0]
 			cf.Namespace = client.Namespace
-			output, err := cf.Describe(clientset)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Println(string(output))
 		},
 	}
 }
@@ -142,11 +114,6 @@ func cmdDescribeRevision(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			r.Name = args[0]
 			r.Namespace = client.Namespace
-			output, err := r.Describe(clientset)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Println(string(output))
 		},
 	}
 }
@@ -160,11 +127,6 @@ func cmdDescribeRoute(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			rt.Name = args[0]
 			rt.Namespace = client.Namespace
-			output, err := rt.Describe(clientset)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			fmt.Println(string(output))
 		},
 	}
 }

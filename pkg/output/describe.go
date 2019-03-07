@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package service
+package output
 
 import (
-	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
-	"github.com/triggermesh/tm/pkg/client"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"encoding/json"
+
+	"github.com/ghodss/yaml"
 )
 
-func (s *Service) List(clientset *client.ConfigSet) (*servingv1alpha1.ServiceList, error) {
-	return clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{})
+func Describe(data interface{}, format string) (string, error) {
+	switch format {
+	case "yaml":
+		b, err := yaml.Marshal(data)
+		return string(b), err
+	default:
+		b, err := json.MarshalIndent(data, "", "  ")
+		return string(b), err
+	}
 }

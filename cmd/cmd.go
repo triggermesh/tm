@@ -36,7 +36,7 @@ import (
 var (
 	version   string
 	err       error
-	cfgFile   string
+	kubeConf  string
 	clientset client.ConfigSet
 
 	YAML string
@@ -66,7 +66,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	tmCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "k8s config file")
+	tmCmd.PersistentFlags().StringVar(&kubeConf, "config", "", "k8s config file")
 	tmCmd.PersistentFlags().StringVarP(&client.Namespace, "namespace", "n", "", "User namespace")
 	tmCmd.PersistentFlags().StringVar(&client.Registry, "registry-host", "knative.registry.svc.cluster.local", "Docker registry host address")
 	tmCmd.PersistentFlags().StringVarP(&client.Output, "output", "o", "", "Output format")
@@ -78,7 +78,8 @@ func init() {
 	tmCmd.AddCommand(newDeleteCmd(&clientset))
 	tmCmd.AddCommand(newSetCmd(&clientset))
 	tmCmd.AddCommand(newGetCmd(&clientset))
-	tmCmd.AddCommand(newDescribeCmd(&clientset))
+	// Describe is an alias for "get" command
+	// tmCmd.AddCommand(newDescribeCmd(&clientset))
 }
 
 var versionCmd = &cobra.Command{
@@ -90,10 +91,8 @@ var versionCmd = &cobra.Command{
 }
 
 func initConfig() {
-	// describe.Format(&client.Output)
-	// get.Format(&client.Output)
-
-	if clientset, err = client.NewClient(cfgFile); err != nil {
+	confPath := client.ConfigPath(kubeConf)
+	if clientset, err = client.NewClient(confPath); err != nil {
 		log.Fatalln(err)
 	}
 }
