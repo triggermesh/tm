@@ -40,6 +40,7 @@ var getCmd = &cobra.Command{
 func newGetCmd(clientset *client.ConfigSet) *cobra.Command {
 	getCmd.AddCommand(cmdListBuild(clientset))
 	getCmd.AddCommand(cmdListBuildTemplates(clientset))
+	getCmd.AddCommand(cmdListClusterBuildTemplates(clientset))
 	getCmd.AddCommand(cmdListConfigurations(clientset))
 	getCmd.AddCommand(cmdListRevision(clientset))
 	getCmd.AddCommand(cmdListRoute(clientset))
@@ -66,7 +67,7 @@ func cmdListBuild(clientset *client.ConfigSet) *cobra.Command {
 				}
 			} else {
 				b.Name = args[0]
-				build, err := b.Describe(clientset)
+				build, err := b.Get(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
@@ -98,11 +99,42 @@ func cmdListBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
 				}
 			} else {
 				bt.Name = args[0]
-				buildtemplate, err := bt.Describe(clientset)
+				buildtemplate, err := bt.Get(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
 				data, err = output.Describe(buildtemplate, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+			fmt.Println(data)
+		},
+	}
+}
+
+func cmdListClusterBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
+	return &cobra.Command{
+		Use:     "clusterbuildtemplate",
+		Aliases: []string{"cbuildtemplates", "cbuildtemplate", "clusterbuildtemplates"},
+		Short:   "List of clusterbuildtemplates",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				list, err := cbt.List(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			} else {
+				cbt.Name = args[0]
+				cbuildtemplate, err := cbt.Get(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.Describe(cbuildtemplate, client.Output)
 				if err != nil {
 					log.Fatalln(err)
 				}
@@ -130,7 +162,7 @@ func cmdListChannels(clientset *client.ConfigSet) *cobra.Command {
 				}
 			} else {
 				c.Name = args[0]
-				channel, err := c.Describe(clientset)
+				channel, err := c.Get(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
@@ -162,7 +194,7 @@ func cmdListService(clientset *client.ConfigSet) *cobra.Command {
 				}
 			} else {
 				s.Name = args[0]
-				service, err := s.Describe(clientset)
+				service, err := s.Get(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
@@ -194,7 +226,7 @@ func cmdListConfigurations(clientset *client.ConfigSet) *cobra.Command {
 				}
 			} else {
 				cf.Name = args[0]
-				configuration, err := cf.Describe(clientset)
+				configuration, err := cf.Get(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
@@ -226,7 +258,7 @@ func cmdListRevision(clientset *client.ConfigSet) *cobra.Command {
 				}
 			} else {
 				r.Name = args[0]
-				revision, err := r.Describe(clientset)
+				revision, err := r.Get(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}
@@ -258,7 +290,7 @@ func cmdListRoute(clientset *client.ConfigSet) *cobra.Command {
 				}
 			} else {
 				rt.Name = args[0]
-				route, err := r.Describe(clientset)
+				route, err := rt.Get(clientset)
 				if err != nil {
 					log.Fatalln(err)
 				}

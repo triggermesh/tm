@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package build
+package revision
 
 import (
-	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
+	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Describe describes knative build object
-func (b *Build) Describe(clientset *client.ConfigSet) (*buildv1alpha1.Build, error) {
-	return clientset.Build.BuildV1alpha1().Builds(b.Namespace).Get(b.Name, metav1.GetOptions{})
+func (r *Revision) Get(clientset *client.ConfigSet) (*servingv1alpha1.Revision, error) {
+	return clientset.Serving.ServingV1alpha1().Revisions(r.Namespace).Get(r.Name, metav1.GetOptions{})
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package buildtemplate
+package build
 
 import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (b *Buildtemplate) List(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplateList, error) {
-	return clientset.Build.BuildV1alpha1().BuildTemplates(b.Namespace).List(metav1.ListOptions{})
+// Describe describes knative build object
+func (b *Build) Get(clientset *client.ConfigSet) (*buildv1alpha1.Build, error) {
+	return clientset.Build.BuildV1alpha1().Builds(b.Namespace).Get(b.Name, metav1.GetOptions{})
 }

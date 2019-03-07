@@ -12,14 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package buildtemplate
+package clusterbuildtemplate
 
-import (
-	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
-	"github.com/triggermesh/tm/pkg/client"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-func (b *Buildtemplate) List(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplateList, error) {
-	return clientset.Build.BuildV1alpha1().BuildTemplates(b.Namespace).List(metav1.ListOptions{})
+type ClusterBuildtemplate struct {
+	Name string
 }

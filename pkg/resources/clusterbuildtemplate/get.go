@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package configuration
+package clusterbuildtemplate
 
 import (
-	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Configuration) Describe(clientset *client.ConfigSet) (*servingv1alpha1.Configuration, error) {
-	return clientset.Serving.ServingV1alpha1().Configurations(c.Namespace).Get(c.Name, metav1.GetOptions{})
+func (cbt *ClusterBuildtemplate) Get(clientset *client.ConfigSet) (*buildv1alpha1.ClusterBuildTemplate, error) {
+	return clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(cbt.Name, metav1.GetOptions{})
 }

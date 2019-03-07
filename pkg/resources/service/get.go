@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package route
+package service
 
 import (
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
@@ -20,6 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (r *Route) Describe(clientset *client.ConfigSet) (*servingv1alpha1.Route, error) {
-	return clientset.Serving.ServingV1alpha1().Routes(r.Namespace).Get(r.Name, metav1.GetOptions{})
+func (s *Service) Get(clientset *client.ConfigSet) (*servingv1alpha1.Service, error) {
+	return clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(s.Name, metav1.GetOptions{})
 }

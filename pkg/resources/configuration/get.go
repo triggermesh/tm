@@ -12,20 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package buildtemplate
+package configuration
 
 import (
-	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
+	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// BuildTemplate describes knative buildtemplate
-func (bt *Buildtemplate) Describe(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
-	return clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).Get(bt.Name, metav1.GetOptions{})
-	// clusterBuildtemplate, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(bt.Name, metav1.GetOptions{})
-	// if err == nil {
-	// return json.Marshal(clusterBuildtemplate)
-	// }
-	// return []byte{}, fmt.Errorf("Not found")
+func (c *Configuration) Get(clientset *client.ConfigSet) (*servingv1alpha1.Configuration, error) {
+	return clientset.Serving.ServingV1alpha1().Configurations(c.Namespace).Get(c.Name, metav1.GetOptions{})
 }

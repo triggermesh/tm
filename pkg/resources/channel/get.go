@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2018 TriggerMesh, Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package revision
+package channel
 
 import (
-	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	eventingApi "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (r *Revision) Describe(clientset *client.ConfigSet) (*servingv1alpha1.Revision, error) {
-	return clientset.Serving.ServingV1alpha1().Revisions(r.Namespace).Get(r.Name, metav1.GetOptions{})
+func (c *Channel) Get(clientset *client.ConfigSet) (*eventingApi.Channel, error) {
+	return clientset.Eventing.EventingV1alpha1().Channels(c.Namespace).Get(c.Name, metav1.GetOptions{})
 }
