@@ -32,6 +32,7 @@ import (
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
+	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,7 +84,6 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	timeout, err := time.ParseDuration(s.BuildTimeout)
 	if err != nil {
-		fmt.Printf("Can't parse timeout value %q: %s\n", s.BuildTimeout, err)
 		timeout = 10 * time.Minute
 	}
 
@@ -98,8 +98,8 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		if configuration.Build.BuildSpec != nil {
 			configuration.Build.BuildSpec.Timeout = &metav1.Duration{timeout}
 			configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
-				Name: s.Buildtemplate,
-				// Arguments: getBuildArguments(image, s.BuildArgs),
+				Name:      s.Buildtemplate,
+				Arguments: getBuildArguments(image, s.BuildArgs),
 				Env: []corev1.EnvVar{
 					{Name: "timestamp", Value: time.Now().String()},
 				},
@@ -217,14 +217,13 @@ func (s *Service) isClusterBuildtemplate(clientset *client.ConfigSet) (bool, err
 }
 
 func (s *Service) deployBuildtemplate(clientset *client.ConfigSet) (string, error) {
-	// buildtemplate := Buildtemplate{
-	// Name:           s.Name + "-buildtemplate",
-	// Namespace:      s.Namespace,
-	// File:           s.Buildtemplate,
-	// RegistrySecret: s.RegistrySecret,
-	// }
-	// return buildtemplate.Deploy(clientset)
-	return "", nil
+	buildtemplate := buildtemplate.Buildtemplate{
+		Name:           s.Name + "-buildtemplate",
+		Namespace:      s.Namespace,
+		File:           s.Buildtemplate,
+		RegistrySecret: s.RegistrySecret,
+	}
+	return buildtemplate.Deploy(clientset)
 }
 
 func (s *Service) createOrUpdate(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) error {
@@ -304,10 +303,10 @@ func mapFromSlice(slice []string) map[string]string {
 	return m
 }
 
-func (s *Service) latestBuild(name string, clientset *client.ConfigSet) (string, error) {
+func (s *Service) latestBuild(clientset *client.ConfigSet) (string, error) {
 	var revision *servingv1alpha1.Revision
-	for i := 0; i < 5; i++ {
-		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+	for i := 0; i < 10; i++ {
+		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(s.Name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			return "", err
 		}
@@ -347,7 +346,7 @@ func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet)
 }
 
 func (s *Service) injectSources(clientset *client.ConfigSet) error {
-	build, err := s.latestBuild(s.Name, clientset)
+	build, err := s.latestBuild(clientset)
 	if err != nil {
 		return err
 	}
@@ -386,7 +385,7 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 			if v.Name == "build-step-custom-source" {
 				if v.State.Terminated != nil {
 					// Looks like we got watch interface for "previous" service version, updating
-					if build, err = s.latestBuild(s.Name, clientset); err != nil {
+					if build, err = s.latestBuild(clientset); err != nil {
 						return err
 					}
 					if buildPod, err = s.serviceBuildPod(build, clientset); err != nil {
@@ -505,8 +504,8 @@ func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.Con
 	}
 
 	if len(s.RegistrySecret) != 0 {
-		// addSecretVolume(s.RegistrySecret, bt)
-		// setEnvConfig(s.RegistrySecret, bt)
+		addSecretVolume(s.RegistrySecret, bt)
+		setEnvConfig(s.RegistrySecret, bt)
 	}
 
 	rand, err := uniqueString()
@@ -560,4 +559,52 @@ func uniqueString() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
+}
+
+func getBuildArguments(image string, buildArgs []string) []buildv1alpha1.ArgumentSpec {
+	args := []buildv1alpha1.ArgumentSpec{
+		{
+			Name:  "IMAGE",
+			Value: image,
+		},
+	}
+
+	for k, v := range mapFromSlice(buildArgs) {
+		args = append(args, buildv1alpha1.ArgumentSpec{
+			Name: k, Value: v,
+		})
+	}
+
+	return args
+}
+
+func addSecretVolume(registrySecret string, template *buildv1alpha1.BuildTemplate) {
+	template.Spec.Volumes = []corev1.Volume{
+		{
+			Name: registrySecret,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: registrySecret,
+				},
+			},
+		},
+	}
+	for i, step := range template.Spec.Steps {
+		mounts := append(step.VolumeMounts, corev1.VolumeMount{
+			Name:      registrySecret,
+			MountPath: "/" + registrySecret,
+			ReadOnly:  true,
+		})
+		template.Spec.Steps[i].VolumeMounts = mounts
+	}
+}
+
+func setEnvConfig(registrySecret string, template *buildv1alpha1.BuildTemplate) {
+	for i, step := range template.Spec.Steps {
+		envs := append(step.Env, corev1.EnvVar{
+			Name:  "DOCKER_CONFIG",
+			Value: "/" + registrySecret,
+		})
+		template.Spec.Steps[i].Env = envs
+	}
 }

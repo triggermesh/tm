@@ -124,23 +124,6 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 	return err
 }
 
-func getBuildArguments(image string, buildArgs []string) []buildv1alpha1.ArgumentSpec {
-	args := []buildv1alpha1.ArgumentSpec{
-		{
-			Name:  "IMAGE",
-			Value: image,
-		},
-	}
-
-	for k, v := range mapFromSlice(buildArgs) {
-		args = append(args, buildv1alpha1.ArgumentSpec{
-			Name: k, Value: v,
-		})
-	}
-
-	return args
-}
-
 func mapFromSlice(slice []string) map[string]string {
 	m := make(map[string]string)
 	for _, s := range slice {
