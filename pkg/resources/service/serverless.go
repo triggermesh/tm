@@ -24,6 +24,7 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	yaml "gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // TODO Cleanup and simplify
@@ -211,31 +212,31 @@ func (s *Service) serviceObject(function file.Function) Service {
 }
 
 func (s *Service) removeOrphans(created []Service, label string, clientset *client.ConfigSet) error {
-	// list, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{
-	// 	IncludeUninitialized: true,
-	// 	LabelSelector:        "service=" + label,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
+	list, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{
+		IncludeUninitialized: true,
+		LabelSelector:        "service=" + label,
+	})
+	if err != nil {
+		return err
+	}
 
-	// for _, existing := range list.Items {
-	// orphaned := true
-	// for _, newService := range created {
-	// 	if newService.Name == existing.Name {
-	// 		orphaned = false
-	// 		break
-	// 	}
-	// }
-	// if orphaned {
-	// 	orphan := delete.Service{
-	// 		Name: existing.Name,
-	// 	}
-	// 	if err = orphan.DeleteService(clientset); err == nil {
-	// 		fmt.Printf("Removing orphaned service: %s\n", existing.Name)
-	// 	}
-	// }
-	// }
+	for _, existing := range list.Items {
+		orphaned := true
+		for _, newService := range created {
+			if newService.Name == existing.Name {
+				orphaned = false
+				break
+			}
+		}
+		if orphaned {
+			orphan := Service{
+				Name: existing.Name,
+			}
+			if err = orphan.Delete(clientset); err == nil {
+				fmt.Printf("Removing orphaned service: %s\n", existing.Name)
+			}
+		}
+	}
 
 	return nil
 }

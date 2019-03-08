@@ -28,6 +28,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Short: "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
+			s.Registry = client.Registry
 			if _, err := s.DeployYAML(YAML, args, clientset); err != nil {
 				log.Fatal(err)
 			}
