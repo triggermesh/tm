@@ -25,7 +25,7 @@ func TestUsername(t *testing.T) {
 	assert := assert.New(t)
 
 	c := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"triggermesh","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
-	d := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"test","namespace":"testnamespace","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
+	d := []byte(`{"apiVersion":"v1","clusters":[{"cluster":{"certificate-authority-data":"==","server":""},"name":"test"}],"contexts":[{"context":{"cluster":"test","namespace":"default","user":"testuser"},"name":"default-context"}],"current-context":"default-context","kind":"Config","preferences":{},"users":[{"name":"testuser","user":{"token":""}}]}`)
 
 	ioutil.WriteFile("config.json", c, 0644)
 	ioutil.WriteFile("default.json", d, 0644)
@@ -33,19 +33,15 @@ func TestUsername(t *testing.T) {
 	testCases := []struct {
 		input  string
 		output string
-		err    string
 	}{
-		{"", "", "open : no such file or directory"},
-		{"random.json", "", "open random.json: no such file or directory"},
-		{"config.json", "testnamespace", ""},
-		{"default.json", "default", ""},
+		{"", "default"},
+		{"random.json", "default"},
+		{"config.json", "testnamespace"},
+		{"default.json", "default"},
 	}
 
 	for _, tc := range testCases {
-		namespace, err := username(tc.input)
-		if err != nil {
-			assert.Equal(tc.err, err.Error())
-		}
+		namespace := getNamespace(tc.input)
 		assert.Equal(tc.output, namespace)
 	}
 
@@ -54,14 +50,28 @@ func TestUsername(t *testing.T) {
 }
 
 func TestNewClient(t *testing.T) {
-	_, err := NewClient("")
+	_, err := NewClient("../../testfiles/cfgfile-test.json")
 	assert.NoError(t, err)
 
-	_, err = NewClient("../../testfiles/cfgfile-test.json")
-	assert.NoError(t, err)
+	_, err = NewClient("")
+	assert.Error(t, err)
+}
+
+func TestConfigPath(t *testing.T) {
+	path := ConfigPath("")
+	home := os.Getenv("HOME")
+	assert.Equal(t, home+"/.tm/config.json", path)
+
+	path = ConfigPath("../../testfiles/cfgfile-test.json")
+	assert.Equal(t, "../../testfiles/cfgfile-test.json", path)
 
 	os.Setenv("KUBECONFIG", "../../testfiles/cfgfile-test.json")
-	_, err = NewClient("")
-	assert.NoError(t, err)
+	path = ConfigPath("")
+	assert.Equal(t, home+"/.tm/config.json", path)
 	os.Unsetenv("KUBECONFIG")
+}
+
+func TestGetInClusterNamespace(t *testing.T) {
+	namespace := getInClusterNamespace()
+	assert.Equal(t, "default", namespace)
 }
