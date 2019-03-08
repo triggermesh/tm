@@ -17,6 +17,7 @@ limitations under the License.
 package client
 
 import (
+	"errors"
 	"io/ioutil"
 	"log"
 	"os"
@@ -101,6 +102,7 @@ func getInClusterNamespace() string {
 	return string(data)
 }
 
+//
 func ConfigPath(cfgFile string) string {
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {
@@ -132,7 +134,7 @@ func NewClient(cfgFile string) (ConfigSet, error) {
 	if err != nil {
 		log.Printf("%s, falling back to in-cluster configuration\n", err)
 		if config, err = rest.InClusterConfig(); err != nil {
-			log.Fatalln("Can't read config file")
+			return ConfigSet{}, errors.New("Can't read config file")
 		}
 		if len(Namespace) == 0 {
 			Namespace = getInClusterNamespace()
