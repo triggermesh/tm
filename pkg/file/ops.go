@@ -94,6 +94,23 @@ func IsGit(path string) bool {
 	return false
 }
 
+func IsGitFile(path string) (string, string) {
+	uri := strings.Split(path, "/")
+	if len(uri) < 8 {
+		return "", ""
+	}
+	repository := fmt.Sprintf("https://%s/%s/%s", uri[0], uri[1], uri[2])
+	file := strings.Join(uri[5:], "/")
+	if strings.HasPrefix(uri[0], "http") {
+		repository = fmt.Sprintf("%s//%s/%s/%s", uri[0], uri[2], uri[3], uri[4])
+		file = strings.Join(uri[7:], "/")
+	}
+	if !IsGit(repository) {
+		return "", ""
+	}
+	return repository, file
+}
+
 // IsRegistry return true if path "behaves" like URL to docker registry
 func IsRegistry(path string) bool {
 	url, err := url.Parse(path)

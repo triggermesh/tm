@@ -10,7 +10,7 @@ import (
 // ParseServerlessYAML accepts serverless yaml file path and returns decoded structure
 func TestParseServerlessYAML(t *testing.T) {
 
-	definition, err := ParseServerlessYAML("test.yaml")
+	definition, err := ParseServerlessYAML("../../testfiles/serverless-test.yaml")
 	assert.NoError(t, err)
 
 	assert.Equal(t, "serverless-foo", definition.Service)

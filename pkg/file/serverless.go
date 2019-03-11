@@ -16,10 +16,13 @@ type Definition struct {
 		Name           string
 		Registry       string
 		RegistrySecret string `yaml:"registry-secret"`
+		PullPolicy     string `yaml:"pull-policy"`
 		Namespace      string
 		Runtime        string
+		Buildtimeout   string
 		Environment    map[string]string
 		EnvSecrets     []string `yaml:"env-secrets"`
+		Annotations    map[string]string
 	}
 	Repository string
 	Functions  map[string]Function
@@ -31,11 +34,13 @@ type Function struct {
 	Handler     string
 	Source      string
 	Runtime     string
+	Concurrency int
 	Buildargs   []string
 	Description string
 	Labels      []string
 	Environment map[string]string
 	EnvSecrets  []string `yaml:"env-secrets"`
+	Annotations map[string]string
 	Events      []map[string]interface{}
 }
 
