@@ -2,10 +2,10 @@ package build
 
 import (
 	"errors"
+	"log"
 	"os"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/triggermesh/tm/pkg/client"
 )
@@ -15,13 +15,13 @@ func TestList(t *testing.T) {
 	namespace := os.Getenv("NAMESPACE")
 	buildClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
-	log.Info(buildClient)
+	log.Println(buildClient)
 
 	build := &Build{Namespace: namespace}
 
 	buildList, err := build.List(&buildClient)
 	assert.NoError(t, err)
-	log.Info(buildList)
+	log.Println(buildList)
 }
 
 func TestBuild(t *testing.T) {
