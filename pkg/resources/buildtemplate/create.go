@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"regexp"
 
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
@@ -30,20 +29,20 @@ import (
 )
 
 // Deploy deploys knative buildtemplate either from local file or by its URL
-func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (string, error) {
+func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
 	var bt buildv1alpha1.BuildTemplate
 	var err error
 
 	if !file.IsLocal(b.File) {
 		path, err := file.Download(b.File)
 		if err != nil {
-			return "", fmt.Errorf("Buildtemplate %s: %s", b.File, err)
+			return nil, fmt.Errorf("Buildtemplate %s: %s", b.File, err)
 		}
 		b.File = path
 	}
 
 	if bt, err = readYAML(b.File); err != nil {
-		return "", err
+		return nil, err
 	}
 	// If argument is passed overwrite build template name
 	if len(b.Name) != 0 {
@@ -56,7 +55,20 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (string, error) {
 		setEnvConfig(b.RegistrySecret, &bt)
 	}
 
-	return bt.ObjectMeta.Name, createBuildTemplate(bt, clientset)
+	return createBuildTemplate(bt, clientset)
+}
+
+func (b *Buildtemplate) Clone(source buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
+	source.SetName(b.Name)
+	source.SetNamespace(b.Namespace)
+	source.SetOwnerReferences([]metav1.OwnerReference{})
+	source.SetResourceVersion("")
+	source.Kind = "BuildTemplate"
+	if len(b.RegistrySecret) != 0 {
+		addSecretVolume(b.RegistrySecret, &source)
+		setEnvConfig(b.RegistrySecret, &source)
+	}
+	return createBuildTemplate(source, clientset)
 }
 
 func addSecretVolume(registrySecret string, template *buildv1alpha1.BuildTemplate) {
@@ -100,9 +112,9 @@ func readYAML(path string) (buildv1alpha1.BuildTemplate, error) {
 	return res, err
 }
 
-func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) error {
+func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
 	if template.TypeMeta.Kind != "BuildTemplate" {
-		return errors.New("Can't create object, only BuildTemplate is allowed")
+		return nil, errors.New("Can't create object, only BuildTemplate is allowed")
 	}
 	var hasImage bool
 	for _, v := range template.Spec.Parameters {
@@ -112,27 +124,14 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 		}
 	}
 	if !hasImage {
-		return errors.New("Build template \"IMAGE\" parameter is missing")
+		return nil, errors.New("Build template \"IMAGE\" parameter is missing")
 	}
 	btOld, err := clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Get(template.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil {
 		template.ObjectMeta.ResourceVersion = btOld.ObjectMeta.ResourceVersion
-		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Update(&template)
+		return clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Update(&template)
 	} else if k8sErrors.IsNotFound(err) {
-		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Create(&template)
+		return clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Create(&template)
 	}
-	return err
-}
-
-func mapFromSlice(slice []string) map[string]string {
-	m := make(map[string]string)
-	for _, s := range slice {
-		t := regexp.MustCompile("[:=]").Split(s, 2)
-		if len(t) != 2 {
-			fmt.Printf("Can't parse argument slice %s\n", s)
-			continue
-		}
-		m[t[0]] = t[1]
-	}
-	return m
+	return nil, err
 }
