@@ -47,10 +47,10 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	fmt.Printf("Creating %s function\n", s.Name)
 	configuration := servingv1alpha1.ConfigurationSpec{}
 
-	bt, err := s.cloneBuildtemplate(clientset)
+	newBuildtemplate, err := s.cloneBuildtemplate(clientset)
 	if err != nil {
 		return "", err
-	} else if bt == nil {
+	} else if newBuildtemplate == nil {
 		rand, err := uniqueString()
 		if err != nil {
 			return "", err
@@ -61,11 +61,11 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 			File:           s.Buildtemplate,
 			RegistrySecret: s.RegistrySecret,
 		}
-		if bt, err = b.Deploy(clientset); err != nil {
+		if newBuildtemplate, err = b.Deploy(clientset); err != nil {
 			return "", err
 		}
 	}
-	s.Buildtemplate = bt.GetName()
+	s.Buildtemplate = newBuildtemplate.GetName()
 
 	switch {
 	case file.IsLocal(s.Source):
@@ -152,21 +152,17 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return string(j), err
 	}
 
-	if _, err := s.createOrUpdate(serviceObject, clientset); err != nil {
-		return "", err
-	}
-
-	buildPodName, err := s.buildPodName(clientset)
+	newService, err := s.createOrUpdate(serviceObject, clientset)
 	if err != nil {
 		return "", err
 	}
 
-	if err := s.setBuildtemplateOwner(bt, buildPodName, clientset); err != nil {
+	if err := s.setBuildtemplateOwner(newBuildtemplate, newService, clientset); err != nil {
 		return "", err
 	}
 
 	if file.IsLocal(s.Source) {
-		if err := s.injectSources(buildPodName, clientset); err != nil {
+		if err := s.injectSources(clientset); err != nil {
 			return "", err
 		}
 	}
@@ -225,8 +221,9 @@ func (s *Service) cloneBuildtemplate(clientset *client.ConfigSet) (*buildv1alpha
 		return nil, err
 	}
 	bt := buildtemplate.Buildtemplate{
-		Name:      fmt.Sprintf("%s-%s", s.Name, rand),
-		Namespace: s.Namespace,
+		Name:           fmt.Sprintf("%s-%s", s.Name, rand),
+		Namespace:      s.Namespace,
+		RegistrySecret: s.RegistrySecret,
 	}
 
 	sourceBt, err := clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Get(s.Buildtemplate, metav1.GetOptions{})
@@ -250,20 +247,16 @@ func (s *Service) buildPodName(clientset *client.ConfigSet) (string, error) {
 	return s.serviceBuildPod(build, clientset)
 }
 
-func (s *Service) setBuildtemplateOwner(buildtemplate *buildv1alpha1.BuildTemplate, podName string, clientset *client.ConfigSet) error {
-	pod, err := clientset.Core.CoreV1().Pods(s.Namespace).Get(podName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
+func (s *Service) setBuildtemplateOwner(buildtemplate *buildv1alpha1.BuildTemplate, owner *servingv1alpha1.Service, clientset *client.ConfigSet) error {
 	buildtemplate.SetOwnerReferences([]metav1.OwnerReference{
 		{
-			APIVersion: "v1",
-			Kind:       "Pod",
-			Name:       podName,
-			UID:        pod.GetUID(),
+			APIVersion: "serving.knative.dev/v1alpha1",
+			Kind:       "Service",
+			Name:       s.Name,
+			UID:        owner.GetUID(),
 		},
 	})
-	_, err = clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Update(buildtemplate)
+	_, err := clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Update(buildtemplate)
 	return err
 }
 
@@ -385,7 +378,11 @@ func (s *Service) serviceBuildPod(buildName string, clientset *client.ConfigSet)
 	return buildPod, nil
 }
 
-func (s *Service) injectSources(buildPod string, clientset *client.ConfigSet) error {
+func (s *Service) injectSources(clientset *client.ConfigSet) error {
+	buildPod, err := s.buildPodName(clientset)
+	if err != nil {
+		return err
+	}
 	fmt.Printf("Uploading sources to %s\n", buildPod)
 	res, err := clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod})
 	if err != nil {
@@ -507,46 +504,6 @@ func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
 		}
 	}
 }
-
-// func (s *Service) cloneBuildtemplate(clustertemplate bool, clientset *client.ConfigSet) (string, error) {
-// 	if len(s.Buildtemplate) == 0 {
-// 		return "", nil
-// 	}
-// 	var err error
-// 	var bt *buildv1alpha1.BuildTemplate
-// 	if clustertemplate {
-// 		cbt, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(s.Buildtemplate, metav1.GetOptions{})
-// 		if err != nil {
-// 			return "", err
-// 		}
-
-// 		bt = &buildv1alpha1.BuildTemplate{
-// 			ObjectMeta: cbt.ObjectMeta,
-// 			TypeMeta:   cbt.TypeMeta,
-// 			Spec:       cbt.Spec,
-// 		}
-// 		bt.Namespace = s.Namespace
-// 	} else {
-// 		if bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Get(s.Buildtemplate, metav1.GetOptions{}); err != nil {
-// 			return "", err
-// 		}
-// 	}
-
-// 	if len(s.RegistrySecret) != 0 {
-// 		addSecretVolume(s.RegistrySecret, bt)
-// 		setEnvConfig(s.RegistrySecret, bt)
-// 	}
-
-// 	rand, err := uniqueString()
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	bt.Name = fmt.Sprintf("%s-%s", s.Buildtemplate, rand)
-// 	bt.ObjectMeta.ResourceVersion = ""
-
-// 	bt, err = clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Create(bt)
-// 	return bt.Name, err
-// }
 
 func (s *Service) imageName(clientset *client.ConfigSet) (string, error) {
 	if len(s.RegistrySecret) == 0 {
