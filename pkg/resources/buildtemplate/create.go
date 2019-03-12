@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"regexp"
 
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
@@ -122,17 +121,4 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 		_, err = clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Create(&template)
 	}
 	return err
-}
-
-func mapFromSlice(slice []string) map[string]string {
-	m := make(map[string]string)
-	for _, s := range slice {
-		t := regexp.MustCompile("[:=]").Split(s, 2)
-		if len(t) != 2 {
-			fmt.Printf("Can't parse argument slice %s\n", s)
-			continue
-		}
-		m[t[0]] = t[1]
-	}
-	return m
 }
