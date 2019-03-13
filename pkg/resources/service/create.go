@@ -49,11 +49,11 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	newBuildtemplate, err := s.cloneBuildtemplate(clientset)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Creating temporary buildtemplate: %s", err)
 	} else if newBuildtemplate == nil {
 		rand, err := uniqueString()
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("Generating unique buildtemplate name: %s", err)
 		}
 		b := buildtemplate.Buildtemplate{
 			Name:           fmt.Sprintf("%s-%s", s.Name, rand),
@@ -62,7 +62,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 			RegistrySecret: s.RegistrySecret,
 		}
 		if newBuildtemplate, err = b.Deploy(clientset); err != nil {
-			return "", err
+			return "", fmt.Errorf("Deploying new buildtemplate: %s", err)
 		}
 	}
 	s.Buildtemplate = newBuildtemplate.GetName()
@@ -88,7 +88,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	image, err := s.imageName(clientset)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Composing service image name: %s", err)
 	}
 
 	timeout, err := time.ParseDuration(s.BuildTimeout)
@@ -149,28 +149,28 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	if client.Dry {
 		j, err := json.MarshalIndent(serviceObject, "", " ")
-		return string(j), err
+		return string(j), fmt.Errorf("Encoding service object: %s", err)
 	}
 
 	newService, err := s.createOrUpdate(serviceObject, clientset)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Creating service: %s", err)
 	}
 
 	if err := s.setBuildtemplateOwner(newBuildtemplate, newService, clientset); err != nil {
-		return "", err
+		return "", fmt.Errorf("Setting buildtemplate owner: %s", err)
 	}
 
 	if file.IsLocal(s.Source) {
 		if err := s.injectSources(clientset); err != nil {
-			return "", err
+			return "", fmt.Errorf("Injecting service sources: %s", err)
 		}
 	}
 
 	// TODO Add cronjob yaml into --dry output
 	if len(s.Cronjob.Schedule) != 0 {
 		if err := s.CreateCronjobSource(clientset); err != nil {
-			return "", err
+			return "", fmt.Errorf("Creating cronjob source: %s", err)
 		}
 	}
 
@@ -181,7 +181,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	fmt.Printf("Waiting for %s ready state\n", s.Name)
 	domain, err := s.waitService(clientset)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Waiting for service readiness: %s", err)
 	}
 	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), nil
 }
@@ -338,20 +338,23 @@ func mapFromSlice(slice []string) map[string]string {
 
 func (s *Service) latestBuild(clientset *client.ConfigSet) (string, error) {
 	var revision *servingv1alpha1.Revision
+	// TODO find more reliable way to get latest active revision
 	for i := 0; i < 10; i++ {
 		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(s.Name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
-			return "", err
+			fmt.Printf("Retrieving service object: %s\n", err)
+			continue
 		}
 		r, err := clientset.Serving.ServingV1alpha1().Revisions(s.Namespace).Get(service.Status.LatestCreatedRevisionName, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
-			return "", err
+			fmt.Printf("Getting latest service revision: %s\n", err)
+			continue
 		}
 		if cond := r.Status.GetCondition(servingv1alpha1.RevisionConditionBuildSucceeded); cond != nil && cond.Reason == "Building" {
 			revision = r
 			break
 		}
-		time.Sleep(time.Second)
+		time.Sleep(2 * time.Second)
 	}
 	if revision == nil {
 		return "", errors.New("can't get active build revision")
@@ -421,6 +424,7 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 					if res, err = clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
 						return err
 					}
+					fmt.Printf("Updating build pod name to %s\n", buildPod)
 					break
 				}
 				if v.State.Running != nil {
