@@ -45,27 +45,30 @@ var sourcedir string
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	fmt.Printf("Creating %s function\n", s.Name)
-	configuration := servingv1alpha1.ConfigurationSpec{}
+	var configuration servingv1alpha1.ConfigurationSpec
+	var newBuildtemplate *buildv1alpha1.BuildTemplate
+	var err error
 
-	newBuildtemplate, err := s.cloneBuildtemplate(clientset)
-	if err != nil {
-		return "", fmt.Errorf("Creating temporary buildtemplate: %s", err)
-	} else if newBuildtemplate == nil {
-		rand, err := uniqueString()
-		if err != nil {
-			return "", fmt.Errorf("Generating unique buildtemplate name: %s", err)
+	if s.Buildtemplate != "" {
+		if newBuildtemplate, err = s.cloneBuildtemplate(clientset); err != nil {
+			return "", fmt.Errorf("Creating temporary buildtemplate: %s", err)
+		} else if newBuildtemplate == nil {
+			rand, err := uniqueString()
+			if err != nil {
+				return "", fmt.Errorf("Generating unique buildtemplate name: %s", err)
+			}
+			b := buildtemplate.Buildtemplate{
+				Name:           fmt.Sprintf("%s-%s", s.Name, rand),
+				Namespace:      s.Namespace,
+				File:           s.Buildtemplate,
+				RegistrySecret: s.RegistrySecret,
+			}
+			if newBuildtemplate, err = b.Deploy(clientset); err != nil {
+				return "", fmt.Errorf("Deploying new buildtemplate: %s", err)
+			}
 		}
-		b := buildtemplate.Buildtemplate{
-			Name:           fmt.Sprintf("%s-%s", s.Name, rand),
-			Namespace:      s.Namespace,
-			File:           s.Buildtemplate,
-			RegistrySecret: s.RegistrySecret,
-		}
-		if newBuildtemplate, err = b.Deploy(clientset); err != nil {
-			return "", fmt.Errorf("Deploying new buildtemplate: %s", err)
-		}
+		s.Buildtemplate = newBuildtemplate.GetName()
 	}
-	s.Buildtemplate = newBuildtemplate.GetName()
 
 	switch {
 	case file.IsLocal(s.Source):
@@ -157,8 +160,10 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("Creating service: %s", err)
 	}
 
-	if err := s.setBuildtemplateOwner(newBuildtemplate, newService, clientset); err != nil {
-		return "", fmt.Errorf("Setting buildtemplate owner: %s", err)
+	if s.Buildtemplate != "" {
+		if err := s.setBuildtemplateOwner(newBuildtemplate, newService, clientset); err != nil {
+			return "", fmt.Errorf("Setting buildtemplate owner: %s", err)
+		}
 	}
 
 	if file.IsLocal(s.Source) {
