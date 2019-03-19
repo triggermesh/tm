@@ -121,7 +121,6 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	configuration.RevisionTemplate.ObjectMeta = metav1.ObjectMeta{
-		Name:              s.Name,
 		CreationTimestamp: metav1.Time{time.Now()},
 		Annotations:       s.Annotations,
 		Labels:            mapFromSlice(s.Labels),
