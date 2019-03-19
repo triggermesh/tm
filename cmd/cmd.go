@@ -39,18 +39,18 @@ var (
 	err       error
 	kubeConf  string
 	clientset client.ConfigSet
+	YAML      string
 
-	YAML string
-	b    build.Build
-	c    channel.Channel
-	s    service.Service
-	r    revision.Revision
-	rt   route.Route
-	cf   configuration.Configuration
-	gc   credential.GitCreds
-	rc   credential.RegistryCreds
-	bt   buildtemplate.Buildtemplate
-	cbt  clusterbuildtemplate.ClusterBuildtemplate
+	b   build.Build
+	c   channel.Channel
+	s   service.Service
+	r   revision.Revision
+	rt  route.Route
+	cf  configuration.Configuration
+	gc  credential.GitCreds
+	rc  credential.RegistryCreds
+	bt  buildtemplate.Buildtemplate
+	cbt clusterbuildtemplate.ClusterBuildtemplate
 )
 
 // tmCmd represents the base command when called without any subcommands
