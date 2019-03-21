@@ -29,7 +29,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
 			s.Registry = client.Registry
-			if _, err := s.DeployYAML(YAML, args, clientset); err != nil {
+			if err := s.DeployYAML(YAML, args, clientset); err != nil {
 				log.Fatal(err)
 			}
 		},

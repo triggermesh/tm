@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
@@ -27,121 +26,170 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TODO Cleanup and simplify
-
 var yamlFile = "serverless.yaml"
 
-// DeployYAML deploys functions defined in serverless.yaml file
-func (s *Service) DeployYAML(YAML string, functionsToDeploy []string, clientset *client.ConfigSet) (services []Service, err error) {
+type status struct {
+	Message string
+	Error   error
+}
+
+func deployWorker(jobs <-chan Service, results chan<- status, clientset *client.ConfigSet) {
+	for function := range jobs {
+		output, err := function.Deploy(clientset)
+		results <- status{
+			Message: output,
+			Error:   err,
+		}
+	}
+}
+
+func deleteWorker(jobs <-chan Service, results chan<- error, clientset *client.ConfigSet) {
+	for function := range jobs {
+		results <- function.Delete(clientset)
+	}
+}
+
+func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, clientset *client.ConfigSet) error {
+	jobs := make(chan Service, 100)
+	results := make(chan status, 100)
+
+	for w := 1; w <= 3; w++ {
+		go deployWorker(jobs, results, clientset)
+	}
+
+	functions, err := s.parseYAML(yamlFile)
+	if err != nil {
+		return err
+	}
+
+	for _, function := range functions {
+		if !s.inList(function.Name, functionsToDeploy) {
+			continue
+		}
+		jobs <- function
+	}
+	close(jobs)
+
+	var errs bool
+	for i := 1; i <= len(functions); i++ {
+		if r := <-results; r.Error != nil {
+			errs = true
+			fmt.Println(r.Error)
+		} else {
+			fmt.Println(r.Message)
+		}
+	}
+
+	if len(functionsToDeploy) == 0 {
+		if err = s.removeOrphans(functions, clientset); err != nil {
+			return err
+		}
+	}
+	if errs {
+		return fmt.Errorf("There were errors during manifest deployment")
+	}
+	return nil
+}
+
+func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, clientset *client.ConfigSet) error {
+	jobs := make(chan Service, 100)
+	results := make(chan error, 100)
+
+	for w := 1; w <= 3; w++ {
+		go deleteWorker(jobs, results, clientset)
+	}
+
+	functions, err := s.parseYAML(yamlFile)
+	if err != nil {
+		return err
+	}
+	for _, function := range functions {
+		if !s.inList(function.Name, functionsToDelete) {
+			continue
+		}
+		fmt.Println("Deleting", function.Name)
+		jobs <- function
+	}
+	close(jobs)
+
+	for a := 1; a <= len(functions); a++ {
+		if err := <-results; err != nil {
+			fmt.Println(err)
+		}
+	}
+	return nil
+}
+
+func (s *Service) parseYAML(YAML string) ([]Service, error) {
+	var err error
 	if YAML, err = getYAML(YAML); err != nil {
 		return nil, err
 	}
-	definition, err := file.ParseServerlessYAML(YAML)
+	definition, err := file.ParseManifest(YAML)
 	if err != nil {
 		return nil, err
 	}
-	if len(definition.Provider.Name) != 0 && definition.Provider.Name != "triggermesh" {
+	if definition.Provider.Name != "" && definition.Provider.Name != "triggermesh" {
 		return nil, fmt.Errorf("%s provider is not supported", definition.Provider.Name)
 	}
 	if len(definition.Service) == 0 {
 		return nil, errors.New("Service name can't be empty")
 	}
-	if len(s.Name) == 0 {
-		s.setupParentVars(definition)
-	}
-	if len(definition.Provider.Registry) != 0 {
-		s.Registry = definition.Provider.Registry
-	}
-	if len(definition.Provider.Namespace) != 0 {
-		s.Namespace = definition.Provider.Namespace
-	}
-	if len(definition.Provider.Runtime) != 0 {
-		s.Buildtemplate = definition.Provider.Runtime
-	}
-	prefix := s.Name
-	if s.Name != definition.Service {
-		prefix = fmt.Sprintf("%s-%s", prefix, definition.Service)
-	}
-	workdir := path.Dir(YAML)
+	s.setupParentVars(definition)
 
-	var wg sync.WaitGroup
-	for name, function := range definition.Functions {
-		if !inList(name, functionsToDeploy) {
-			continue
-		}
-
-		service := s.serviceObject(function)
-		if len(function.Handler) != 0 {
-			fmt.Printf("Warning! Please change \"handler:%s\" to \"source:%s\" for function \"%s\" in serverless.yaml. Parameter \"handler\" will be deprecated soon\n",
-				function.Handler, function.Handler, name)
-			service.Source = function.Handler
-		}
-		service.Labels = append(service.Labels, "service:"+prefix)
-		service.Name = fmt.Sprintf("%s-%s", prefix, name)
-		if workdir != "." && workdir != "./." && !file.IsRemote(service.Source) {
-			service.Source = fmt.Sprintf("%s/%s", workdir, service.Source)
-		}
-		if len(service.Buildtemplate) == 0 {
-			service.Buildtemplate = definition.Provider.Runtime
-		}
-		if len(service.Buildtemplate) == 0 {
-			service.Buildtemplate = s.Buildtemplate
-		}
-
-		if len(function.Description) != 0 {
-			service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)
-		}
-
-		service.parseSchedule(function.Events)
-
-		wg.Add(1)
-		go func(service Service) {
-			defer wg.Done()
-			output, err := service.Deploy(clientset)
-			if err != nil {
-				fmt.Printf("%s: %s\n", service.Name, err)
-			} else {
-				fmt.Print(output)
-			}
-		}(service)
-		services = append(services, service)
+	functions := s.parseFunctions(definition.Functions, path.Dir(YAML))
+	includedFunctions, err := s.parseIncludes(definition.Include, path.Dir(YAML))
+	if err != nil {
+		return nil, err
 	}
+	return append(functions, includedFunctions...), nil
+}
 
-	if len(functionsToDeploy) == 0 {
-		if err = s.removeOrphans(services, prefix, clientset); err != nil {
-			return nil, err
+func (s *Service) parseIncludes(includes []string, workdir ...string) ([]Service, error) {
+	var services []Service
+	var definition file.Definition
+	for _, include := range includes {
+		if !file.IsRemote(include) && len(workdir) == 1 {
+			include = path.Join(workdir[0], include)
 		}
-	}
-
-	for _, include := range definition.Include {
-		YAML = workdir + "/" + include
-		if file.IsRemote(include) {
-			YAML = include
+		YAML, err := getYAML(include)
+		if err != nil {
+			return []Service{}, err
 		}
-		wg.Add(1)
-		go func(YAML string, functionsToDeploy []string) {
-			defer wg.Done()
-			if _, err := s.DeployYAML(YAML, functionsToDeploy, clientset); err != nil {
-				fmt.Printf("%s: %s\n", YAML, err)
-			}
-		}(YAML, functionsToDeploy)
+		definition, err = file.ParseManifest(YAML)
+		if err != nil {
+			return []Service{}, err
+		}
+		services = append(services, s.parseFunctions(definition.Functions, path.Dir(YAML))...)
 	}
-	wg.Wait()
 
 	return services, nil
 }
 
-func inList(name string, functionsToDeploy []string) bool {
-	deployThis := true
-	if len(functionsToDeploy) != 0 {
-		deployThis = false
-		for _, v := range functionsToDeploy {
-			if v == name {
-				return true
-			}
+func (s *Service) parseFunctions(functions map[string]file.Function, workdir ...string) []Service {
+	var services []Service
+	for name, function := range functions {
+		service := s.serviceObject(function)
+		service.Name = fmt.Sprintf("%s-%s", s.Name, name)
+		service.Labels = append(service.Labels, "service:"+s.Name)
+		if !file.IsRemote(service.Source) && len(workdir) == 1 {
+			service.Source = path.Join(workdir[0], service.Source)
+		}
+		service.parseSchedule(function.Events)
+		services = append(services, service)
+	}
+	return services
+}
+
+func (s *Service) inList(name string, list []string) bool {
+	listed := true
+	for _, v := range list {
+		listed = false
+		if v == name || name == fmt.Sprintf("%s-%s", s.Name, v) {
+			return true
 		}
 	}
-	return deployThis
+	return listed
 }
 
 func (s *Service) parseSchedule(events []map[string]interface{}) {
@@ -165,9 +213,20 @@ func (s *Service) parseSchedule(events []map[string]interface{}) {
 }
 
 func (s *Service) setupParentVars(definition file.Definition) {
-	s.Name = definition.Service
-	s.RegistrySecret = definition.Provider.RegistrySecret
 	s.Annotations = make(map[string]string)
+	s.Name = definition.Service
+	s.EnvSecrets = definition.Provider.EnvSecrets
+	s.PullPolicy = definition.Provider.PullPolicy
+	s.Buildtemplate = definition.Provider.Runtime
+	s.BuildTimeout = definition.Provider.Buildtimeout
+	s.RegistrySecret = definition.Provider.RegistrySecret
+
+	if len(s.Namespace) == 0 {
+		s.Namespace = definition.Provider.Namespace
+	}
+	if len(s.Registry) == 0 {
+		s.Registry = definition.Provider.Registry
+	}
 	for k, v := range definition.Provider.Annotations {
 		s.Annotations[k] = v
 	}
@@ -177,9 +236,6 @@ func (s *Service) setupParentVars(definition file.Definition) {
 	for k, v := range definition.Provider.Environment {
 		s.Env = append(s.Env, k+":"+v)
 	}
-	s.EnvSecrets = definition.Provider.EnvSecrets
-	s.PullPolicy = definition.Provider.PullPolicy
-	s.BuildTimeout = definition.Provider.Buildtimeout
 }
 
 func (s *Service) serviceObject(function file.Function) Service {
@@ -196,9 +252,13 @@ func (s *Service) serviceObject(function file.Function) Service {
 		BuildTimeout:   s.BuildTimeout,
 		RegistrySecret: s.RegistrySecret,
 		Env:            s.Env,
+		Annotations:    make(map[string]string),
 		EnvSecrets:     append(s.EnvSecrets, function.EnvSecrets...),
 	}
-	service.Annotations = make(map[string]string)
+	// For back-compatibility with old "handler" field
+	if len(function.Handler) != 0 {
+		service.Source = function.Handler
+	}
 	for k, v := range function.Environment {
 		service.Env = append(service.Env, k+":"+v)
 	}
@@ -208,13 +268,19 @@ func (s *Service) serviceObject(function file.Function) Service {
 	for k, v := range function.Annotations {
 		service.Annotations[k] = v
 	}
+	if len(service.Buildtemplate) == 0 {
+		service.Buildtemplate = s.Buildtemplate
+	}
+	if len(function.Description) != 0 {
+		service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)
+	}
 	return service
 }
 
-func (s *Service) removeOrphans(created []Service, label string, clientset *client.ConfigSet) error {
+func (s *Service) removeOrphans(created []Service, clientset *client.ConfigSet) error {
 	list, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{
 		IncludeUninitialized: true,
-		LabelSelector:        "service=" + label,
+		LabelSelector:        "service=" + s.Name,
 	})
 	if err != nil {
 		return err
@@ -230,81 +296,14 @@ func (s *Service) removeOrphans(created []Service, label string, clientset *clie
 		}
 		if orphaned {
 			orphan := Service{
-				Name: existing.Name,
+				Name:      existing.Name,
+				Namespace: existing.Namespace,
 			}
-			if err = orphan.Delete(clientset); err == nil {
-				fmt.Printf("Removing orphaned service: %s\n", existing.Name)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (s *Service) DeleteYAML(filepath string, functions []string, clientset *client.ConfigSet) (err error) {
-	var wg sync.WaitGroup
-	if filepath, err = getYAML(filepath); err != nil {
-		return err
-	}
-	definition, err := file.ParseServerlessYAML(filepath)
-	if err != nil {
-		return err
-	}
-	if len(definition.Provider.Name) != 0 && definition.Provider.Name != "triggermesh" {
-		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)
-	}
-	if len(s.Name) == 0 && len(definition.Service) == 0 {
-		return errors.New("Service name can't be empty")
-	}
-	if len(s.Name) == 0 {
-		s.Name = definition.Service
-	}
-
-	for name := range definition.Functions {
-		pass := false
-		for _, v := range functions {
-			if v == name {
-				pass = true
-				break
-			}
-		}
-		if len(functions) != 0 && !pass {
-			continue
-		}
-		if len(definition.Service) != 0 && s.Name != definition.Service {
-			name = fmt.Sprintf("%s-%s", definition.Service, name)
-		}
-		service := Service{
-			Name: fmt.Sprintf("%s-%s", s.Name, name),
-		}
-		service.Namespace = s.Namespace
-
-		wg.Add(1)
-		fmt.Printf("Deleting %s\n", service.Name)
-		go func(service Service) {
-			defer wg.Done()
-			if err = service.Delete(clientset); err != nil {
-				fmt.Printf("%s: %s\n", service.Name, err)
-			}
-		}(service)
-	}
-	for _, include := range definition.Include {
-		filepath = path.Dir(filepath) + "/" + include
-		if file.IsRemote(include) {
-			if filepath, err = file.Clone(include); err != nil {
+			if err = orphan.Delete(clientset); err != nil {
 				return err
 			}
-			filepath = filepath + "/serverless.yaml"
 		}
-		wg.Add(1)
-		go func(filepath string, functions []string) {
-			defer wg.Done()
-			if err = s.DeleteYAML(filepath, functions, clientset); err != nil {
-				fmt.Printf("%s: %s\n", filepath, err)
-			}
-		}(filepath, functions)
 	}
-	wg.Wait()
 	return nil
 }
 
