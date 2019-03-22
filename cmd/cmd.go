@@ -35,11 +35,12 @@ import (
 )
 
 var (
-	version   string
-	err       error
-	kubeConf  string
-	clientset client.ConfigSet
-	YAML      string
+	version     string
+	err         error
+	kubeConf    string
+	clientset   client.ConfigSet
+	YAML        string
+	concurrency int
 
 	b   build.Build
 	c   channel.Channel

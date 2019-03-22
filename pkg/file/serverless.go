@@ -49,8 +49,8 @@ type Schedule struct {
 	Data string
 }
 
-// ParseServerlessYAML accepts serverless yaml file path and returns decoded structure
-func ParseServerlessYAML(path string) (Definition, error) {
+// ParseServerless accepts serverless yaml file path and returns decoded structure
+func ParseManifest(path string) (Definition, error) {
 	var f Definition
 	if _, err := os.Stat(path); err != nil {
 		return f, err

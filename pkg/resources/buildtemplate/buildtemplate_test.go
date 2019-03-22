@@ -48,7 +48,7 @@ func TestBuildTemplate(t *testing.T) {
 		ErrMSG         error
 	}{
 		{"foo", "", "", errors.New("Buildtemplate : Get : unsupported protocol scheme \"\"")},
-		{"foo", "https://github.com/triggermesh/knative-lambda-runtime/blob/master/go-1.x/buildtemplate.yaml", "", errors.New("error converting YAML to JSON: yaml: line 533: mapping values are not allowed in this context")},
+		{"foo", "https://github.com/triggermesh/knative-lambda-runtime/blob/master/go-1.x/buildtemplate.yaml", "", errors.New("error converting YAML to JSON: yaml: line 526: mapping values are not allowed in this context")},
 		{"foo", "../../../testfiles/buildtemplate-err1-test.yaml", "", errors.New("Build template \"IMAGE\" parameter is missing")},
 		{"foo", "../../../testfiles/buildtemplate-err2-test.yaml", "", errors.New("Can't create object, only BuildTemplate is allowed")},
 		{"foo", "../../../testfiles/buildtemplate-test.yaml", "", nil},

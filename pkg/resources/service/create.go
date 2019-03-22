@@ -41,8 +41,6 @@ import (
 
 const uploadDoneTrigger = "/home/.sourceuploaddone"
 
-var sourcedir string
-
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	fmt.Printf("Creating %s function\n", s.Name)
@@ -74,12 +72,12 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	switch {
 	case file.IsLocal(s.Source):
 		if file.IsDir(s.Source) {
-			sourcedir = path.Base(s.Source)
+			s.Source = path.Clean(s.Source)
 		} else {
-			sourcedir = path.Base(path.Dir(s.Source))
 			s.BuildArgs = append(s.BuildArgs, "HANDLER="+path.Base(s.Source))
+			s.Source = path.Clean(path.Dir(s.Source))
 		}
-		s.BuildArgs = append(s.BuildArgs, "DIRECTORY="+sourcedir)
+		s.BuildArgs = append(s.BuildArgs, "DIRECTORY=.")
 		configuration = s.fromPath()
 	case file.IsGit(s.Source):
 		if len(s.Revision) == 0 {
@@ -185,7 +183,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	if !client.Wait {
-		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details\n", s.Namespace, s.Name), nil
+		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
 	}
 
 	fmt.Printf("Waiting for %s ready state\n", s.Name)
@@ -193,7 +191,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Waiting for service readiness: %s", err)
 	}
-	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), nil
+	return fmt.Sprintf("Service %s URL: http://%s", s.Name, domain), nil
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {
@@ -317,7 +315,7 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 						sync; 
 						mv /home/%s/* /workspace; 
 						sync;`,
-							uploadDoneTrigger, path.Clean(s.Source))},
+							uploadDoneTrigger, path.Base(s.Source))},
 					},
 				},
 			},
@@ -432,8 +430,8 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 		Pod:         buildPod,
 		Namespace:   s.Namespace,
 		Container:   sourceContainer,
-		Source:      path.Clean(s.Source),
-		Destination: "/home/" + path.Clean(s.Source),
+		Source:      s.Source,
+		Destination: path.Join("/home", path.Base(s.Source)),
 	}
 	if err := c.Upload(clientset); err != nil {
 		return err

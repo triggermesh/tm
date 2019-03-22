@@ -30,14 +30,14 @@ func newDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 		Short: "Delete knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
-			if err := s.DeleteYAML(file, args, clientset); err != nil {
+			if err := s.DeleteYAML(file, args, concurrency, clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
 
 	deleteCmd.Flags().StringVarP(&file, "file", "f", "serverless.yaml", "Delete functions defined in yaml")
-
+	deleteCmd.Flags().IntVarP(&concurrency, "concurrency", "c", 3, "Number of concurrent deletion threads")
 	deleteCmd.AddCommand(cmdDeleteConfiguration(clientset))
 	deleteCmd.AddCommand(cmdDeleteBuildTemplate(clientset))
 	deleteCmd.AddCommand(cmdDeleteRevision(clientset))
