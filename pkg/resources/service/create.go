@@ -183,7 +183,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	if !client.Wait {
-		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details\n", s.Namespace, s.Name), nil
+		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
 	}
 
 	fmt.Printf("Waiting for %s ready state\n", s.Name)
@@ -191,7 +191,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Waiting for service readiness: %s", err)
 	}
-	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), nil
+	return fmt.Sprintf("Service %s URL: http://%s", s.Name, domain), nil
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {
@@ -315,7 +315,7 @@ func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
 						sync; 
 						mv /home/%s/* /workspace; 
 						sync;`,
-							uploadDoneTrigger, s.Source)},
+							uploadDoneTrigger, path.Base(s.Source))},
 					},
 				},
 			},
@@ -431,7 +431,7 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 		Namespace:   s.Namespace,
 		Container:   sourceContainer,
 		Source:      s.Source,
-		Destination: "/home",
+		Destination: path.Join("/home", path.Base(s.Source)),
 	}
 	if err := c.Upload(clientset); err != nil {
 		return err

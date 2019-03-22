@@ -33,28 +33,14 @@ type status struct {
 	Error   error
 }
 
-func deployWorker(jobs <-chan Service, results chan<- status, clientset *client.ConfigSet) {
-	for function := range jobs {
-		output, err := function.Deploy(clientset)
-		results <- status{
-			Message: output,
-			Error:   err,
-		}
-	}
-}
-
-func deleteWorker(jobs <-chan Service, results chan<- error, clientset *client.ConfigSet) {
-	for function := range jobs {
-		results <- function.Delete(clientset)
-	}
-}
-
-func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, clientset *client.ConfigSet) error {
+func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, threads int, clientset *client.ConfigSet) error {
 	jobs := make(chan Service, 100)
 	results := make(chan status, 100)
+	defer close(jobs)
+	defer close(results)
 
-	for w := 1; w <= 3; w++ {
-		go deployWorker(jobs, results, clientset)
+	for w := 0; w < threads; w++ {
+		go deploymentWorker(jobs, results, clientset)
 	}
 
 	functions, err := s.parseYAML(yamlFile)
@@ -62,16 +48,17 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, client
 		return err
 	}
 
+	var inProgress int
 	for _, function := range functions {
 		if !s.inList(function.Name, functionsToDeploy) {
 			continue
 		}
 		jobs <- function
+		inProgress++
 	}
-	close(jobs)
 
 	var errs bool
-	for i := 1; i <= len(functions); i++ {
+	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
 			errs = true
 			fmt.Println(r.Error)
@@ -91,30 +78,34 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, client
 	return nil
 }
 
-func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, clientset *client.ConfigSet) error {
+func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, threads int, clientset *client.ConfigSet) error {
 	jobs := make(chan Service, 100)
-	results := make(chan error, 100)
+	results := make(chan status, 100)
+	defer close(jobs)
+	defer close(results)
 
-	for w := 1; w <= 3; w++ {
-		go deleteWorker(jobs, results, clientset)
+	for w := 0; w < threads; w++ {
+		go deletionWorker(jobs, results, clientset)
 	}
 
 	functions, err := s.parseYAML(yamlFile)
 	if err != nil {
 		return err
 	}
+
+	var inProgress int
 	for _, function := range functions {
 		if !s.inList(function.Name, functionsToDelete) {
 			continue
 		}
 		fmt.Println("Deleting", function.Name)
 		jobs <- function
+		inProgress++
 	}
-	close(jobs)
 
-	for a := 1; a <= len(functions); a++ {
-		if err := <-results; err != nil {
-			fmt.Println(err)
+	for i := 0; i < inProgress; i++ {
+		if r := <-results; r.Error != nil {
+			fmt.Println(r.Error)
 		}
 	}
 	return nil
@@ -299,6 +290,7 @@ func (s *Service) removeOrphans(created []Service, clientset *client.ConfigSet) 
 				Name:      existing.Name,
 				Namespace: existing.Namespace,
 			}
+			fmt.Printf("Removing orphaned function %s\n", orphan.Name)
 			if err = orphan.Delete(clientset); err != nil {
 				return err
 			}
@@ -329,4 +321,22 @@ func getYAML(filepath string) (string, error) {
 		}
 	}
 	return filepath, nil
+}
+
+func deploymentWorker(services <-chan Service, results chan<- status, clientset *client.ConfigSet) {
+	for service := range services {
+		output, err := service.Deploy(clientset)
+		results <- status{
+			Message: output,
+			Error:   err,
+		}
+	}
+}
+
+func deletionWorker(services <-chan Service, results chan<- status, clientset *client.ConfigSet) {
+	for service := range services {
+		results <- status{
+			Error: service.Delete(clientset),
+		}
+	}
 }

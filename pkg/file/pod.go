@@ -41,7 +41,6 @@ type Copy struct {
 
 // Upload receives Copy structure, creates tarball of local source path and uploads it to active (un)tar process on remote pod
 func (c *Copy) Upload(clientset *client.ConfigSet) error {
-	command := "tar -xvf -"
 	uploadPath := "/tmp/tm/upload"
 	if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
 		return err
@@ -57,12 +56,7 @@ func (c *Copy) Upload(clientset *client.ConfigSet) error {
 		return err
 	}
 
-	if c.Destination != "" {
-		if _, _, err = c.RemoteExec(clientset, "mkdir -p "+c.Destination, nil); err != nil {
-			return err
-		}
-		command = fmt.Sprintf("%s -C %s", command, c.Destination)
-	}
+	command := fmt.Sprintf("tar -xvf - -C /home")
 	_, _, err = c.RemoteExec(clientset, command, fileReader)
 	return err
 }
