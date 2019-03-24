@@ -56,6 +56,10 @@ tm deploy -f https://github.com/tzununbekov/serverless
 
 ### Running Tests
 
+To run tests you first have to set namespace you have access to with the following command:
+```
+export NAMESPACE=yourNamespace
+```
 Run unit-tests with following command from project root directory: 
 ```
 make test
