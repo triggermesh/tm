@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package revision
+package route
 
 import (
 	"os"
@@ -25,23 +25,23 @@ import (
 func TestList(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
-	revisionClient, err := client.NewClient(home + "/.tm/config.json")
+	routeClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
-	revision := &Revision{Name: "Foo", Namespace: namespace}
+	r := &Route{Name: "Foo", Namespace: namespace}
 
-	_, err = revision.List(&revisionClient)
+	_, err = r.List(&routeClient)
 	assert.NoError(t, err)
 }
 
 func TestGet(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
-	revisionClient, err := client.NewClient(home + "/.tm/config.json")
+	routeClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
-	revision := &Revision{Name: "Foo", Namespace: namespace}
-	result, err := revision.Get(&revisionClient)
+	r := &Route{Name: "Foo", Namespace: namespace}
+	result, err := r.Get(&routeClient)
 	assert.Error(t, err)
 	assert.Equal(t, "", result.Name)
 }
@@ -49,10 +49,10 @@ func TestGet(t *testing.T) {
 func TestDelete(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
-	revisionClient, err := client.NewClient(home + "/.tm/config.json")
+	routeClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
-	revision := &Revision{Name: "Foo", Namespace: namespace}
-	err = revision.Delete(&revisionClient)
+	r := &Route{Name: "Foo", Namespace: namespace}
+	err = r.Delete(&routeClient)
 	assert.Error(t, err)
 }
