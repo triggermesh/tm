@@ -16,7 +16,6 @@ package build
 
 import (
 	"errors"
-	"log"
 	"os"
 	"testing"
 
@@ -29,13 +28,11 @@ func TestList(t *testing.T) {
 	namespace := os.Getenv("NAMESPACE")
 	buildClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
-	log.Println(buildClient)
 
 	build := &Build{Namespace: namespace}
 
-	buildList, err := build.List(&buildClient)
+	_, err = build.List(&buildClient)
 	assert.NoError(t, err)
-	log.Println(buildList)
 }
 
 func TestBuild(t *testing.T) {

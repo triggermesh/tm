@@ -15,7 +15,6 @@
 package channel
 
 import (
-	"log"
 	"os"
 	"testing"
 
@@ -31,9 +30,8 @@ func TestList(t *testing.T) {
 
 	channel := &Channel{Namespace: namespace}
 
-	channelList, err := channel.List(&channelClient)
+	_, err = channel.List(&channelClient)
 	assert.NoError(t, err)
-	log.Println(channelList)
 }
 
 func TestBuild(t *testing.T) {
