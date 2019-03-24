@@ -28,7 +28,7 @@ func TestDeployAndDelete(t *testing.T) {
 	serviceClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
-	s := &Service{
+	foo := &Service{
 		Name:          "foo",
 		Namespace:     namespace,
 		Source:        "https://github.com/golang/example",
@@ -36,10 +36,35 @@ func TestDeployAndDelete(t *testing.T) {
 		BuildArgs:     []string{"DIRECTORY=hello"},
 	}
 
-	_, err = s.Deploy(&serviceClient)
+	_, err = foo.Deploy(&serviceClient)
 	assert.NoError(t, err)
-	err = s.Delete(&serviceClient)
+	err = foo.Delete(&serviceClient)
 	assert.NoError(t, err)
+
+	bar := &Service{
+		Name:      "bar",
+		Namespace: namespace,
+		Source:    "gcr.io/google-samples/hello-app:1.0",
+	}
+
+	_, err = bar.Deploy(&serviceClient)
+	assert.NoError(t, err)
+	err = bar.Delete(&serviceClient)
+	assert.NoError(t, err)
+
+	foobar := &Service{
+		Name:          "foobar",
+		Namespace:     namespace,
+		Source:        "https://github.com/knative/docs",
+		Buildtemplate: "https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml",
+		BuildArgs:     []string{"DIRECTORY=serving/samples/helloworld-go"},
+	}
+
+	_, err = foobar.Deploy(&serviceClient)
+	assert.NoError(t, err)
+	err = foobar.Delete(&serviceClient)
+	assert.NoError(t, err)
+
 }
 
 func TestList(t *testing.T) {
