@@ -60,6 +60,9 @@ func TestDeployAndDelete(t *testing.T) {
 		BuildArgs:     []string{"DIRECTORY=serving/samples/helloworld-go"},
 	}
 
+	foobar.Cronjob.Schedule = "*/5 * * * *"
+	foobar.Cronjob.Data = "foo"
+
 	_, err = foobar.Deploy(&serviceClient)
 	assert.NoError(t, err)
 	err = foobar.Delete(&serviceClient)
