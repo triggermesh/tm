@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package clusterbuildtemplate
+package configuration
 
 import (
 	"os"
@@ -24,22 +24,35 @@ import (
 
 func TestList(t *testing.T) {
 	home := os.Getenv("HOME")
-	cbtClient, err := client.NewClient(home + "/.tm/config.json")
+	namespace := os.Getenv("NAMESPACE")
+	configurationClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
-	cbt := &ClusterBuildtemplate{Name: "Foo"}
+	config := &Configuration{Name: "Foo", Namespace: namespace}
 
-	_, err = cbt.List(&cbtClient)
+	_, err = config.List(&configurationClient)
 	assert.NoError(t, err)
 }
 
 func TestGet(t *testing.T) {
 	home := os.Getenv("HOME")
-	cbtClient, err := client.NewClient(home + "/.tm/config.json")
+	namespace := os.Getenv("NAMESPACE")
+	configurationClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
-	cbt := &ClusterBuildtemplate{"Foo"}
-	result, err := cbt.Get(&cbtClient)
+	config := &Configuration{Name: "Foo", Namespace: namespace}
+	result, err := config.Get(&configurationClient)
 	assert.Error(t, err)
 	assert.Equal(t, "", result.Name)
+}
+
+func TestDelete(t *testing.T) {
+	home := os.Getenv("HOME")
+	namespace := os.Getenv("NAMESPACE")
+	configurationClient, err := client.NewClient(home + "/.tm/config.json")
+	assert.NoError(t, err)
+
+	config := &Configuration{Name: "Foo", Namespace: namespace}
+	err = config.Delete(&configurationClient)
+	assert.Error(t, err)
 }

@@ -28,7 +28,6 @@ func TestList(t *testing.T) {
 	namespace := os.Getenv("NAMESPACE")
 	channelClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
-	log.Println(channelClient)
 
 	channel := &Channel{Namespace: namespace}
 
