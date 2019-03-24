@@ -54,6 +54,13 @@ Moreover, for more complex deployments, tm CLI supports function definition pars
 tm deploy -f https://github.com/tzununbekov/serverless
 ```  
 
+### Running Tests
+
+Run unit-tests with following command from project root directory: 
+```
+make test
+```
+
 ## AWS Lambda
 
 With triggermesh CLI you can easily deploy AWS Lambda functions on Kuberentes:
