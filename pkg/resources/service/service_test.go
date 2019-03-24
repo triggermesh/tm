@@ -22,26 +22,46 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 )
 
+func TestDeployAndDelete(t *testing.T) {
+	home := os.Getenv("HOME")
+	namespace := os.Getenv("NAMESPACE")
+	serviceClient, err := client.NewClient(home + "/.tm/config.json")
+	assert.NoError(t, err)
+
+	s := &Service{
+		Name:          "foo",
+		Namespace:     namespace,
+		Source:        "https://github.com/golang/example",
+		Buildtemplate: "https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/go/openfaas-go-runtime.yaml",
+		BuildArgs:     []string{"DIRECTORY=hello"},
+	}
+
+	_, err = s.Deploy(&serviceClient)
+	assert.NoError(t, err)
+	err = s.Delete(&serviceClient)
+	assert.NoError(t, err)
+}
+
 func TestList(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
-	routeClient, err := client.NewClient(home + "/.tm/config.json")
+	serviceClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
-	r := &Service{Name: "Foo", Namespace: namespace}
+	s := &Service{Name: "foo", Namespace: namespace}
 
-	_, err = r.List(&routeClient)
+	_, err = s.List(&serviceClient)
 	assert.NoError(t, err)
 }
 
 func TestGet(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
-	routeClient, err := client.NewClient(home + "/.tm/config.json")
+	serviceClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
-	r := &Service{Name: "Foo", Namespace: namespace}
-	result, err := r.Get(&routeClient)
+	s := &Service{Name: "foo", Namespace: namespace}
+	result, err := s.Get(&serviceClient)
 	assert.Error(t, err)
 	assert.Equal(t, "", result.Name)
 }
