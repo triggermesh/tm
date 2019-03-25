@@ -336,6 +336,15 @@ func mapFromSlice(slice []string) map[string]string {
 	return m
 }
 
+func (s *Service) inProgress(clientset *client.ConfigSet) bool {
+	service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(s.Name, metav1.GetOptions{})
+	if err != nil {
+		return false
+	}
+	cond := service.Status.GetCondition(servingv1alpha1.ServiceConditionReady)
+	return cond != nil && cond.Status == corev1.ConditionUnknown
+}
+
 func (s *Service) buildPodName(clientset *client.ConfigSet) (string, error) {
 	list, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).List(metav1.ListOptions{
 		IncludeUninitialized: true,
@@ -407,9 +416,12 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 			if v.Name == "build-step-custom-source" {
 				if v.State.Terminated != nil {
 					// Looks like we got watch interface for "previous" service version
-					// Trying to get latest build pod name one last time
-					if buildPod, err = s.buildPodName(clientset); err != nil {
-						return err
+					// Trying to get latest build pod name
+					for buildPod = ""; buildPod == "" && s.inProgress(clientset); {
+						if buildPod, err = s.buildPodName(clientset); err != nil {
+							return err
+						}
+						time.Sleep(2 * time.Second)
 					}
 					res.Stop()
 					fmt.Printf("Updating build pod name to %s\n", buildPod)
