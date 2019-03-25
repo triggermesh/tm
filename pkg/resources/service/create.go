@@ -423,6 +423,9 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 						}
 						time.Sleep(2 * time.Second)
 					}
+					if buildPod == "" {
+						return fmt.Errorf("Can't get build pod name, please check service status")
+					}
 					res.Stop()
 					fmt.Printf("Updating build pod name to %s\n", buildPod)
 					if res, err = clientset.Core.CoreV1().Pods(s.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
