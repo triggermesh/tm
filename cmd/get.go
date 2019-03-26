@@ -336,3 +336,35 @@ func cmdListTasks(clientset *client.ConfigSet) *cobra.Command {
 		},
 	}
 }
+
+func cmdListTaskRuns(clientset *client.ConfigSet) *cobra.Command {
+	return &cobra.Command{
+		Use:     "taskrun",
+		Aliases: []string{"taskruns"},
+		Short:   "List of tekton TaskRun resources",
+		Run: func(cmd *cobra.Command, args []string) {
+			tr.Namespace = client.Namespace
+			if len(args) == 0 {
+				list, err := tr.List(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			} else {
+				tr.Name = args[0]
+				taskrun, err := tr.Get(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.Describe(taskrun, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+			fmt.Println(data)
+		},
+	}
+}

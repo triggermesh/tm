@@ -46,6 +46,7 @@ func newDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 	deleteCmd.AddCommand(cmdDeleteRoute(clientset))
 	deleteCmd.AddCommand(cmdDeleteChannel(clientset))
 	deleteCmd.AddCommand(cmdDeleteTask(clientset))
+	deleteCmd.AddCommand(cmdDeleteTaskRun(clientset))
 
 	return deleteCmd
 }
@@ -182,6 +183,23 @@ func cmdDeleteTask(clientset *client.ConfigSet) *cobra.Command {
 				log.Fatalln(err)
 			}
 			fmt.Println("Task is being deleted")
+		},
+	}
+}
+
+func cmdDeleteTaskRun(clientset *client.ConfigSet) *cobra.Command {
+	return &cobra.Command{
+		Use:     "taskrun",
+		Aliases: []string{"taskruns"},
+		Short:   "Delete tekton taskrun resource",
+		Args:    cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			tr.Name = args[0]
+			tr.Namespace = client.Namespace
+			if err := tr.Delete(clientset); err != nil {
+				log.Fatalln(err)
+			}
+			fmt.Println("TaskRun is being deleted")
 		},
 	}
 }

@@ -154,7 +154,7 @@ func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
 		Use:     "task",
 		Aliases: []string{"tasks"},
 		Args:    cobra.ExactArgs(1),
-		Short:   "Deploy knative eventing task",
+		Short:   "Deploy tekton Task object ",
 		Run: func(cmd *cobra.Command, args []string) {
 			t.Name = args[0]
 			t.Namespace = client.Namespace
@@ -165,4 +165,22 @@ func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
 		},
 	}
 	return deployTaskCmd
+}
+
+func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
+	deployTaskRunCmd := &cobra.Command{
+		Use:     "taskrun",
+		Aliases: []string{"taskruns"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "Deploy tekton TaskRun object",
+		Run: func(cmd *cobra.Command, args []string) {
+			tr.Name = args[0]
+			tr.Namespace = client.Namespace
+			if err := tr.Deploy(clientset); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("TaskRun deployment started")
+		},
+	}
+	return deployTaskRunCmd
 }
