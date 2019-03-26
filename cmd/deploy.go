@@ -43,6 +43,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
 	deployCmd.AddCommand(cmdDeployTask(clientset))
 	deployCmd.AddCommand(cmdDeployTaskRun(clientset))
+	deployCmd.AddCommand(cmdDeployPipeline(clientset))
 
 	return deployCmd
 }
@@ -184,4 +185,22 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		},
 	}
 	return deployTaskRunCmd
+}
+
+func cmdDeployPipeline(clientset *client.ConfigSet) *cobra.Command {
+	deployPipelineCmd := &cobra.Command{
+		Use:     "pipeline",
+		Aliases: []string{"pipelines"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "Deploy tekton Pipeline object",
+		Run: func(cmd *cobra.Command, args []string) {
+			pl.Name = args[0]
+			pl.Namespace = client.Namespace
+			if err := pl.Deploy(clientset); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("Pipeline deployment started")
+		},
+	}
+	return deployPipelineCmd
 }
