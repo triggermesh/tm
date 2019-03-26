@@ -42,6 +42,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
 	deployCmd.AddCommand(cmdDeployTask(clientset))
+	deployCmd.AddCommand(cmdDeployTaskRun(clientset))
 
 	return deployCmd
 }

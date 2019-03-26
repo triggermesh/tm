@@ -47,6 +47,7 @@ func newGetCmd(clientset *client.ConfigSet) *cobra.Command {
 	getCmd.AddCommand(cmdListService(clientset))
 	getCmd.AddCommand(cmdListChannels(clientset))
 	getCmd.AddCommand(cmdListTasks(clientset))
+	getCmd.AddCommand(cmdListTaskRuns(clientset))
 	return getCmd
 }
 
