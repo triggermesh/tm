@@ -41,6 +41,8 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployChannel(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
+	deployCmd.AddCommand(cmdDeployTask(clientset))
+
 	return deployCmd
 }
 
@@ -145,4 +147,22 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 	}
 	deployChannelCmd.Flags().StringVarP(&c.Provisioner, "provisioner", "p", "in-memory-channel", "Channel provisioner")
 	return deployChannelCmd
+}
+
+func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
+	deployTaskCmd := &cobra.Command{
+		Use:     "task",
+		Aliases: []string{"tasks"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "Deploy knative eventing task",
+		Run: func(cmd *cobra.Command, args []string) {
+			t.Name = args[0]
+			t.Namespace = client.Namespace
+			if err := t.Deploy(clientset); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("Task deployment started")
+		},
+	}
+	return deployTaskCmd
 }

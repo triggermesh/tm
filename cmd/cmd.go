@@ -29,6 +29,7 @@ import (
 	"github.com/triggermesh/tm/pkg/resources/revision"
 	"github.com/triggermesh/tm/pkg/resources/route"
 	"github.com/triggermesh/tm/pkg/resources/service"
+	"github.com/triggermesh/tm/pkg/resources/task"
 
 	// Required for configs with gcp auth provider
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -44,6 +45,7 @@ var (
 
 	b   build.Build
 	c   channel.Channel
+	t   task.Task
 	s   service.Service
 	r   revision.Revision
 	rt  route.Route
