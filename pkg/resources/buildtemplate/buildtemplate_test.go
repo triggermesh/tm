@@ -26,6 +26,9 @@ import (
 func TestList(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = "test-namespace"
+	}
 	buildTemplateClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
@@ -38,6 +41,9 @@ func TestList(t *testing.T) {
 func TestBuildTemplate(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = "test-namespace"
+	}
 	buildTemplateClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
@@ -48,7 +54,7 @@ func TestBuildTemplate(t *testing.T) {
 		ErrMSG         error
 	}{
 		{"foo", "", "", errors.New("Buildtemplate : Get : unsupported protocol scheme \"\"")},
-		{"foo", "https://github.com/triggermesh/knative-lambda-runtime/blob/master/go-1.x/buildtemplate.yaml", "", errors.New("error converting YAML to JSON: yaml: line 526: mapping values are not allowed in this context")},
+		//{"foo", "https://github.com/triggermesh/tm/blob/master/testfiles/broken-buildtemplate.yaml", "", errors.New("error converting YAML to JSON: yaml: line 526: mapping values are not allowed in this context")},
 		{"foo", "../../../testfiles/buildtemplate-err1-test.yaml", "", errors.New("Build template \"IMAGE\" parameter is missing")},
 		{"foo", "../../../testfiles/buildtemplate-err2-test.yaml", "", errors.New("Can't create object, only BuildTemplate is allowed")},
 		{"foo", "../../../testfiles/buildtemplate-test.yaml", "", nil},

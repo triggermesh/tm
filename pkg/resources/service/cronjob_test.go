@@ -26,6 +26,9 @@ import (
 func TestCreateCronjobSource(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = "test-namespace"
+	}
 	serviceClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 

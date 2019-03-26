@@ -25,6 +25,9 @@ import (
 func TestList(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = "test-namespace"
+	}
 	routeClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
@@ -37,6 +40,9 @@ func TestList(t *testing.T) {
 func TestGet(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = "test-namespace"
+	}
 	routeClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
@@ -49,6 +55,9 @@ func TestGet(t *testing.T) {
 func TestDelete(t *testing.T) {
 	home := os.Getenv("HOME")
 	namespace := os.Getenv("NAMESPACE")
+	if namespace == "" {
+		namespace = "test-namespace"
+	}
 	routeClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
 
