@@ -308,7 +308,7 @@
 
 [[projects]]
   name = "github.com/tektoncd/pipeline"
-  packages = ["pkg/apis/pipeline/v1alpha1","pkg/client/clientset/versioned"]
+  packages = ["pkg/client/clientset/versioned"]
   revision = "c1500fab83b09edadefb38bb8920a0c837d8f32b"
   version = "v0.1.0"
 
@@ -440,6 +440,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5cdf4a1d70ca19f163107084b762b39c97e3866234eb9d03d76d5daf23bbda5a"
+  inputs-digest = "29e68a53f9f901cba36ecc1e858933dc78b1a101ad09030387f08b9bdc462cda"
   solver-name = "gps-cdcl"
   solver-version = 1
