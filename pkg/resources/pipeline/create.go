@@ -30,7 +30,7 @@ func (pl *Pipeline) newObject(clientset *client.ConfigSet) v1alpha1.Pipeline {
 	return v1alpha1.Pipeline{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Pipeline",
-			APIVersion: "",
+			APIVersion: "pipeline.knative.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      pl.Name,

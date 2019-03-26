@@ -30,7 +30,7 @@ func (tr *TaskRun) newObject(clientset *client.ConfigSet) v1alpha1.TaskRun {
 	return v1alpha1.TaskRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "TaskRun",
-			APIVersion: "",
+			APIVersion: "pipeline.knative.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      tr.Name,
