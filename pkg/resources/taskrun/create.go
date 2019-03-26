@@ -23,7 +23,7 @@ import (
 
 func (tr *TaskRun) Deploy(clientset *client.ConfigSet) error {
 	taskRunObject := tr.newObject(clientset)
-	return t.createOrUpdate(taskRunObject, clientset)
+	return tr.createOrUpdate(taskRunObject, clientset)
 }
 
 func (tr *TaskRun) newObject(clientset *client.ConfigSet) tektonV1alpha1.TaskRun {
@@ -33,10 +33,10 @@ func (tr *TaskRun) newObject(clientset *client.ConfigSet) tektonV1alpha1.TaskRun
 			APIVersion: "",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      t.Name,
-			Namespace: t.Namespace,
+			Name:      tr.Name,
+			Namespace: tr.Namespace,
 		},
-		Spec: tektonV1alpha1.TaskRunSpec{},
+		Spec:   tektonV1alpha1.TaskRunSpec{},
 		Status: tektonV1alpha1.TaskRunStatus{},
 	}
 }
@@ -49,7 +49,7 @@ func (tr *TaskRun) createOrUpdate(taskRunObject tektonV1alpha1.TaskRun, clientse
 			return err
 		}
 		taskRunObject.ObjectMeta.ResourceVersion = taskRun.GetResourceVersion()
-		_, err = clientset.Tekton.TektonV1alpha1().TaskRuns(t.Namespace).Update(&taskRunObject)
+		_, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Update(&taskRunObject)
 	}
 	return err
 }
