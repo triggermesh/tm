@@ -25,9 +25,9 @@ import (
 
 func TestList(t *testing.T) {
 	home := os.Getenv("HOME")
-	namespace := os.Getenv("NAMESPACE")
-	if namespace == "" {
-		namespace = "test-namespace"
+	namespace := "test-namespace"
+	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
+		namespace = ns
 	}
 	buildClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
@@ -40,9 +40,9 @@ func TestList(t *testing.T) {
 
 func TestBuild(t *testing.T) {
 	home := os.Getenv("HOME")
-	namespace := os.Getenv("NAMESPACE")
-	if namespace == "" {
-		namespace = "test-namespace"
+	namespace := "test-namespace"
+	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
+		namespace = ns
 	}
 	buildClient, err := client.NewClient(home + "/.tm/config.json")
 	assert.NoError(t, err)
