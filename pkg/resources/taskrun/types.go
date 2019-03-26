@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package task
+package taskrun
 
-// Task represents tekton Task object
-type Task struct {
+// TaskRun represents tekton TaskRun object
+type TaskRun struct {
 	Name      string
 	Namespace string
 }

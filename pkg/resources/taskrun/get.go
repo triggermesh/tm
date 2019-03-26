@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package task
+package taskrun
 
-// Task represents tekton Task object
-type Task struct {
-	Name      string
-	Namespace string
+import (
+	tektonV1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/triggermesh/tm/pkg/client"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func (tr *TaskRun) Get(clientset *client.ConfigSet) (*tektonV1alpha1.TaskRun, error) {
+	return clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 }
