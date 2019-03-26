@@ -26,7 +26,7 @@ import (
 	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/configuration"
 	"github.com/triggermesh/tm/pkg/resources/credential"
-	"github.com/triggermesh/tm/pkg/resources/pipeline"
+	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
 	"github.com/triggermesh/tm/pkg/resources/revision"
 	"github.com/triggermesh/tm/pkg/resources/route"
 	"github.com/triggermesh/tm/pkg/resources/service"
@@ -49,7 +49,7 @@ var (
 	c   channel.Channel
 	t   task.Task
 	tr  taskrun.TaskRun
-	pl  pipeline.Pipeline
+	plr pipelineresource.PipelineResource
 	s   service.Service
 	r   revision.Revision
 	rt  route.Route

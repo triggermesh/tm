@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipeline
+package pipelineresource
 
 import (
-	v1alpha1 "github.com/knative/build-pipeline/pkg/apis/pipeline/v1alpha1"
-
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (pl *Pipeline) List(clientset *client.ConfigSet) (*v1alpha1.PipelineList, error) {
-	return clientset.Tekton.TektonV1alpha1().Pipelines(pl.Namespace).List(metav1.ListOptions{})
+func (plr *PipelineResource) Delete(clientset *client.ConfigSet) error {
+	return clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Delete(plr.Name, &metav1.DeleteOptions{})
 }

@@ -43,7 +43,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
 	deployCmd.AddCommand(cmdDeployTask(clientset))
 	deployCmd.AddCommand(cmdDeployTaskRun(clientset))
-	deployCmd.AddCommand(cmdDeployPipeline(clientset))
+	deployCmd.AddCommand(cmdDeployPipelineResource(clientset))
 
 	return deployCmd
 }
@@ -187,20 +187,20 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 	return deployTaskRunCmd
 }
 
-func cmdDeployPipeline(clientset *client.ConfigSet) *cobra.Command {
-	deployPipelineCmd := &cobra.Command{
-		Use:     "pipeline",
-		Aliases: []string{"pipelines"},
+func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
+	deployPipelineResourceCmd := &cobra.Command{
+		Use:     "pipelineresource",
+		Aliases: []string{"pipelineresources"},
 		Args:    cobra.ExactArgs(1),
-		Short:   "Deploy tekton Pipeline object",
+		Short:   "Deploy tekton PipelineResource object",
 		Run: func(cmd *cobra.Command, args []string) {
-			pl.Name = args[0]
-			pl.Namespace = client.Namespace
-			if err := pl.Deploy(clientset); err != nil {
+			plr.Name = args[0]
+			plr.Namespace = client.Namespace
+			if err := plr.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("Pipeline deployment started")
+			fmt.Println("PipelineResource deployment started")
 		},
 	}
-	return deployPipelineCmd
+	return deployPipelineResourceCmd
 }
