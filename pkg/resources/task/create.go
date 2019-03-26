@@ -15,7 +15,8 @@
 package task
 
 import (
-	tektonV1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	v1alpha1 "github.com/knative/build-pipeline/pkg/apis/pipeline/v1alpha1"
+
 	"github.com/triggermesh/tm/pkg/client"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,8 +27,8 @@ func (t *Task) Deploy(clientset *client.ConfigSet) error {
 	return t.createOrUpdate(taskObject, clientset)
 }
 
-func (t *Task) newObject(clientset *client.ConfigSet) tektonV1alpha1.Task {
-	return tektonV1alpha1.Task{
+func (t *Task) newObject(clientset *client.ConfigSet) v1alpha1.Task {
+	return v1alpha1.Task{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Task",
 			APIVersion: "",
@@ -36,11 +37,11 @@ func (t *Task) newObject(clientset *client.ConfigSet) tektonV1alpha1.Task {
 			Name:      t.Name,
 			Namespace: t.Namespace,
 		},
-		Spec: tektonV1alpha1.TaskSpec{},
+		Spec: v1alpha1.TaskSpec{},
 	}
 }
 
-func (t *Task) createOrUpdate(taskObject tektonV1alpha1.Task, clientset *client.ConfigSet) error {
+func (t *Task) createOrUpdate(taskObject v1alpha1.Task, clientset *client.ConfigSet) error {
 	_, err := clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Create(&taskObject)
 	if k8sErrors.IsAlreadyExists(err) {
 		task, err := clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(taskObject.ObjectMeta.Name, metav1.GetOptions{})

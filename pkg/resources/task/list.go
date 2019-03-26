@@ -15,11 +15,11 @@
 package task
 
 import (
-	tektonV1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	v1alpha1 "github.com/knative/build-pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (t *Task) List(clientset *client.ConfigSet) (*tektonV1alpha1.TaskList, error) {
+func (t *Task) List(clientset *client.ConfigSet) (*v1alpha1.TaskList, error) {
 	return clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).List(metav1.ListOptions{})
 }
