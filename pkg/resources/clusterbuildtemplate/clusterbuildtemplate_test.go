@@ -15,7 +15,6 @@
 package clusterbuildtemplate
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,8 +22,7 @@ import (
 )
 
 func TestList(t *testing.T) {
-	home := os.Getenv("HOME")
-	cbtClient, err := client.NewClient(home + "/.tm/config.json")
+	cbtClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	cbt := &ClusterBuildtemplate{Name: "Foo"}
@@ -34,8 +32,7 @@ func TestList(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	home := os.Getenv("HOME")
-	cbtClient, err := client.NewClient(home + "/.tm/config.json")
+	cbtClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	cbt := &ClusterBuildtemplate{"Foo"}

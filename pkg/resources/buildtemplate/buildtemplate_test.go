@@ -24,12 +24,11 @@ import (
 )
 
 func TestList(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	buildTemplateClient, err := client.NewClient(home + "/.tm/config.json")
+	buildTemplateClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	buildtemplate := &Buildtemplate{Namespace: namespace}
@@ -39,12 +38,11 @@ func TestList(t *testing.T) {
 }
 
 func TestBuildTemplate(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	buildTemplateClient, err := client.NewClient(home + "/.tm/config.json")
+	buildTemplateClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	testCases := []struct {

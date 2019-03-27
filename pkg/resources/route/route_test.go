@@ -23,12 +23,11 @@ import (
 )
 
 func TestList(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	routeClient, err := client.NewClient(home + "/.tm/config.json")
+	routeClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	r := &Route{Name: "Foo", Namespace: namespace}
@@ -38,12 +37,11 @@ func TestList(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	routeClient, err := client.NewClient(home + "/.tm/config.json")
+	routeClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	r := &Route{Name: "Foo", Namespace: namespace}
@@ -53,12 +51,11 @@ func TestGet(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	routeClient, err := client.NewClient(home + "/.tm/config.json")
+	routeClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	r := &Route{Name: "Foo", Namespace: namespace}

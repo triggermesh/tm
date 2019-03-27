@@ -24,12 +24,11 @@ import (
 )
 
 func TestCreateCronjobSource(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	serviceClient, err := client.NewClient(home + "/.tm/config.json")
+	serviceClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	s := &Service{Name: "foo", Namespace: namespace}

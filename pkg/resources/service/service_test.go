@@ -23,12 +23,11 @@ import (
 )
 
 func TestDeployAndDelete(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	serviceClient, err := client.NewClient(home + "/.tm/config.json")
+	serviceClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	foo := &Service{
@@ -74,12 +73,11 @@ func TestDeployAndDelete(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	serviceClient, err := client.NewClient(home + "/.tm/config.json")
+	serviceClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	s := &Service{Name: "foo", Namespace: namespace}
@@ -89,12 +87,11 @@ func TestList(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	home := os.Getenv("HOME")
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	serviceClient, err := client.NewClient(home + "/.tm/config.json")
+	serviceClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	s := &Service{Name: "foo", Namespace: namespace}

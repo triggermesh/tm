@@ -23,12 +23,12 @@ import (
 )
 
 func TestList(t *testing.T) {
-	home := os.Getenv("HOME")
+
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	revisionClient, err := client.NewClient(home + "/.tm/config.json")
+	revisionClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	revision := &Revision{Name: "Foo", Namespace: namespace}
@@ -38,12 +38,12 @@ func TestList(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	home := os.Getenv("HOME")
+
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	revisionClient, err := client.NewClient(home + "/.tm/config.json")
+	revisionClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	revision := &Revision{Name: "Foo", Namespace: namespace}
@@ -53,12 +53,12 @@ func TestGet(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	home := os.Getenv("HOME")
+
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	revisionClient, err := client.NewClient(home + "/.tm/config.json")
+	revisionClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
 	revision := &Revision{Name: "Foo", Namespace: namespace}
