@@ -1,0 +1,77 @@
+module github.com/triggermesh/tm
+
+go 1.12
+
+require (
+	cloud.google.com/go v0.35.1
+	github.com/davecgh/go-spew v1.1.1
+	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c
+	github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76
+	github.com/emirpasic/gods v1.12.0
+	github.com/evanphx/json-patch v4.1.0+incompatible
+	github.com/ghodss/yaml v1.0.0
+	github.com/gobuffalo/envy v1.6.12
+	github.com/gogo/protobuf v1.2.0
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/protobuf v1.2.0
+	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
+	github.com/google/btree v1.0.0
+	github.com/google/go-cmp v0.2.0
+	github.com/google/go-containerregistry v0.0.0-20180801194910-5f7b0e489541
+	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
+	github.com/googleapis/gnostic v0.2.0
+	github.com/gosuri/uitable v0.0.0-20160404203958-36ee7e946282
+	github.com/gregjones/httpcache v0.0.0-20181110185634-c63ab54fda8f
+	github.com/hashicorp/golang-lru v0.5.0
+	github.com/imdario/mergo v0.3.7
+	github.com/inconshreveable/mousetrap v1.0.0
+	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
+	github.com/joho/godotenv v1.3.0
+	github.com/json-iterator/go v1.1.5
+	github.com/kevinburke/ssh_config v0.0.0-20180830205328-81db2a75821e
+	github.com/knative/build v0.3.0
+	github.com/knative/eventing v0.3.0
+	github.com/knative/eventing-sources v0.3.0
+	github.com/knative/pkg v0.0.0-20190131204738-819ebda80ca6
+	github.com/knative/serving v0.3.0
+	github.com/markbates/inflect v1.0.4
+	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
+	github.com/mattn/go-runewidth v0.0.4
+	github.com/mholt/archiver v2.1.0+incompatible
+	github.com/mitchellh/go-homedir v1.1.0
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+	github.com/nwaples/rardecode v1.0.0
+	github.com/pelletier/go-buffruneio v0.2.0
+	github.com/petar/GoLLRB v0.0.0-20130427215148-53be0d36a84c
+	github.com/peterbourgon/diskv v2.0.1+incompatible
+	github.com/pierrec/lz4 v0.0.0-20190131084431-473cd7ce01a1
+	github.com/pmezard/go-difflib v1.0.0
+	github.com/rogpeppe/go-internal v1.1.0
+	github.com/sergi/go-diff v1.0.0
+	github.com/spf13/cobra v0.0.3
+	github.com/spf13/pflag v1.0.3
+	github.com/src-d/gcfg v1.4.0
+	github.com/stretchr/testify v1.3.0
+	github.com/ulikunitz/xz v0.5.5
+	github.com/xanzy/ssh-agent v0.2.0
+	go.uber.org/atomic v1.3.2
+	go.uber.org/multierr v1.1.0
+	go.uber.org/zap v1.9.1
+	golang.org/x/crypto v0.0.0-20190131182504-b8fe1690c613
+	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3
+	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
+	golang.org/x/sys v0.0.0-20190201073406-2970a3744de3
+	golang.org/x/text v0.3.0
+	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
+	google.golang.org/appengine v1.4.0
+	gopkg.in/inf.v0 v0.9.1
+	gopkg.in/src-d/go-billy.v4 v4.3.0
+	gopkg.in/src-d/go-git.v4 v4.9.1
+	gopkg.in/warnings.v0 v0.1.2
+	gopkg.in/yaml.v2 v2.2.2
+	k8s.io/api v0.0.0-20180904230853-4e7be11eab3f
+	k8s.io/apimachinery v0.0.0-20180904193909-def12e63c512
+	k8s.io/client-go v0.0.0-20180910083459-2cefa64ff137
+	sigs.k8s.io/controller-runtime v0.0.0-20181113214900-0f0740db5681
+)
