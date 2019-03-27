@@ -54,7 +54,7 @@ Moreover, for more complex deployments, tm CLI supports function definition pars
 tm deploy -f https://github.com/tzununbekov/serverless
 ```  
 
-### Running Tests
+### Running Tests Locally
 
 To run tests you first have to set namespace you have access to with the following command:
 ```
