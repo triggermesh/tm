@@ -3,10 +3,9 @@ package file
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 
+	"github.com/spf13/afero"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -51,15 +50,20 @@ type Schedule struct {
 	Data string
 }
 
+var Aos = afero.NewOsFs()
+
 // ParseServerless accepts serverless yaml file path and returns decoded structure
 func ParseManifest(path string) (Definition, error) {
 	var definition Definition
 
-	if _, err := os.Stat(path); err != nil {
-		return definition, err
+	exists, err := afero.Exists(Aos, path)
+
+	if !exists || err != nil {
+		return definition, errors.New("could not find manifest file")
 	}
 
-	data, err := ioutil.ReadFile(path)
+	data, err := afero.ReadFile(Aos, path)
+
 	if err != nil {
 		return definition, err
 	}
@@ -70,7 +74,7 @@ func ParseManifest(path string) (Definition, error) {
 	return definition, err
 }
 
-func (definition *Definition) Validate() error {
+func (definition Definition) Validate() error {
 	if definition.Provider.Name != "" && definition.Provider.Name != "triggermesh" {
 		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)
 	}
