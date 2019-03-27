@@ -69,7 +69,7 @@ func ParseManifest(path string) (Definition, error) {
 	}
 
 	definition.Repository = filepath.Base(filepath.Dir(path))
-	err = yaml.Unmarshal(data, &definition)
+	err = yaml.UnmarshalStrict(data, &definition)
 
 	return definition, err
 }

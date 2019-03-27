@@ -24,7 +24,6 @@ functions:
 
   remote:
     handler: https://gitlab.com/tzununbekov/tesfunc
-    revision: master
     description: "Go function with another repository as source"
     environment:
       FUNCTION: remote
