@@ -33,6 +33,24 @@ type status struct {
 }
 
 func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, threads int, clientset *client.ConfigSet) error {
+	services, err := s.ManifestToFunctions(yamlFile)
+	if err != nil {
+		return err
+	}
+
+	var functions []Service
+	for _, service := range services {
+		if s.inList(service.Name, functionsToDeploy) {
+			functions = append(functions, service)
+		}
+	}
+
+	removeOrphans := (len(functionsToDeploy) == 0)
+
+	return s.DeployFunctions(functions, removeOrphans, threads, clientset)
+}
+
+func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threads int, clientset *client.ConfigSet) error {
 	jobs := make(chan Service, 100)
 	results := make(chan status, 100)
 	defer close(jobs)
@@ -42,16 +60,8 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, thread
 		go deploymentWorker(jobs, results, clientset)
 	}
 
-	functions, err := s.ManifestToFunctions(yamlFile)
-	if err != nil {
-		return err
-	}
-
 	var inProgress int
 	for _, function := range functions {
-		if !s.inList(function.Name, functionsToDeploy) {
-			continue
-		}
 		jobs <- function
 		inProgress++
 	}
@@ -66,11 +76,12 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, thread
 		}
 	}
 
-	if len(functionsToDeploy) == 0 {
-		if err = s.removeOrphans(functions, clientset); err != nil {
+	if removeOrphans {
+		if err := s.removeOrphans(functions, clientset); err != nil {
 			return err
 		}
 	}
+
 	if errs {
 		return fmt.Errorf("There were errors during manifest deployment")
 	}
