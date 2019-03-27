@@ -34,6 +34,7 @@ require (
 	github.com/knative/eventing-sources v0.3.0
 	github.com/knative/pkg v0.0.0-20190131204738-819ebda80ca6
 	github.com/knative/serving v0.3.0
+	github.com/markbates/deplist v1.0.5 // indirect
 	github.com/markbates/inflect v1.0.4
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 	github.com/mattn/go-runewidth v0.0.4
@@ -62,7 +63,7 @@ require (
 	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3
 	golang.org/x/oauth2 v0.0.0-20190130055435-99b60b757ec1
 	golang.org/x/sys v0.0.0-20190201073406-2970a3744de3
-	golang.org/x/text v0.3.0
+	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
 	google.golang.org/appengine v1.4.0
 	gopkg.in/inf.v0 v0.9.1
