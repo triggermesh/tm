@@ -42,7 +42,7 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, thread
 		go deploymentWorker(jobs, results, clientset)
 	}
 
-	functions, err := s.parseYAML(yamlFile)
+	functions, err := s.ManifestToFunctions(yamlFile)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 		go deletionWorker(jobs, results, clientset)
 	}
 
-	functions, err := s.parseYAML(yamlFile)
+	functions, err := s.ManifestToFunctions(yamlFile)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 	return nil
 }
 
-func (s *Service) parseYAML(YAML string) ([]Service, error) {
+func (s *Service) ManifestToFunctions(YAML string) ([]Service, error) {
 	var err error
 	if YAML, err = getYAML(YAML); err != nil {
 		return nil, err
