@@ -46,6 +46,10 @@ func newGetCmd(clientset *client.ConfigSet) *cobra.Command {
 	getCmd.AddCommand(cmdListRoute(clientset))
 	getCmd.AddCommand(cmdListService(clientset))
 	getCmd.AddCommand(cmdListChannels(clientset))
+	getCmd.AddCommand(cmdListTasks(clientset))
+	getCmd.AddCommand(cmdListTaskRuns(clientset))
+	getCmd.AddCommand(cmdListPipelineResources(clientset))
+
 	return getCmd
 }
 
@@ -295,6 +299,102 @@ func cmdListRoute(clientset *client.ConfigSet) *cobra.Command {
 					log.Fatalln(err)
 				}
 				data, err = output.Describe(route, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+			fmt.Println(data)
+		},
+	}
+}
+
+func cmdListTasks(clientset *client.ConfigSet) *cobra.Command {
+	return &cobra.Command{
+		Use:     "task",
+		Aliases: []string{"tasks"},
+		Short:   "List of tekton task resources",
+		Run: func(cmd *cobra.Command, args []string) {
+			t.Namespace = client.Namespace
+			if len(args) == 0 {
+				list, err := t.List(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			} else {
+				t.Name = args[0]
+				task, err := t.Get(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.Describe(task, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+			fmt.Println(data)
+		},
+	}
+}
+
+func cmdListTaskRuns(clientset *client.ConfigSet) *cobra.Command {
+	return &cobra.Command{
+		Use:     "taskrun",
+		Aliases: []string{"taskruns"},
+		Short:   "List of tekton TaskRun resources",
+		Run: func(cmd *cobra.Command, args []string) {
+			tr.Namespace = client.Namespace
+			if len(args) == 0 {
+				list, err := tr.List(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			} else {
+				tr.Name = args[0]
+				taskrun, err := tr.Get(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.Describe(taskrun, client.Output)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+			fmt.Println(data)
+		},
+	}
+}
+
+func cmdListPipelineResources(clientset *client.ConfigSet) *cobra.Command {
+	return &cobra.Command{
+		Use:     "pipelineresources",
+		Aliases: []string{"pipelineresourcess"},
+		Short:   "List of tekton PipelineResources resources",
+		Run: func(cmd *cobra.Command, args []string) {
+			plr.Namespace = client.Namespace
+			if len(args) == 0 {
+				list, err := plr.List(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.List(list.Items)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			} else {
+				plr.Name = args[0]
+				pipelineResource, err := plr.Get(clientset)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				data, err = output.Describe(pipelineResource, client.Output)
 				if err != nil {
 					log.Fatalln(err)
 				}

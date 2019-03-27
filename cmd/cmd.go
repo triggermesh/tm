@@ -26,9 +26,12 @@ import (
 	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/configuration"
 	"github.com/triggermesh/tm/pkg/resources/credential"
+	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
 	"github.com/triggermesh/tm/pkg/resources/revision"
 	"github.com/triggermesh/tm/pkg/resources/route"
 	"github.com/triggermesh/tm/pkg/resources/service"
+	"github.com/triggermesh/tm/pkg/resources/task"
+	"github.com/triggermesh/tm/pkg/resources/taskrun"
 
 	// Required for configs with gcp auth provider
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -44,6 +47,9 @@ var (
 
 	b   build.Build
 	c   channel.Channel
+	t   task.Task
+	tr  taskrun.TaskRun
+	plr pipelineresource.PipelineResource
 	s   service.Service
 	r   revision.Revision
 	rt  route.Route
