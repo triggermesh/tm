@@ -17,7 +17,7 @@ require (
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
 	github.com/google/btree v1.0.0
 	github.com/google/go-cmp v0.2.0
-	github.com/google/go-containerregistry v0.0.0-20180801194910-5f7b0e489541
+	github.com/google/go-containerregistry v0.0.0-20190322231611-80cc55a02b42
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
 	github.com/googleapis/gnostic v0.2.0
 	github.com/gosuri/uitable v0.0.0-20160404203958-36ee7e946282
