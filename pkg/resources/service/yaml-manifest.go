@@ -16,6 +16,8 @@ package service
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"path"
 	"strings"
 
@@ -26,6 +28,7 @@ import (
 )
 
 var yamlFile = "serverless.yaml"
+var Output io.Writer = os.Stdout
 
 type status struct {
 	Message string
@@ -70,9 +73,9 @@ func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threa
 	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
 			errs = true
-			fmt.Println(r.Error)
+			fmt.Fprint(Output, r.Error)
 		} else {
-			fmt.Println(r.Message)
+			fmt.Fprint(Output, r.Message)
 		}
 	}
 
@@ -115,7 +118,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 
 	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
-			fmt.Println(r.Error)
+			fmt.Fprint(Output, r.Error)
 		}
 	}
 	return nil
@@ -300,7 +303,7 @@ func (s *Service) removeOrphans(created []Service, clientset *client.ConfigSet) 
 				Name:      existing.Name,
 				Namespace: existing.Namespace,
 			}
-			fmt.Printf("Removing orphaned function %s\n", orphan.Name)
+			fmt.Fprint(Output, "Removing orphaned function %s\n", orphan.Name)
 			if err = orphan.Delete(clientset); err != nil {
 				return err
 			}
