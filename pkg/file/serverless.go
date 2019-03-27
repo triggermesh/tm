@@ -1,6 +1,8 @@
 package file
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -51,16 +53,31 @@ type Schedule struct {
 
 // ParseServerless accepts serverless yaml file path and returns decoded structure
 func ParseManifest(path string) (Definition, error) {
-	var f Definition
+	var definition Definition
+
 	if _, err := os.Stat(path); err != nil {
-		return f, err
+		return definition, err
 	}
+
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return f, err
+		return definition, err
 	}
-	f.Repository = filepath.Base(filepath.Dir(path))
-	err = yaml.Unmarshal(data, &f)
 
-	return f, err
+	definition.Repository = filepath.Base(filepath.Dir(path))
+	err = yaml.Unmarshal(data, &definition)
+
+	return definition, err
+}
+
+func (definition *Definition) Validate() error {
+	if definition.Provider.Name != "" && definition.Provider.Name != "triggermesh" {
+		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)
+	}
+
+	if len(definition.Service) == 0 {
+		return errors.New("Service name can't be empty")
+	}
+
+	return nil
 }

@@ -15,7 +15,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -120,12 +119,12 @@ func (s *Service) parseYAML(YAML string) ([]Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	if definition.Provider.Name != "" && definition.Provider.Name != "triggermesh" {
-		return nil, fmt.Errorf("%s provider is not supported", definition.Provider.Name)
+
+	err = definition.Validate()
+	if err != nil {
+		return nil, err
 	}
-	if len(definition.Service) == 0 {
-		return nil, errors.New("Service name can't be empty")
-	}
+
 	s.setupParentVars(definition)
 
 	functions := s.parseFunctions(definition.Functions, path.Dir(YAML))
