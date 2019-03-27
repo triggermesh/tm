@@ -1,4 +1,4 @@
-// Copyright 2018 TriggerMesh, Inc
+// Copyright 2019 TriggerMesh, Inc
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package channel
+package revision
 
 import (
 	"os"
@@ -28,55 +28,40 @@ func TestList(t *testing.T) {
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	channelClient, err := client.NewClient(client.ConfigPath(""))
+	revisionClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
-	channel := &Channel{Namespace: namespace}
+	revision := &Revision{Name: "Foo", Namespace: namespace}
 
-	_, err = channel.List(&channelClient)
+	_, err = revision.List(&revisionClient)
 	assert.NoError(t, err)
 }
 
-func TestBuild(t *testing.T) {
+func TestGet(t *testing.T) {
 
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
-	channelClient, err := client.NewClient(client.ConfigPath(""))
+	revisionClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
-	testCases := []struct {
-		Name        string
-		Provisioner string
-		ErrMSG      error
-	}{
-		{"foo", "bar", nil},
+	revision := &Revision{Name: "Foo", Namespace: namespace}
+	result, err := revision.Get(&revisionClient)
+	assert.Error(t, err)
+	assert.Equal(t, "", result.Name)
+}
+
+func TestDelete(t *testing.T) {
+
+	namespace := "test-namespace"
+	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
+		namespace = ns
 	}
+	revisionClient, err := client.NewClient(client.ConfigPath(""))
+	assert.NoError(t, err)
 
-	for _, tt := range testCases {
-		channel := &Channel{
-			Name:        tt.Name,
-			Namespace:   namespace,
-			Provisioner: tt.Provisioner,
-		}
-
-		err = channel.Deploy(&channelClient)
-		if err != nil {
-			assert.Error(t, err)
-			continue
-		}
-
-		ch, err := channel.Get(&channelClient)
-		assert.NoError(t, err)
-		assert.Equal(t, tt.Name, ch.Name)
-
-		err = channel.Deploy(&channelClient)
-		if err != nil {
-			assert.Error(t, err)
-		}
-
-		err = channel.Delete(&channelClient)
-		assert.NoError(t, err)
-	}
+	revision := &Revision{Name: "Foo", Namespace: namespace}
+	err = revision.Delete(&revisionClient)
+	assert.Error(t, err)
 }
