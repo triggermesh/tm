@@ -33,7 +33,7 @@ type status struct {
 }
 
 func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, threads int, clientset *client.ConfigSet) error {
-	services, err := s.ManifestToFunctions(yamlFile)
+	services, err := s.ManifestToServices(yamlFile)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 		go deletionWorker(jobs, results, clientset)
 	}
 
-	functions, err := s.ManifestToFunctions(yamlFile)
+	functions, err := s.ManifestToServices(yamlFile)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 	return nil
 }
 
-func (s *Service) ManifestToFunctions(YAML string) ([]Service, error) {
+func (s *Service) ManifestToServices(YAML string) ([]Service, error) {
 	var err error
 	if YAML, err = getYAML(YAML); err != nil {
 		return nil, err
