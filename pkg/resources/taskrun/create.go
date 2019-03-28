@@ -36,7 +36,14 @@ func (tr *TaskRun) newObject(clientset *client.ConfigSet) v1alpha1.TaskRun {
 			Name:      tr.Name,
 			Namespace: tr.Namespace,
 		},
-		Spec:   v1alpha1.TaskRunSpec{},
+		Spec: v1alpha1.TaskRunSpec{
+			Trigger: v1alpha1.TaskTrigger{
+				Type: v1alpha1.TaskTriggerTypeManual,
+				Name: "foo-bar",
+			},
+			TaskRef:  &v1alpha1.TaskRef{},
+			TaskSpec: &v1alpha1.TaskSpec{},
+		},
 		Status: v1alpha1.TaskRunStatus{},
 	}
 }

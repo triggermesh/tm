@@ -16,8 +16,8 @@ package task
 
 import (
 	v1alpha1 "github.com/knative/build-pipeline/pkg/apis/pipeline/v1alpha1"
-
 	"github.com/triggermesh/tm/pkg/client"
+	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,7 +37,17 @@ func (t *Task) newObject(clientset *client.ConfigSet) v1alpha1.Task {
 			Name:      t.Name,
 			Namespace: t.Namespace,
 		},
-		Spec: v1alpha1.TaskSpec{},
+		Spec: v1alpha1.TaskSpec{
+			Steps: []corev1.Container{
+				corev1.Container{
+					Name:  t.Name,
+					Image: "Foo",
+				},
+			},
+			Volumes: []corev1.Volume{
+				corev1.Volume{Name: t.Name},
+			},
+		},
 	}
 }
 
