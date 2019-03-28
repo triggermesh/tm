@@ -28,6 +28,7 @@ func TestCreateCronjobSource(t *testing.T) {
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
+	client.Dry = false
 	serviceClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 

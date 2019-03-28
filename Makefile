@@ -18,7 +18,7 @@ shrink:
 	$(UPX) $(BINARY_NAME)
 
 test: 
-	$(GOTEST) -v -cover ./...
+	$(GOTEST) -count=1 -v -cover ./...
 
 clean: 
 	$(GOCLEAN)
