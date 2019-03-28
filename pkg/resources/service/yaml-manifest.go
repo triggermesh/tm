@@ -303,7 +303,7 @@ func (s *Service) removeOrphans(created []Service, clientset *client.ConfigSet) 
 				Name:      existing.Name,
 				Namespace: existing.Namespace,
 			}
-			fmt.Fprint(Output, "Removing orphaned function %s\n", orphan.Name)
+			fmt.Fprintf(Output, "Removing orphaned function %s\n", orphan.Name)
 			if err = orphan.Delete(clientset); err != nil {
 				return err
 			}

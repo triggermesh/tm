@@ -1,0 +1,14 @@
+service: serverless-test
+description: "dry-run deployment test file"
+
+provider:
+  name: triggermesh
+  environment:
+    FOO: BAR
+
+functions:
+  bar:
+    handler: bar/main.go
+    description: "go function"
+    environment:
+      FUNCTION: bar
