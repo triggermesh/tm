@@ -36,7 +36,11 @@ func (plr *PipelineResource) newObject(clientset *client.ConfigSet) v1alpha1.Pip
 			Name:      plr.Name,
 			Namespace: plr.Namespace,
 		},
-		Spec:   v1alpha1.PipelineResourceSpec{},
+		Spec: v1alpha1.PipelineResourceSpec{
+			Type:         v1alpha1.PipelineResourceTypeGit,
+			Params:       []v1alpha1.Param{},
+			SecretParams: []v1alpha1.SecretParam{},
+		},
 		Status: v1alpha1.PipelineResourceStatus{},
 	}
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package taskrun
+package pipelineresource
 
 import (
 	"os"
@@ -30,21 +30,21 @@ func TestCreate(t *testing.T) {
 	testClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
-	taskRun := &TaskRun{Name: "foo-bar", Namespace: namespace}
+	pipeline := &PipelineResource{Name: "foo-bar", Namespace: namespace}
 
-	err = taskRun.Deploy(&testClient)
+	err = pipeline.Deploy(&testClient)
 	assert.NoError(t, err)
 
-	taskRun = &TaskRun{Name: "foo-bar", Namespace: namespace}
+	pipeline = &PipelineResource{Name: "foo-bar", Namespace: namespace}
 
-	err = taskRun.Deploy(&testClient)
+	err = pipeline.Deploy(&testClient)
 	assert.Error(t, err)
 
-	result, err := taskRun.Get(&testClient)
+	result, err := pipeline.Get(&testClient)
 	assert.NoError(t, err)
 	assert.Equal(t, "foo-bar", result.Name)
 
-	err = taskRun.Delete(&testClient)
+	err = pipeline.Delete(&testClient)
 	assert.NoError(t, err)
 }
 
@@ -56,9 +56,9 @@ func TestList(t *testing.T) {
 	testClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
-	taskRun := &TaskRun{Name: "Foo", Namespace: namespace}
+	pipeline := &PipelineResource{Name: "Foo", Namespace: namespace}
 
-	_, err = taskRun.List(&testClient)
+	_, err = pipeline.List(&testClient)
 	assert.NoError(t, err)
 }
 
@@ -70,8 +70,8 @@ func TestGet(t *testing.T) {
 	testClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
-	taskRun := &TaskRun{Name: "Foo", Namespace: namespace}
-	result, err := taskRun.Get(&testClient)
+	pipeline := &PipelineResource{Name: "Foo", Namespace: namespace}
+	result, err := pipeline.Get(&testClient)
 	assert.Error(t, err)
 	assert.Equal(t, "", result.Name)
 }
@@ -84,7 +84,7 @@ func TestDelete(t *testing.T) {
 	testClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
-	taskRun := &TaskRun{Name: "Foo", Namespace: namespace}
-	err = taskRun.Delete(&testClient)
+	pipeline := &PipelineResource{Name: "Foo", Namespace: namespace}
+	err = pipeline.Delete(&testClient)
 	assert.Error(t, err)
 }
