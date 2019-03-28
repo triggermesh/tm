@@ -17,7 +17,7 @@ func TestDryRunDeployment(t *testing.T) {
 	defer func() { Output = os.Stdout }()
 
 	client.Dry = true
-	clientset, err := client.NewClient(client.ConfigPath(""))
+	clientset, err := client.NewClient("../../../testfiles/cfgfile-test.json")
 	require.NoError(t, err)
 
 	service := &Service{Namespace: "my-namespace"}

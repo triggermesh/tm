@@ -79,7 +79,7 @@ func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threa
 		}
 	}
 
-	if removeOrphans {
+	if removeOrphans && !client.Dry {
 		if err := s.removeOrphans(functions, clientset); err != nil {
 			return err
 		}
