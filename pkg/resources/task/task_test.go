@@ -22,32 +22,6 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 )
 
-func TestCreate(t *testing.T) {
-	namespace := "test-namespace"
-	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
-		namespace = ns
-	}
-	testClient, err := client.NewClient(client.ConfigPath(""))
-	assert.NoError(t, err)
-
-	task := &Task{Name: "foo-bar", Namespace: namespace}
-
-	err = task.Deploy(&testClient)
-	assert.NoError(t, err)
-
-	task = &Task{Name: "foo-bar", Namespace: namespace}
-
-	err = task.Deploy(&testClient)
-	assert.Error(t, err)
-
-	result, err := task.Get(&testClient)
-	assert.NoError(t, err)
-	assert.Equal(t, "foo-bar", result.Name)
-
-	err = task.Delete(&testClient)
-	assert.NoError(t, err)
-}
-
 func TestList(t *testing.T) {
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
