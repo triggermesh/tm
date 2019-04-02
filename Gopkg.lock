@@ -795,7 +795,7 @@
   version = "v2.2.2"
 
 [[projects]]
-  digest = "1:26a67eb988225c6a0600c1af0b35e795ac4d23a9c40a7aa178fa2adc0670f1f7"
+  digest = "1:13f16734c26d843bc2accbc21dd49be71de99ad5fa0176726cdada80cc6859cb"
   name = "k8s.io/api"
   packages = [
     "admission/v1beta1",
@@ -810,12 +810,10 @@
     "authorization/v1beta1",
     "autoscaling/v1",
     "autoscaling/v2beta1",
-    "autoscaling/v2beta2",
     "batch/v1",
     "batch/v1beta1",
     "batch/v2alpha1",
     "certificates/v1beta1",
-    "coordination/v1beta1",
     "core/v1",
     "events/v1beta1",
     "extensions/v1beta1",
@@ -832,11 +830,11 @@
     "storage/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "145d52631d00cbfe68490d19ae4f0f501fd31a95"
-  version = "kubernetes-1.12.6"
+  revision = "4e7be11eab3ffcfc1876898b8272df53785a9504"
+  version = "kubernetes-1.11.3"
 
 [[projects]]
-  digest = "1:f7b2b7b711a411db5b1255b80b36f772c0bbafdedd64317e1e75b89e9ee15e5d"
+  digest = "1:7a378707f82aacb0ab160cb7977963e2498ca5b095b7a74de64256f88fa9c1bd"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -872,7 +870,6 @@
     "pkg/util/httpstream/spdy",
     "pkg/util/intstr",
     "pkg/util/json",
-    "pkg/util/naming",
     "pkg/util/net",
     "pkg/util/rand",
     "pkg/util/remotecommand",
@@ -888,11 +885,11 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "01f179d85dbce0f2e0e4351a92394b38694b7cae"
-  version = "kubernetes-1.12.6"
+  revision = "def12e63c512da17043b4f0293f52d1006603d9f"
+  version = "kubernetes-1.11.3"
 
 [[projects]]
-  digest = "1:eef1b56f17866b8273d1a9631a9323b65000c986acc4b45ff363e7e6a68938b7"
+  digest = "1:abcff54871cd19454f070e6a75671e6b8336d50ac84f5a928748f6f16627ecd1"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -910,12 +907,10 @@
     "kubernetes/typed/authorization/v1beta1",
     "kubernetes/typed/autoscaling/v1",
     "kubernetes/typed/autoscaling/v2beta1",
-    "kubernetes/typed/autoscaling/v2beta2",
     "kubernetes/typed/batch/v1",
     "kubernetes/typed/batch/v1beta1",
     "kubernetes/typed/batch/v2alpha1",
     "kubernetes/typed/certificates/v1beta1",
-    "kubernetes/typed/coordination/v1beta1",
     "kubernetes/typed/core/v1",
     "kubernetes/typed/events/v1beta1",
     "kubernetes/typed/extensions/v1beta1",
@@ -962,8 +957,8 @@
     "util/retry",
   ]
   pruneopts = "UT"
-  revision = "78295b709ec6fa5be12e35892477a326dea2b5d3"
-  version = "kubernetes-1.12.6"
+  revision = "2cefa64ff137e128daeddbd1775cd775708a05bf"
+  version = "kubernetes-1.11.3"
 
 [[projects]]
   digest = "1:84a8609383bec11b71d52dd813f33f1d16614b91966940bdc2aa79bea864fa25"
