@@ -146,11 +146,11 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:c280fbe00363f7c8db868a738b94df33586ce05c10d26578c3adf544d010eb64"
+  digest = "1:2f89996c98a00f058f7a2faececf33665aef79f44aa0a1a2e40b227ad254d6d0"
   name = "github.com/google/go-containerregistry"
   packages = ["pkg/name"]
   pruneopts = "UT"
-  revision = "dbc4da98389f9d0c42eb314c2b346bf1d2a27310"
+  revision = "8d4083db9aa0d2fae6588c1acdbe6a1f5db461e3"
 
 [[projects]]
   branch = "master"
@@ -255,7 +255,7 @@
   version = "0.5"
 
 [[projects]]
-  digest = "1:5cccd2918fd6141b80588ff57bf45d075af3f438eab84b531471319fdf9c9cac"
+  digest = "1:ea2dc9fd11ca484880b97d4b285d2780113a4b5e6db6cbc033e8eec3f5ddf104"
   name = "github.com/knative/build"
   packages = [
     "pkg/apis/build",
@@ -265,11 +265,10 @@
     "pkg/client/clientset/versioned/typed/build/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "ee63efca9865c41732883f4eb0aef3be13becedd"
-  version = "v0.4.0"
+  revision = "dd3ceb3323922b899a0a913f885fcf59943e7b59"
 
 [[projects]]
-  digest = "1:f22974d4f6e7ef8d4500a93eba7745fbe9fbf1d89838ba3763b376b0cd71055e"
+  digest = "1:7bbf359a4449653b378322332e82885419f93c471ff2a9d09c086e0bf8b2a1bc"
   name = "github.com/knative/eventing"
   packages = [
     "pkg/apis/duck/v1alpha1",
@@ -280,8 +279,7 @@
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "86064bdeeb7635ae7dfe903bd085ede9ea29b4aa"
-  version = "v0.4.1"
+  revision = "441cc942390661cfec2ce9148fb15916a0044994"
 
 [[projects]]
   digest = "1:16bc07b97751c7ccf3555588d360f6ab189b2904179d9456842e4b80d2e2e397"
@@ -297,8 +295,7 @@
   version = "v0.4.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:93b0e1ce9724ed93ff5c3e27c1ebbdb842f55fc36bffac90b2ff01e1198b6b25"
+  digest = "1:13092860b0b75f6c07949f78b130bfbc1a25e438157e539c24fafa79c035dd81"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -312,10 +309,10 @@
     "webhook",
   ]
   pruneopts = "UT"
-  revision = "916205998db9d085aaff357221b208bc89290ea5"
+  revision = "60fdcbcabd2faeb34328d8b2725dc76c59189453"
 
 [[projects]]
-  digest = "1:95e1cb1a2fefe2b7777c96cef2b7e347fb0d1da80ff9e9a118a918819c5f6406"
+  digest = "1:1153caed38dc911bcecac47ca131eb935cdc8cbb30fa6e073f9db596d30f71ab"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -331,8 +328,7 @@
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "4913b81a4305b174ed07c54298be6ddeb3dd874e"
-  version = "v0.4.1"
+  revision = "9a44df0e64edcb943c7edfe2d3eac2be41aa2316"
 
 [[projects]]
   digest = "1:3804a3a02964db8e6db3e5e7960ac1c1a9b12835642dd4f4ac4e56c749ec73eb"
@@ -795,7 +791,7 @@
   version = "v2.2.2"
 
 [[projects]]
-  digest = "1:13f16734c26d843bc2accbc21dd49be71de99ad5fa0176726cdada80cc6859cb"
+  digest = "1:26a67eb988225c6a0600c1af0b35e795ac4d23a9c40a7aa178fa2adc0670f1f7"
   name = "k8s.io/api"
   packages = [
     "admission/v1beta1",
@@ -810,10 +806,12 @@
     "authorization/v1beta1",
     "autoscaling/v1",
     "autoscaling/v2beta1",
+    "autoscaling/v2beta2",
     "batch/v1",
     "batch/v1beta1",
     "batch/v2alpha1",
     "certificates/v1beta1",
+    "coordination/v1beta1",
     "core/v1",
     "events/v1beta1",
     "extensions/v1beta1",
@@ -830,11 +828,11 @@
     "storage/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "4e7be11eab3ffcfc1876898b8272df53785a9504"
-  version = "kubernetes-1.11.3"
+  revision = "145d52631d00cbfe68490d19ae4f0f501fd31a95"
+  version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:7a378707f82aacb0ab160cb7977963e2498ca5b095b7a74de64256f88fa9c1bd"
+  digest = "1:f7b2b7b711a411db5b1255b80b36f772c0bbafdedd64317e1e75b89e9ee15e5d"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -870,6 +868,7 @@
     "pkg/util/httpstream/spdy",
     "pkg/util/intstr",
     "pkg/util/json",
+    "pkg/util/naming",
     "pkg/util/net",
     "pkg/util/rand",
     "pkg/util/remotecommand",
@@ -885,11 +884,11 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "def12e63c512da17043b4f0293f52d1006603d9f"
-  version = "kubernetes-1.11.3"
+  revision = "01f179d85dbce0f2e0e4351a92394b38694b7cae"
+  version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:abcff54871cd19454f070e6a75671e6b8336d50ac84f5a928748f6f16627ecd1"
+  digest = "1:eef1b56f17866b8273d1a9631a9323b65000c986acc4b45ff363e7e6a68938b7"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -907,10 +906,12 @@
     "kubernetes/typed/authorization/v1beta1",
     "kubernetes/typed/autoscaling/v1",
     "kubernetes/typed/autoscaling/v2beta1",
+    "kubernetes/typed/autoscaling/v2beta2",
     "kubernetes/typed/batch/v1",
     "kubernetes/typed/batch/v1beta1",
     "kubernetes/typed/batch/v2alpha1",
     "kubernetes/typed/certificates/v1beta1",
+    "kubernetes/typed/coordination/v1beta1",
     "kubernetes/typed/core/v1",
     "kubernetes/typed/events/v1beta1",
     "kubernetes/typed/extensions/v1beta1",
@@ -957,8 +958,8 @@
     "util/retry",
   ]
   pruneopts = "UT"
-  revision = "2cefa64ff137e128daeddbd1775cd775708a05bf"
-  version = "kubernetes-1.11.3"
+  revision = "78295b709ec6fa5be12e35892477a326dea2b5d3"
+  version = "kubernetes-1.12.6"
 
 [[projects]]
   digest = "1:84a8609383bec11b71d52dd813f33f1d16614b91966940bdc2aa79bea864fa25"
