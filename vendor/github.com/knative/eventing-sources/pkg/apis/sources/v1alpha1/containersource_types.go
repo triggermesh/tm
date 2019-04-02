@@ -24,9 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// Important: Run "make" to regenerate code after modifying this file
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // Check that ContainerSource can be validated and can be defaulted.
 var _ runtime.Object = (*ContainerSource)(nil)
 
@@ -137,6 +134,7 @@ func (s *ContainerSourceStatus) MarkNotDeployed(reason, messageFormat string, me
 
 // ContainerSource is the Schema for the containersources API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 // +kubebuilder:categories=all,knative,eventing,sources
 type ContainerSource struct {
 	metav1.TypeMeta   `json:",inline"`
