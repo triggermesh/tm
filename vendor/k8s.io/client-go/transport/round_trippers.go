@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"golang.org/x/oauth2"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 )
@@ -45,11 +44,7 @@ func HTTPWrappersForConfig(config *Config, rt http.RoundTripper) (http.RoundTrip
 	case config.HasBasicAuth() && config.HasTokenAuth():
 		return nil, fmt.Errorf("username/password or bearer token may be set, but not both")
 	case config.HasTokenAuth():
-		var err error
-		rt, err = NewBearerAuthWithRefreshRoundTripper(config.BearerToken, config.BearerTokenFile, rt)
-		if err != nil {
-			return nil, err
-		}
+		rt = NewBearerAuthRoundTripper(config.BearerToken, rt)
 	case config.HasBasicAuth():
 		rt = NewBasicAuthRoundTripper(config.Username, config.Password, rt)
 	}
@@ -143,7 +138,7 @@ func (rt *authProxyRoundTripper) CancelRequest(req *http.Request) {
 	if canceler, ok := rt.rt.(requestCanceler); ok {
 		canceler.CancelRequest(req)
 	} else {
-		glog.Errorf("CancelRequest not implemented by %T", rt.rt)
+		glog.Errorf("CancelRequest not implemented")
 	}
 }
 
@@ -171,7 +166,7 @@ func (rt *userAgentRoundTripper) CancelRequest(req *http.Request) {
 	if canceler, ok := rt.rt.(requestCanceler); ok {
 		canceler.CancelRequest(req)
 	} else {
-		glog.Errorf("CancelRequest not implemented by %T", rt.rt)
+		glog.Errorf("CancelRequest not implemented")
 	}
 }
 
@@ -202,7 +197,7 @@ func (rt *basicAuthRoundTripper) CancelRequest(req *http.Request) {
 	if canceler, ok := rt.rt.(requestCanceler); ok {
 		canceler.CancelRequest(req)
 	} else {
-		glog.Errorf("CancelRequest not implemented by %T", rt.rt)
+		glog.Errorf("CancelRequest not implemented")
 	}
 }
 
@@ -262,7 +257,7 @@ func (rt *impersonatingRoundTripper) CancelRequest(req *http.Request) {
 	if canceler, ok := rt.delegate.(requestCanceler); ok {
 		canceler.CancelRequest(req)
 	} else {
-		glog.Errorf("CancelRequest not implemented by %T", rt.delegate)
+		glog.Errorf("CancelRequest not implemented")
 	}
 }
 
@@ -270,35 +265,13 @@ func (rt *impersonatingRoundTripper) WrappedRoundTripper() http.RoundTripper { r
 
 type bearerAuthRoundTripper struct {
 	bearer string
-	source oauth2.TokenSource
 	rt     http.RoundTripper
 }
 
 // NewBearerAuthRoundTripper adds the provided bearer token to a request
 // unless the authorization header has already been set.
 func NewBearerAuthRoundTripper(bearer string, rt http.RoundTripper) http.RoundTripper {
-	return &bearerAuthRoundTripper{bearer, nil, rt}
-}
-
-// NewBearerAuthRoundTripper adds the provided bearer token to a request
-// unless the authorization header has already been set.
-// If tokenFile is non-empty, it is periodically read,
-// and the last successfully read content is used as the bearer token.
-// If tokenFile is non-empty and bearer is empty, the tokenFile is read
-// immediately to populate the initial bearer token.
-func NewBearerAuthWithRefreshRoundTripper(bearer string, tokenFile string, rt http.RoundTripper) (http.RoundTripper, error) {
-	if len(tokenFile) == 0 {
-		return &bearerAuthRoundTripper{bearer, nil, rt}, nil
-	}
-	source := NewCachedFileTokenSource(tokenFile)
-	if len(bearer) == 0 {
-		token, err := source.Token()
-		if err != nil {
-			return nil, err
-		}
-		bearer = token.AccessToken
-	}
-	return &bearerAuthRoundTripper{bearer, source, rt}, nil
+	return &bearerAuthRoundTripper{bearer, rt}
 }
 
 func (rt *bearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -307,13 +280,7 @@ func (rt *bearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.Response, 
 	}
 
 	req = utilnet.CloneRequest(req)
-	token := rt.bearer
-	if rt.source != nil {
-		if refreshedToken, err := rt.source.Token(); err == nil {
-			token = refreshedToken.AccessToken
-		}
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", rt.bearer))
 	return rt.rt.RoundTrip(req)
 }
 
@@ -321,7 +288,7 @@ func (rt *bearerAuthRoundTripper) CancelRequest(req *http.Request) {
 	if canceler, ok := rt.rt.(requestCanceler); ok {
 		canceler.CancelRequest(req)
 	} else {
-		glog.Errorf("CancelRequest not implemented by %T", rt.rt)
+		glog.Errorf("CancelRequest not implemented")
 	}
 }
 
@@ -405,7 +372,7 @@ func (rt *debuggingRoundTripper) CancelRequest(req *http.Request) {
 	if canceler, ok := rt.delegatedRoundTripper.(requestCanceler); ok {
 		canceler.CancelRequest(req)
 	} else {
-		glog.Errorf("CancelRequest not implemented by %T", rt.delegatedRoundTripper)
+		glog.Errorf("CancelRequest not implemented")
 	}
 }
 

@@ -30,15 +30,15 @@
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.11.3"
 
 [[override]]
-  name = "k8s.io/api"
-  version = "kubernetes-1.12.6"
+  name = "k8s.io/api" 
+  version = "kubernetes-1.11.3"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.11.3"
 
 [[override]]
   name = "github.com/mholt/archiver"
@@ -48,11 +48,11 @@
   go-tests = true
   unused-packages = true
 
-[[override]]
+[[constraint]]
   name = "github.com/knative/serving"
-  version = "v0.4.0"
+  version = "v0.4.1"
 
-[[override]]
+[[constraint]]
   name = "github.com/knative/build"
   version = "v0.4.0"
 
