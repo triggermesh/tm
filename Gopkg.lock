@@ -513,6 +513,23 @@
   version = "v1.3.0"
 
 [[projects]]
+  digest = "1:48ca5645a292ff528f1cbc479bacd5816384f8a0a0c4fa429cbf25348c2f01b1"
+  name = "github.com/tektoncd/pipeline"
+  packages = [
+    "pkg/apis/pipeline",
+    "pkg/apis/pipeline/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/pipeline/v1alpha1",
+    "pkg/list",
+    "pkg/names",
+    "pkg/templating",
+  ]
+  pruneopts = "UT"
+  revision = "7c43fbae2816c7271bed51098d0595cd6174c7a3"
+  version = "0.2.0"
+
+[[projects]]
   digest = "1:db345c377984d0907323c09a9b17f11d995a59649fd38f909727df358b5f9020"
   name = "github.com/ulikunitz/xz"
   packages = [
@@ -807,7 +824,7 @@
   version = "kubernetes-1.11.3"
 
 [[projects]]
-  digest = "1:4d9d173a3ef69067f23fdb75971982a8b683189c7bef602b6fe9eec5eddea26b"
+  digest = "1:0b7bf20ac8872418de9a5a1eddccefea371cf778eeb434a8b3b3f5ab3c45b8b8"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -842,6 +859,7 @@
     "pkg/util/intstr",
     "pkg/util/json",
     "pkg/util/net",
+    "pkg/util/rand",
     "pkg/util/remotecommand",
     "pkg/util/runtime",
     "pkg/util/sets",
@@ -956,6 +974,8 @@
     "github.com/spf13/cobra",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
+    "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1",
+    "github.com/tektoncd/pipeline/pkg/client/clientset/versioned",
     "golang.org/x/crypto/ssh/terminal",
     "gopkg.in/src-d/go-git.v4",
     "gopkg.in/yaml.v2",
