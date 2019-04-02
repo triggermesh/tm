@@ -30,19 +30,29 @@
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.11.3"
+  version = "kubernetes-1.12.6"
 
 [[override]]
   name = "k8s.io/api" 
-  version = "kubernetes-1.11.3"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "github.com/google/go-containerregistry"
+  # HEAD as of 2019-03-20
+  revision = "8d4083db9aa0d2fae6588c1acdbe6a1f5db461e3"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.11.3"
+  version = "kubernetes-1.12.6"
 
 [[override]]
   name = "github.com/mholt/archiver"
   version = "v2.1.0"
+
+[[override]]
+  name = "github.com/knative/pkg"
+  # HEAD as of 2019-03-21 💖
+  revision = "60fdcbcabd2faeb34328d8b2725dc76c59189453"
 
 [prune]
   go-tests = true
@@ -50,11 +60,15 @@
 
 [[constraint]]
   name = "github.com/knative/serving"
-  version = "v0.4.1"
+  revision = "9a44df0e64edcb943c7edfe2d3eac2be41aa2316"
 
 [[constraint]]
   name = "github.com/knative/build"
-  version = "v0.4.0"
+  revision = "dd3ceb3323922b899a0a913f885fcf59943e7b59"
+
+[[constraint]]
+  name = "github.com/knative/eventing"
+  revision = "441cc942390661cfec2ce9148fb15916a0044994"
 
 [[override]]
   name = "github.com/stretchr/testify"
