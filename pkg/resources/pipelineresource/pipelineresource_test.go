@@ -22,31 +22,31 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 )
 
-func TestCreate(t *testing.T) {
-	namespace := "test-namespace"
-	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
-		namespace = ns
-	}
-	testClient, err := client.NewClient(client.ConfigPath(""))
-	assert.NoError(t, err)
+// func TestCreate(t *testing.T) {
+// 	namespace := "test-namespace"
+// 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
+// 		namespace = ns
+// 	}
+// 	testClient, err := client.NewClient(client.ConfigPath(""))
+// 	assert.NoError(t, err)
 
-	pipeline := &PipelineResource{Name: "foo-bar", Namespace: namespace}
+// 	pipeline := &PipelineResource{Name: "foo-bar", Namespace: namespace}
 
-	err = pipeline.Deploy(&testClient)
-	assert.NoError(t, err)
+// 	err = pipeline.Deploy(&testClient)
+// 	assert.NoError(t, err)
 
-	pipeline = &PipelineResource{Name: "foo-bar", Namespace: namespace}
+// 	pipeline = &PipelineResource{Name: "foo-bar", Namespace: namespace}
 
-	err = pipeline.Deploy(&testClient)
-	assert.Error(t, err)
+// 	err = pipeline.Deploy(&testClient)
+// 	assert.Error(t, err)
 
-	result, err := pipeline.Get(&testClient)
-	assert.NoError(t, err)
-	assert.Equal(t, "foo-bar", result.Name)
+// 	result, err := pipeline.Get(&testClient)
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, "foo-bar", result.Name)
 
-	err = pipeline.Delete(&testClient)
-	assert.NoError(t, err)
-}
+// 	err = pipeline.Delete(&testClient)
+// 	assert.NoError(t, err)
+// }
 
 func TestList(t *testing.T) {
 	namespace := "test-namespace"

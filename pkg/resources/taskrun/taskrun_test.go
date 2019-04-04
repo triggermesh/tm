@@ -22,31 +22,31 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 )
 
-func TestCreate(t *testing.T) {
-	namespace := "test-namespace"
-	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
-		namespace = ns
-	}
-	testClient, err := client.NewClient(client.ConfigPath(""))
-	assert.NoError(t, err)
+// func TestCreate(t *testing.T) {
+// 	namespace := "test-namespace"
+// 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
+// 		namespace = ns
+// 	}
+// 	testClient, err := client.NewClient(client.ConfigPath(""))
+// 	assert.NoError(t, err)
 
-	taskRun := &TaskRun{Name: "foo-bar", Namespace: namespace}
+// 	taskRun := &TaskRun{Name: "foo-bar", Namespace: namespace}
 
-	err = taskRun.Deploy(&testClient)
-	assert.NoError(t, err)
+// 	err = taskRun.Deploy(&testClient)
+// 	assert.NoError(t, err)
 
-	taskRun = &TaskRun{Name: "foo-bar", Namespace: namespace}
+// 	taskRun = &TaskRun{Name: "foo-bar", Namespace: namespace}
 
-	err = taskRun.Deploy(&testClient)
-	assert.Error(t, err)
+// 	err = taskRun.Deploy(&testClient)
+// 	assert.Error(t, err)
 
-	result, err := taskRun.Get(&testClient)
-	assert.NoError(t, err)
-	assert.Equal(t, "foo-bar", result.Name)
+// 	result, err := taskRun.Get(&testClient)
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, "foo-bar", result.Name)
 
-	err = taskRun.Delete(&testClient)
-	assert.NoError(t, err)
-}
+// 	err = taskRun.Delete(&testClient)
+// 	assert.NoError(t, err)
+// }
 
 func TestList(t *testing.T) {
 	namespace := "test-namespace"
