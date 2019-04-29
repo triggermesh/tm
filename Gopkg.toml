@@ -51,8 +51,7 @@
 
 [[override]]
   name = "github.com/knative/pkg"
-  # HEAD as of 2019-03-21 💖
-  revision = "60fdcbcabd2faeb34328d8b2725dc76c59189453"
+  revision = "105f928666ad10b3ed8ae80db28ad5b318bf9507"
 
 [prune]
   go-tests = true
@@ -60,15 +59,15 @@
 
 [[constraint]]
   name = "github.com/knative/serving"
-  revision = "9a44df0e64edcb943c7edfe2d3eac2be41aa2316"
+  version = "v0.5.2"
 
 [[constraint]]
   name = "github.com/knative/build"
-  revision = "dd3ceb3323922b899a0a913f885fcf59943e7b59"
+  version = "v0.5.0"
 
 [[constraint]]
   name = "github.com/knative/eventing"
-  revision = "441cc942390661cfec2ce9148fb15916a0044994"
+  version = "v0.5.0"
 
 [[override]]
   name = "github.com/stretchr/testify"
@@ -76,4 +75,4 @@
 
 [[override]]
   name = "github.com/tektoncd/pipeline"
-  version = "v0.2.0"
+  version = "v0.3.1"

@@ -132,18 +132,19 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:d2754cafcab0d22c13541618a8029a70a8959eb3525ff201fe971637e2274cd0"
+  branch = "master"
+  digest = "1:010d46ea3c1e730897e53058d1013a963f3f987675dda87df64f891b945281db"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
     "cmp/cmpopts",
     "cmp/internal/diff",
+    "cmp/internal/flags",
     "cmp/internal/function",
     "cmp/internal/value",
   ]
   pruneopts = "UT"
-  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
-  version = "v0.2.0"
+  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
 
 [[projects]]
   digest = "1:2f89996c98a00f058f7a2faececf33665aef79f44aa0a1a2e40b227ad254d6d0"
@@ -265,10 +266,11 @@
     "pkg/client/clientset/versioned/typed/build/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "dd3ceb3323922b899a0a913f885fcf59943e7b59"
+  revision = "4fc8663ff9c48a66c52684b2e4cdf06ec83117c8"
+  version = "v0.5.0"
 
 [[projects]]
-  digest = "1:7bbf359a4449653b378322332e82885419f93c471ff2a9d09c086e0bf8b2a1bc"
+  digest = "1:cb18be98985d40a82eb0619af0666e06a9a509c09e88299ef4b08cc11be5755c"
   name = "github.com/knative/eventing"
   packages = [
     "pkg/apis/duck/v1alpha1",
@@ -279,7 +281,8 @@
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "441cc942390661cfec2ce9148fb15916a0044994"
+  revision = "d817bf6e94a278e58686cdaf219f8cb403104470"
+  version = "v0.5.0"
 
 [[projects]]
   digest = "1:16bc07b97751c7ccf3555588d360f6ab189b2904179d9456842e4b80d2e2e397"
@@ -295,13 +298,15 @@
   version = "v0.4.1"
 
 [[projects]]
-  digest = "1:13092860b0b75f6c07949f78b130bfbc1a25e438157e539c24fafa79c035dd81"
+  digest = "1:fd352ca37fb051f8b93e4b3241bd6e3ce85ca4e3adb44c94d53e2b36e3aa4e4e"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
     "apis/duck",
     "apis/duck/v1alpha1",
+    "apis/duck/v1beta1",
     "changeset",
+    "configmap",
     "kmeta",
     "kmp",
     "logging",
@@ -309,14 +314,15 @@
     "webhook",
   ]
   pruneopts = "UT"
-  revision = "60fdcbcabd2faeb34328d8b2725dc76c59189453"
+  revision = "105f928666ad10b3ed8ae80db28ad5b318bf9507"
 
 [[projects]]
-  digest = "1:1153caed38dc911bcecac47ca131eb935cdc8cbb30fa6e073f9db596d30f71ab"
+  digest = "1:d4a8dc047a2c78b883efa05cf221859c3087b4003fa94763bd3eb3175f954fd5"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
     "pkg/apis/autoscaling/v1alpha1",
+    "pkg/apis/config",
     "pkg/apis/networking",
     "pkg/apis/networking/v1alpha1",
     "pkg/apis/serving",
@@ -328,7 +334,8 @@
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "9a44df0e64edcb943c7edfe2d3eac2be41aa2316"
+  revision = "98e0f5a999ba0f69c1909a676078a22e9b8b13b9"
+  version = "v0.5.2"
 
 [[projects]]
   digest = "1:3804a3a02964db8e6db3e5e7960ac1c1a9b12835642dd4f4ac4e56c749ec73eb"
@@ -430,14 +437,6 @@
   version = "v2.1.1"
 
 [[projects]]
-  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
-  version = "v0.8.1"
-
-[[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
@@ -517,7 +516,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:48ca5645a292ff528f1cbc479bacd5816384f8a0a0c4fa429cbf25348c2f01b1"
+  digest = "1:8ce3200eee9c5dcbe4196350808db41e724cd51e580e5f4aa20b874441dfcc45"
   name = "github.com/tektoncd/pipeline"
   packages = [
     "pkg/apis/pipeline",
@@ -530,8 +529,8 @@
     "pkg/templating",
   ]
   pruneopts = "UT"
-  revision = "7c43fbae2816c7271bed51098d0595cd6174c7a3"
-  version = "0.2.0"
+  revision = "0dd031eabb3695e26a10624564cc797d6b7a48b9"
+  version = "v0.3.1"
 
 [[projects]]
   digest = "1:2643d81498e38e44bdcf480be199cac55f29e97403b0342d962824bfe9960722"
@@ -888,11 +887,55 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:eef1b56f17866b8273d1a9631a9323b65000c986acc4b45ff363e7e6a68938b7"
+  digest = "1:84bf477f5b7181a100754861d7bb0139c3b38ab10ff7d0934fe46ef28be7319e"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
     "dynamic",
+    "informers",
+    "informers/admissionregistration",
+    "informers/admissionregistration/v1alpha1",
+    "informers/admissionregistration/v1beta1",
+    "informers/apps",
+    "informers/apps/v1",
+    "informers/apps/v1beta1",
+    "informers/apps/v1beta2",
+    "informers/autoscaling",
+    "informers/autoscaling/v1",
+    "informers/autoscaling/v2beta1",
+    "informers/autoscaling/v2beta2",
+    "informers/batch",
+    "informers/batch/v1",
+    "informers/batch/v1beta1",
+    "informers/batch/v2alpha1",
+    "informers/certificates",
+    "informers/certificates/v1beta1",
+    "informers/coordination",
+    "informers/coordination/v1beta1",
+    "informers/core",
+    "informers/core/v1",
+    "informers/events",
+    "informers/events/v1beta1",
+    "informers/extensions",
+    "informers/extensions/v1beta1",
+    "informers/internalinterfaces",
+    "informers/networking",
+    "informers/networking/v1",
+    "informers/policy",
+    "informers/policy/v1beta1",
+    "informers/rbac",
+    "informers/rbac/v1",
+    "informers/rbac/v1alpha1",
+    "informers/rbac/v1beta1",
+    "informers/scheduling",
+    "informers/scheduling/v1alpha1",
+    "informers/scheduling/v1beta1",
+    "informers/settings",
+    "informers/settings/v1alpha1",
+    "informers/storage",
+    "informers/storage/v1",
+    "informers/storage/v1alpha1",
+    "informers/storage/v1beta1",
     "kubernetes",
     "kubernetes/scheme",
     "kubernetes/typed/admissionregistration/v1alpha1",
@@ -926,6 +969,33 @@
     "kubernetes/typed/storage/v1",
     "kubernetes/typed/storage/v1alpha1",
     "kubernetes/typed/storage/v1beta1",
+    "listers/admissionregistration/v1alpha1",
+    "listers/admissionregistration/v1beta1",
+    "listers/apps/v1",
+    "listers/apps/v1beta1",
+    "listers/apps/v1beta2",
+    "listers/autoscaling/v1",
+    "listers/autoscaling/v2beta1",
+    "listers/autoscaling/v2beta2",
+    "listers/batch/v1",
+    "listers/batch/v1beta1",
+    "listers/batch/v2alpha1",
+    "listers/certificates/v1beta1",
+    "listers/coordination/v1beta1",
+    "listers/core/v1",
+    "listers/events/v1beta1",
+    "listers/extensions/v1beta1",
+    "listers/networking/v1",
+    "listers/policy/v1beta1",
+    "listers/rbac/v1",
+    "listers/rbac/v1alpha1",
+    "listers/rbac/v1beta1",
+    "listers/scheduling/v1alpha1",
+    "listers/scheduling/v1beta1",
+    "listers/settings/v1alpha1",
+    "listers/storage/v1",
+    "listers/storage/v1alpha1",
+    "listers/storage/v1beta1",
     "pkg/apis/clientauthentication",
     "pkg/apis/clientauthentication/v1alpha1",
     "pkg/apis/clientauthentication/v1beta1",
