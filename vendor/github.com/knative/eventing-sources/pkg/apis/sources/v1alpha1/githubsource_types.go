@@ -69,6 +69,14 @@ type GitHubSourceSpec struct {
 	// name to use as the sink.
 	// +optional
 	Sink *corev1.ObjectReference `json:"sink,omitempty"`
+
+	// API URL if using github enterprise (default https://api.github.com)
+	// +optional
+	GitHubAPIURL string `json:"githubAPIURL,omitempty"`
+
+	// Secure can be set to true to configure the webhook to use https.
+	// +optional
+	Secure bool `json:"secure,omitempty"`
 }
 
 // SecretValueFromSource represents the source of a secret value
@@ -103,11 +111,10 @@ var gitHubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
 
 // GitHubSourceStatus defines the observed state of GitHubSource
 type GitHubSourceStatus struct {
-	// Conditions holds the state of a source at a point in time.
-	// +optional
-	// +patchMergeKey=type
-	// +patchStrategy=merge
-	Conditions duckv1alpha1.Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	// inherits duck/v1alpha1 Status, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
+	// * Conditions - the latest available observations of a resource's current state.
+	duckv1alpha1.Status `json:",inline"`
 
 	// WebhookIDKey is the ID of the webhook registered with GitHub
 	WebhookIDKey string `json:"webhookIDKey,omitempty"`

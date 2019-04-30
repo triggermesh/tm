@@ -31,6 +31,7 @@ import (
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
@@ -47,6 +48,16 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	var configuration servingv1alpha1.ConfigurationSpec
 	var newBuildtemplate *buildv1alpha1.BuildTemplate
 	var err error
+	build := &buildv1alpha1.Build{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "build.knative.dev/v1alpha1",
+			Kind:       "Build",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: s.Name + "-",
+			Namespace:    s.Namespace,
+		},
+	}
 
 	if s.Buildtemplate != "" {
 		if newBuildtemplate, err = s.cloneBuildtemplate(clientset); err != nil {
@@ -78,14 +89,14 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 			s.Source = path.Clean(path.Dir(s.Source))
 		}
 		s.BuildArgs = append(s.BuildArgs, "DIRECTORY=.")
-		configuration = s.fromPath()
+		build.Spec = s.buildPath()
 	case file.IsGit(s.Source):
 		if len(s.Revision) == 0 {
 			s.Revision = "master"
 		}
-		configuration = s.fromSource()
+		build.Spec = s.buildSource()
 	default:
-		configuration = s.fromImage()
+		configuration = s.configFromImage()
 	}
 
 	image, err := s.imageName(clientset)
@@ -98,36 +109,47 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		timeout = 10 * time.Minute
 	}
 
-	if configuration.Build != nil {
-		configuration.RevisionTemplate = servingv1alpha1.RevisionTemplateSpec{
+	if build.Spec.Source != nil {
+		build.Spec.Timeout = &metav1.Duration{Duration: timeout}
+		build.Spec.Template = &buildv1alpha1.TemplateInstantiationSpec{
+			Name:      s.Buildtemplate,
+			Arguments: getBuildArguments(image, s.BuildArgs),
+			Env: []corev1.EnvVar{
+				{Name: "timestamp", Value: time.Now().String()},
+			},
+		}
+		if build, err = clientset.Build.BuildV1alpha1().Builds(s.Namespace).Create(build); err != nil {
+			return "", fmt.Errorf("Service build error: %s", err)
+		}
+		configuration.Template = &servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
-				Container: corev1.Container{
-					Image: fmt.Sprintf("%s:%s", image, s.ResultImageTag),
+				RevisionSpec: servingv1beta1.RevisionSpec{
+					PodSpec: servingv1beta1.PodSpec{
+						Containers: []corev1.Container{
+							{Image: image},
+						},
+					},
 				},
 			},
 		}
-		if configuration.Build.BuildSpec != nil {
-			configuration.Build.BuildSpec.Timeout = &metav1.Duration{timeout}
-			configuration.Build.BuildSpec.Template = &buildv1alpha1.TemplateInstantiationSpec{
-				Name:      s.Buildtemplate,
-				Arguments: getBuildArguments(image, s.BuildArgs),
-				Env: []corev1.EnvVar{
-					{Name: "timestamp", Value: time.Now().String()},
-				},
-			}
-		}
+		// configuration.DeprecatedRevisionTemplate.Spec.DeprecatedBuildRef = &corev1.ObjectReference{
+		// APIVersion: "build.knative.dev/v1alpha1",
+		// Kind:       "Build",
+		// Name:       build.GetName(),
+		// }
+		// fmt.Printf("Build Ref is set to %+v\n", configuration.DeprecatedRevisionTemplate.Spec.DeprecatedBuildRef)
 	}
 
-	configuration.RevisionTemplate.ObjectMeta = metav1.ObjectMeta{
-		CreationTimestamp: metav1.Time{time.Now()},
+	configuration.Template.ObjectMeta = metav1.ObjectMeta{
+		CreationTimestamp: metav1.Time{Time: time.Now()},
 		Annotations:       s.Annotations,
 		Labels:            mapFromSlice(s.Labels),
 	}
 
-	configuration.RevisionTemplate.Spec.ContainerConcurrency = servingv1alpha1.RevisionContainerConcurrencyType(s.Concurrency)
-	configuration.RevisionTemplate.Spec.Container.Env = s.setupEnv()
-	configuration.RevisionTemplate.Spec.Container.EnvFrom = s.setupEnvSecrets()
-	configuration.RevisionTemplate.Spec.Container.ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
+	configuration.Template.Spec.ContainerConcurrency = servingv1beta1.RevisionContainerConcurrencyType(s.Concurrency)
+	configuration.Template.Spec.RevisionSpec.PodSpec.Containers[0].Env = s.setupEnv()
+	configuration.Template.Spec.RevisionSpec.PodSpec.Containers[0].EnvFrom = s.setupEnvSecrets()
+	configuration.Template.Spec.RevisionSpec.PodSpec.Containers[0].ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
 
 	serviceObject := servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
@@ -138,13 +160,11 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              s.Name,
 			Namespace:         s.Namespace,
-			Labels:            configuration.RevisionTemplate.ObjectMeta.Labels,
-			CreationTimestamp: metav1.Time{time.Now()},
+			Labels:            configuration.Template.ObjectMeta.Labels,
+			CreationTimestamp: metav1.Time{Time: time.Now()},
 		},
 		Spec: servingv1alpha1.ServiceSpec{
-			RunLatest: &servingv1alpha1.RunLatestType{
-				Configuration: configuration,
-			},
+			ConfigurationSpec: configuration,
 		},
 	}
 
@@ -161,6 +181,29 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	newService, err := s.createOrUpdate(serviceObject, clientset)
 	if err != nil {
 		return "", fmt.Errorf("Creating service: %s", err)
+	}
+
+	if build.Spec.Source != nil {
+		if build, err = clientset.Build.BuildV1alpha1().Builds(s.Namespace).Get(build.Name, metav1.GetOptions{}); err != nil {
+			return "", err
+		}
+		conf, err := clientset.Serving.ServingV1alpha1().Configurations(s.Namespace).Get(s.Name, metav1.GetOptions{})
+		if err != nil {
+			return "", err
+		}
+		trueP := true
+		ref := metav1.OwnerReference{
+			APIVersion:         "serving.knative.dev/v1alpha1",
+			Kind:               "Configuration",
+			Name:               conf.GetName(),
+			UID:                conf.GetUID(),
+			BlockOwnerDeletion: &trueP,
+			Controller:         &trueP,
+		}
+		build.SetOwnerReferences([]metav1.OwnerReference{ref})
+		if _, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).Update(build); err != nil {
+			return "", err
+		}
 	}
 
 	if s.Buildtemplate != "" {
@@ -273,26 +316,15 @@ func (s *Service) createOrUpdate(serviceObject servingv1alpha1.Service, clientse
 	return newService, err
 }
 
-func (s *Service) fromImage() servingv1alpha1.ConfigurationSpec {
+func (s *Service) configFromImage() servingv1alpha1.ConfigurationSpec {
 	return servingv1alpha1.ConfigurationSpec{
-		RevisionTemplate: servingv1alpha1.RevisionTemplateSpec{
+		Template: &servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
-				Container: corev1.Container{
-					Image: s.Source,
-				},
-			},
-		},
-	}
-}
-
-func (s *Service) fromSource() servingv1alpha1.ConfigurationSpec {
-	return servingv1alpha1.ConfigurationSpec{
-		Build: &servingv1alpha1.RawExtension{
-			BuildSpec: &buildv1alpha1.BuildSpec{
-				Source: &buildv1alpha1.SourceSpec{
-					Git: &buildv1alpha1.GitSourceSpec{
-						Url:      s.Source,
-						Revision: s.Revision,
+				RevisionSpec: servingv1beta1.RevisionSpec{
+					PodSpec: servingv1beta1.PodSpec{
+						Containers: []corev1.Container{
+							{Image: s.Source},
+						},
 					},
 				},
 			},
@@ -300,24 +332,31 @@ func (s *Service) fromSource() servingv1alpha1.ConfigurationSpec {
 	}
 }
 
-func (s *Service) fromPath() servingv1alpha1.ConfigurationSpec {
-	return servingv1alpha1.ConfigurationSpec{
-		Build: &servingv1alpha1.RawExtension{
-			BuildSpec: &buildv1alpha1.BuildSpec{
-				Source: &buildv1alpha1.SourceSpec{
-					Custom: &corev1.Container{
-						Image:   "library/busybox",
-						Command: []string{"sh"},
-						Args: []string{"-c", fmt.Sprintf(`
+func (s *Service) buildSource() buildv1alpha1.BuildSpec {
+	return buildv1alpha1.BuildSpec{
+		Source: &buildv1alpha1.SourceSpec{
+			Git: &buildv1alpha1.GitSourceSpec{
+				Url:      s.Source,
+				Revision: s.Revision,
+			},
+		},
+	}
+}
+
+func (s *Service) buildPath() buildv1alpha1.BuildSpec {
+	return buildv1alpha1.BuildSpec{
+		Source: &buildv1alpha1.SourceSpec{
+			Custom: &corev1.Container{
+				Image:   "library/busybox",
+				Command: []string{"sh"},
+				Args: []string{"-c", fmt.Sprintf(`
 						while [ ! -f %s ]; do 
 							sleep 1; 
 						done; 
 						sync; 
 						mv /home/%s/* /workspace; 
 						sync;`,
-							uploadDoneTrigger, path.Base(s.Source))},
-					},
-				},
+					uploadDoneTrigger, path.Base(s.Source))},
 			},
 		},
 	}
@@ -354,9 +393,10 @@ func (s *Service) buildPodName(clientset *client.ConfigSet) (string, error) {
 	}
 	var builds []buildv1alpha1.Build
 	for _, build := range list.Items {
-		if len(build.OwnerReferences) == 1 &&
-			build.OwnerReferences[0].Kind == "Configuration" &&
-			build.OwnerReferences[0].Name == s.Name {
+		// if len(build.OwnerReferences) == 1 &&
+		// build.OwnerReferences[0].Kind == "Configuration" &&
+		// build.OwnerReferences[0].Name == s.Name {
+		if build.GetObjectMeta().GetGenerateName() == s.Name+"-" {
 			builds = append(builds, build)
 		}
 	}
