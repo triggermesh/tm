@@ -95,7 +95,7 @@ func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			b.Name = args[0]
 			b.Namespace = client.Namespace
-			if err := b.Deploy(clientset); err != nil {
+			if _, err := b.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
 		},
@@ -104,9 +104,9 @@ func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 	deployBuildCmd.Flags().StringVar(&b.Source, "source", "", "Git URL to get sources from")
 	deployBuildCmd.Flags().StringVar(&b.Revision, "revision", "master", "Git source revision")
 	deployBuildCmd.Flags().StringVar(&b.Buildtemplate, "buildtemplate", "", "Buildtemplate name to use with build")
-	deployBuildCmd.Flags().StringVar(&b.Step, "step", "", "Build step (container) to run on provided source")
-	deployBuildCmd.Flags().StringVar(&b.Image, "image", "", "Image for build step")
-	deployBuildCmd.Flags().StringSliceVar(&b.Command, "command", []string{}, "Build step (container) command")
+	// deployBuildCmd.Flags().StringVar(&b.Step, "step", "", "Build step (container) to run on provided source")
+	// deployBuildCmd.Flags().StringVar(&b.Image, "image", "", "Image for build step")
+	// deployBuildCmd.Flags().StringSliceVar(&b.Command, "command", []string{}, "Build step (container) command")
 	deployBuildCmd.Flags().StringSliceVar(&b.Args, "args", []string{}, "Build arguments")
 	deployBuildCmd.MarkFlagRequired("source")
 	return deployBuildCmd

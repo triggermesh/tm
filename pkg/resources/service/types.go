@@ -40,17 +40,6 @@ type Service struct {
 	}
 }
 
-type registryAuths struct {
-	Auths registry
-}
-
-type credentials struct {
-	Username string
-	Password string
-}
-
-type registry map[string]credentials
-
 func encode(data interface{}) ([]byte, error) {
 	// if output == "yaml" {
 	// return yaml.Marshal(data)

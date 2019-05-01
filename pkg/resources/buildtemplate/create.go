@@ -58,15 +58,15 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (*buildv1alpha1.Buil
 	return createBuildTemplate(bt, clientset)
 }
 
-func (b *Buildtemplate) Clone(source buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
-	source.SetName(b.Name)
-	source.SetNamespace(b.Namespace)
+func (bt *Buildtemplate) Clone(source buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
+	source.SetGenerateName(bt.Name + "-")
+	source.SetNamespace(bt.Namespace)
 	source.SetOwnerReferences([]metav1.OwnerReference{})
 	source.SetResourceVersion("")
 	source.Kind = "BuildTemplate"
-	if len(b.RegistrySecret) != 0 {
-		addSecretVolume(b.RegistrySecret, &source)
-		setEnvConfig(b.RegistrySecret, &source)
+	if len(bt.RegistrySecret) != 0 {
+		addSecretVolume(bt.RegistrySecret, &source)
+		setEnvConfig(bt.RegistrySecret, &source)
 	}
 	return createBuildTemplate(source, clientset)
 }
