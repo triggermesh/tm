@@ -33,7 +33,6 @@ import (
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
-	fmt.Printf("Creating %s function\n", s.Name)
 	var configuration servingv1alpha1.ConfigurationSpec
 
 	build := build.Build{
@@ -51,68 +50,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// if s.Buildtemplate != "" {
-	// 	if newBuildtemplate, err = s.cloneBuildtemplate(clientset); err != nil {
-	// 		return "", fmt.Errorf("Creating temporary buildtemplate: %s", err)
-	// 	} else if newBuildtemplate == nil {
-	// 		rand, err := uniqueString()
-	// 		if err != nil {
-	// 			return "", fmt.Errorf("Generating unique buildtemplate name: %s", err)
-	// 		}
-	// 		b := buildtemplate.Buildtemplate{
-	// 			Name:           fmt.Sprintf("%s-%s", s.Name, rand),
-	// 			Namespace:      s.Namespace,
-	// 			File:           s.Buildtemplate,
-	// 			RegistrySecret: s.RegistrySecret,
-	// 		}
-	// 		if newBuildtemplate, err = b.Deploy(clientset); err != nil {
-	// 			return "", fmt.Errorf("Deploying new buildtemplate: %s", err)
-	// 		}
-	// 	}
-	// 	s.Buildtemplate = newBuildtemplate.GetName()
-	// }
 
-	// switch {
-	// case file.IsLocal(s.Source):
-	// 	if file.IsDir(s.Source) {
-	// 		s.Source = path.Clean(s.Source)
-	// 	} else {
-	// 		s.BuildArgs = append(s.BuildArgs, "HANDLER="+path.Base(s.Source))
-	// 		s.Source = path.Clean(path.Dir(s.Source))
-	// 	}
-	// 	s.BuildArgs = append(s.BuildArgs, "DIRECTORY=.")
-	// 	build.Spec = s.buildPath()
-	// case file.IsGit(s.Source):
-	// 	if len(s.Revision) == 0 {
-	// 		s.Revision = "master"
-	// 	}
-	// 	build.Spec = s.buildSource()
-	// default:
-	// 	configuration = s.configFromImage()
-	// }
-
-	// image, err := s.imageName(clientset)
-	// if err != nil {
-	// 	return "", fmt.Errorf("Composing service image name: %s", err)
-	// }
-
-	// timeout, err := time.ParseDuration(s.BuildTimeout)
-	// if err != nil {
-	// 	timeout = 10 * time.Minute
-	// }
-
-	// if build.Spec.Source != nil {
-	// build.Spec.Timeout = &metav1.Duration{Duration: timeout}
-	// build.Spec.Template = &buildv1alpha1.TemplateInstantiationSpec{
-	// 	Name:      s.Buildtemplate,
-	// 	Arguments: getBuildArguments(image, s.BuildArgs),
-	// 	Env: []corev1.EnvVar{
-	// 		{Name: "timestamp", Value: time.Now().String()},
-	// 	},
-	// }
-	// if build, err = clientset.Build.BuildV1alpha1().Builds(s.Namespace).Create(build); err != nil {
-	// 	return "", fmt.Errorf("Service build error: %s", err)
-	// }
 	configuration.Template = &servingv1alpha1.RevisionTemplateSpec{
 		Spec: servingv1alpha1.RevisionSpec{
 			RevisionSpec: servingv1beta1.RevisionSpec{
@@ -165,14 +103,11 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return string(obj), err
 	}
 
+	fmt.Printf("Creating %q service\n", s.Name)
 	if _, err := s.createOrUpdate(serviceObject, clientset); err != nil {
 		return "", fmt.Errorf("Creating service: %s", err)
 	}
 
-	// if build.Spec.Source != nil {
-	// 	if build, err = clientset.Build.BuildV1alpha1().Builds(s.Namespace).Get(build.Name, metav1.GetOptions{}); err != nil {
-	// 		return "", err
-	// 	}
 	// 	conf, err := clientset.Serving.ServingV1alpha1().Configurations(s.Namespace).Get(s.Name, metav1.GetOptions{})
 	// 	if err != nil {
 	// 		return "", err
@@ -198,12 +133,6 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	// 	}
 	// }
 
-	// if file.IsLocal(s.Source) {
-	// 	if err := s.injectSources(clientset); err != nil {
-	// 		return "", fmt.Errorf("Injecting service sources: %s", err)
-	// 	}
-	// }
-
 	// TODO Add cronjob yaml into --dry output
 	if len(s.Cronjob.Schedule) != 0 {
 		if err := s.CreateCronjobSource(clientset); err != nil {
@@ -220,7 +149,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Waiting for service readiness: %s", err)
 	}
-	return fmt.Sprintf("Service %s URL: http://%s", s.Name, domain), nil
+	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), nil
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {
@@ -333,34 +262,3 @@ func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
 		}
 	}
 }
-
-// func addSecretVolume(registrySecret string, template *buildv1alpha1.BuildTemplate) {
-// 	template.Spec.Volumes = []corev1.Volume{
-// 		{
-// 			Name: registrySecret,
-// 			VolumeSource: corev1.VolumeSource{
-// 				Secret: &corev1.SecretVolumeSource{
-// 					SecretName: registrySecret,
-// 				},
-// 			},
-// 		},
-// 	}
-// 	for i, step := range template.Spec.Steps {
-// 		mounts := append(step.VolumeMounts, corev1.VolumeMount{
-// 			Name:      registrySecret,
-// 			MountPath: "/" + registrySecret,
-// 			ReadOnly:  true,
-// 		})
-// 		template.Spec.Steps[i].VolumeMounts = mounts
-// 	}
-// }
-
-// func setEnvConfig(registrySecret string, template *buildv1alpha1.BuildTemplate) {
-// 	for i, step := range template.Spec.Steps {
-// 		envs := append(step.Env, corev1.EnvVar{
-// 			Name:  "DOCKER_CONFIG",
-// 			Value: "/" + registrySecret,
-// 		})
-// 		template.Spec.Steps[i].Env = envs
-// 	}
-// }

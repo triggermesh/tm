@@ -28,6 +28,7 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
+	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,9 +37,6 @@ const uploadDoneTrigger = "/home/.sourceuploaddone"
 
 // Deploy uses Build structure to generate and deploy knative build
 func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
-	// var newBuildtemplate *buildv1alpha1.BuildTemplate
-	// var err error
-
 	build := &buildv1alpha1.Build{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Build",
@@ -47,9 +45,6 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: fmt.Sprintf("%s-", b.Name),
 			Namespace:    b.Namespace,
-			// CreationTimestamp: metav1.Time{
-			// time.Now(),
-			// },
 		},
 	}
 
@@ -88,7 +83,6 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 		}
 		build.Spec = b.buildSource()
 	} else {
-		fmt.Printf("Can't identify source path %q, passing as is\n", b.Source)
 		return b.Source, nil
 	}
 
@@ -106,18 +100,20 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 	build.Spec.Template = &buildv1alpha1.TemplateInstantiationSpec{
 		Name:      b.Buildtemplate,
 		Arguments: getBuildArguments(image, b.Args),
-		// Env: []corev1.EnvVar{
-		// {Name: "timestamp", Value: time.Now().String()},
-		// },
 	}
 
+	fmt.Printf("Creating %q build\n", b.Name)
 	if build, err = clientset.Build.BuildV1alpha1().Builds(b.Namespace).Create(build); err != nil {
-		return "", fmt.Errorf("Service build error: %s", err)
+		return "", fmt.Errorf("Build creation error: %s", err)
+	}
+
+	if err := b.Wait(build, clientset); err != nil {
+		return "", fmt.Errorf("Build error: %s", err)
 	}
 
 	if local {
 		if err := b.injectSources(clientset); err != nil {
-			return "", fmt.Errorf("Injecting service sources: %s", err)
+			return "", fmt.Errorf("Injecting sources: %s", err)
 		}
 	}
 
@@ -222,31 +218,24 @@ func (b *Build) injectSources(clientset *client.ConfigSet) error {
 
 func (b *Build) buildPodName(clientset *client.ConfigSet) (string, error) {
 	list, err := clientset.Build.BuildV1alpha1().Builds(b.Namespace).List(metav1.ListOptions{
-		IncludeUninitialized: true,
+		FieldSelector: "metadata.generateName=" + b.Name + "-",
 	})
 	if err != nil {
 		return "", err
 	}
-	var builds []buildv1alpha1.Build
+	var latestBuild string
+	var latestStart time.Time
 	for _, build := range list.Items {
-		if build.GetObjectMeta().GetGenerateName() == b.Name+"-" {
-			builds = append(builds, build)
-		}
-	}
-	var latest string
-	var timestamp time.Time
-	for _, build := range builds {
-		cond := build.Status.GetCondition(buildv1alpha1.BuildSucceeded)
-		if cond != nil && cond.Status == corev1.ConditionUnknown {
-			if build.Status.StartTime != nil && build.Status.StartTime.After(timestamp) {
+		if b.inProgress(clientset) {
+			if build.Status.StartTime != nil && build.Status.StartTime.After(latestStart) {
 				if build.Status.Cluster != nil {
-					timestamp = build.Status.StartTime.Time
-					latest = build.Status.Cluster.PodName
+					latestStart = build.Status.StartTime.Time
+					latestBuild = build.Status.Cluster.PodName
 				}
 			}
 		}
 	}
-	return latest, nil
+	return latestBuild, nil
 }
 
 func (b *Build) inProgress(clientset *client.ConfigSet) bool {
@@ -265,15 +254,16 @@ func (b *Build) cloneBuildtemplate(clientset *client.ConfigSet) (*buildv1alpha1.
 		RegistrySecret: b.RegistrySecret,
 	}
 
-	sourceBt, err := clientset.Build.BuildV1alpha1().BuildTemplates(b.Namespace).Get(b.Buildtemplate, metav1.GetOptions{})
+	sourceBt, err := bt.Get(clientset)
 	if err != nil {
-		// cb, err := clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(b.Buildtemplate, metav1.GetOptions{})
-		// if err != nil {
-		return nil, nil
-		// }
-		// sourceBt.Spec = cb.Spec
-		// sourceBt.TypeMeta = cb.TypeMeta
-		// sourceBt.ObjectMeta = cb.ObjectMeta
+		cbt := clusterbuildtemplate.ClusterBuildtemplate{Name: bt.Name}
+		cb, err := cbt.Get(clientset)
+		if err != nil {
+			return nil, nil
+		}
+		sourceBt.Spec = cb.Spec
+		sourceBt.TypeMeta = cb.TypeMeta
+		sourceBt.ObjectMeta = cb.ObjectMeta
 	}
 	return bt.Clone(*sourceBt, clientset)
 }
@@ -364,4 +354,46 @@ func (b *Build) imageName(clientset *client.ConfigSet) (string, error) {
 
 func gitlabEnv() (string, bool) {
 	return os.LookupEnv("CI_REGISTRY_IMAGE")
+}
+
+func (b *Build) Wait(build *buildv1alpha1.Build, clientset *client.ConfigSet) error {
+	watch, err := clientset.Build.BuildV1alpha1().Builds(b.Namespace).Watch(metav1.ListOptions{
+		FieldSelector: "metadata.name=" + build.Name,
+	})
+	if err != nil {
+		return err
+	}
+	if watch == nil {
+		return fmt.Errorf("Can't get build watch interface")
+	}
+	defer watch.Stop()
+
+	duration, err := time.ParseDuration(b.Timeout)
+	if err != nil {
+		duration = 10 * time.Minute
+	}
+
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case event := <-watch.ResultChan():
+			res, ok := event.Object.(*buildv1alpha1.Build)
+			if !ok {
+				continue
+			}
+			cond := res.Status.GetCondition(buildv1alpha1.BuildSucceeded)
+			if cond == nil {
+				return fmt.Errorf("Can't get build conditions")
+			}
+			if cond.Status != corev1.ConditionUnknown && cond.Status != corev1.ConditionTrue {
+				return fmt.Errorf("Unexpected build status: %s", cond.Status)
+			}
+			return nil
+		case <-ticker.C:
+			return fmt.Errorf("Watch build timeout")
+		}
+	}
+	return nil
 }
