@@ -33,6 +33,9 @@ import (
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
+	var image string
+	var err error
+
 	service := &servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -41,35 +44,38 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 	build := build.Build{
 		Wait:           true,
-		Name:           s.Name,
 		Source:         s.Source,
 		Registry:       s.Registry,
 		Args:           s.BuildArgs,
 		Namespace:      s.Namespace,
+		GenerateName:   s.Name + "-",
 		Timeout:        s.BuildTimeout,
 		Buildtemplate:  s.Buildtemplate,
 		RegistrySecret: s.RegistrySecret,
 	}
 
-	fmt.Printf("Preparing service image\n")
-	image, err := build.Deploy(clientset)
-	if err != nil {
-		return "", err
-	}
-
-	defer func() {
-		if err := build.SetOwner(clientset, metav1.OwnerReference{
-			APIVersion: "serving.knative.dev/v1alpha1",
-			Kind:       "Configuration",
-			Name:       service.GetName(),
-			UID:        service.GetUID(),
-		}); err != nil {
-			fmt.Printf("Can't set build owner, cleaning up: %s\n", err)
-			if err = build.Delete(clientset); err != nil {
-				fmt.Printf("Can't remove build %q: %s\n", build.Name, err)
-			}
+	if !client.Dry {
+		if s.Buildtemplate != "" {
+			defer func() {
+				if err := build.SetOwner(clientset, metav1.OwnerReference{
+					APIVersion: "serving.knative.dev/v1alpha1",
+					Kind:       "Configuration",
+					Name:       service.GetName(),
+					UID:        service.GetUID(),
+				}); err != nil {
+					fmt.Printf("Can't set build owner, cleaning up\n")
+					if err = build.Delete(clientset); err != nil {
+						fmt.Printf("Can't remove buildtemplate %q: %s\n", build.Name, err)
+					}
+				}
+			}()
 		}
-	}()
+
+		image, err = build.Deploy(clientset)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	configuration := servingv1alpha1.ConfigurationSpec{
 		Template: &servingv1alpha1.RevisionTemplateSpec{
@@ -124,11 +130,11 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	// TODO Add cronjob yaml into --dry output
-	if len(s.Cronjob.Schedule) != 0 {
-		if err := s.CreateCronjobSource(clientset); err != nil {
-			return "", fmt.Errorf("Creating cronjob source: %s", err)
-		}
-	}
+	// if len(s.Cronjob.Schedule) != 0 {
+	// 	if err := s.CreateCronjobSource(clientset); err != nil {
+	// 		return "", fmt.Errorf("Creating cronjob source: %s", err)
+	// 	}
+	// }
 
 	if !client.Wait {
 		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil

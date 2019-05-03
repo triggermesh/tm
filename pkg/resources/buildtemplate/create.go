@@ -36,7 +36,7 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (*buildv1alpha1.Buil
 	if !file.IsLocal(b.File) {
 		path, err := file.Download(b.File)
 		if err != nil {
-			return nil, fmt.Errorf("Buildtemplate %s: %s", b.File, err)
+			return nil, fmt.Errorf("Buildtemplate %q not found", b.File)
 		}
 		b.File = path
 	}

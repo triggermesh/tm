@@ -43,9 +43,15 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 			APIVersion: "build.knative.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: fmt.Sprintf("%s-", b.Name),
+			Name:         b.Name,
+			GenerateName: b.GenerateName,
 			Namespace:    b.Namespace,
 		},
+	}
+
+	// workaround, find a better solution
+	if b.Name == "" {
+		b.Name = strings.TrimRight(b.GenerateName, "-")
 	}
 
 	if b.Buildtemplate != "" {
@@ -63,7 +69,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 				Name:       build.Name,
 				UID:        build.UID,
 			}); err != nil {
-				fmt.Printf("Can't set build owner, cleaning up\n")
+				fmt.Printf("Can't set buildtemplate owner, cleaning up\n")
 				bt := buildtemplate.Buildtemplate{
 					Name:      buildtemplateName,
 					Namespace: b.Namespace,
@@ -112,20 +118,20 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	if build, err = clientset.Build.BuildV1alpha1().Builds(b.Namespace).Create(build); err != nil {
-		return "", fmt.Errorf("Build creation error: %s", err)
+		return "", fmt.Errorf("Build %q creation error: %s", build.Name, err)
 	}
 	b.Name = build.GetName()
 
-	if b.Wait {
-		if err := b.wait(build, clientset); err != nil {
-			return "", fmt.Errorf("Build error: %s", err)
+	if local {
+		if err := b.injectSources(clientset); err != nil {
+			return "", fmt.Errorf("Injecting sources: %s", err)
 		}
 	}
 
-	if local {
-		fmt.Printf("Waiting for the build completion\n")
-		if err := b.injectSources(clientset); err != nil {
-			return "", fmt.Errorf("Injecting sources: %s", err)
+	if b.Wait {
+		fmt.Printf("Waiting for the build %q completion\n", b.Name)
+		if err := b.wait(build, clientset); err != nil {
+			return "", fmt.Errorf("Build %q error: %s", b.Name, err)
 		}
 	}
 
@@ -265,14 +271,14 @@ func (b *Build) installBuildTemplate(clientset *client.ConfigSet) (string, error
 		return "", err
 	} else if newBuildtemplate == nil {
 		bt := buildtemplate.Buildtemplate{
-			Name:           b.Name,
-			Namespace:      b.Namespace,
 			File:           b.Buildtemplate,
+			Namespace:      b.Namespace,
 			RegistrySecret: b.RegistrySecret,
 		}
-		if _, err = bt.Deploy(clientset); err != nil {
+		if newBuildtemplate, err = bt.Deploy(clientset); err != nil {
 			return "", err
 		}
+		b.Buildtemplate = newBuildtemplate.Name
 		newBuildtemplate, err = b.cloneBuildtemplate(clientset)
 		if err != nil {
 			return "", err
@@ -291,7 +297,7 @@ func (b *Build) setBuildtemplateOwner(clientset *client.ConfigSet, owner metav1.
 
 func (b *Build) cloneBuildtemplate(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
 	bt := buildtemplate.Buildtemplate{
-		Name:           b.Name,
+		Name:           b.Buildtemplate,
 		Namespace:      b.Namespace,
 		RegistrySecret: b.RegistrySecret,
 	}
@@ -403,7 +409,7 @@ func (b *Build) wait(build *buildv1alpha1.Build, clientset *client.ConfigSet) er
 		return err
 	}
 	if watch == nil {
-		return fmt.Errorf("Can't get build watch interface")
+		return fmt.Errorf("Can't get build %q watch interface", b.Name)
 	}
 	defer watch.Stop()
 
@@ -424,12 +430,19 @@ func (b *Build) wait(build *buildv1alpha1.Build, clientset *client.ConfigSet) er
 			}
 			cond := res.Status.GetCondition(buildv1alpha1.BuildSucceeded)
 			if cond == nil {
-				return fmt.Errorf("Can't get build conditions")
+				// return fmt.Errorf("Can't get build %q condition", b.Name)
+				continue
 			}
-			if cond.Status != corev1.ConditionUnknown && cond.Status != corev1.ConditionTrue {
-				return fmt.Errorf("Unexpected build status: %s", cond.Status)
+			if cond.Status == corev1.ConditionUnknown {
+				// Build is in progress
+				continue
 			}
-			return nil
+			if cond.Status == corev1.ConditionTrue {
+				// Build succeeded
+				return nil
+			}
+			// Build failure
+			return fmt.Errorf("Unexpected build status, please run \"tm -n %s get build %s\" to see details", b.Namespace, b.Name)
 		case <-ticker.C:
 			return fmt.Errorf("Watch build timeout")
 		}

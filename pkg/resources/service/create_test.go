@@ -16,11 +16,16 @@ func TestDryRunDeployment(t *testing.T) {
 	Output = buffer
 	defer func() { Output = os.Stdout }()
 
+	namespace := "test-namespace"
+	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
+		namespace = ns
+	}
+
 	client.Dry = true
 	clientset, err := client.NewClient("../../../testfiles/cfgfile-test.json")
 	require.NoError(t, err)
 
-	service := &Service{Namespace: "my-namespace"}
+	service := &Service{Namespace: namespace}
 	err = service.DeployYAML("../../../testfiles/serverless-simple.yaml", []string{}, 3, &clientset)
 	require.NoError(t, err)
 

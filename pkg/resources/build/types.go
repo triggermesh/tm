@@ -17,12 +17,11 @@ package build
 // Build structure represents knative build object
 type Build struct {
 	Name           string
+	GenerateName   string
 	Namespace      string
 	Source         string
 	Timeout        string
 	Revision       string
-	Step           string
-	Command        []string
 	Buildtemplate  string
 	Registry       string
 	RegistrySecret string
