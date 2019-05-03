@@ -27,7 +27,7 @@ type Build struct {
 	Registry       string
 	RegistrySecret string
 	Args           []string
-	// Image          string
+	Wait           bool
 }
 
 type registryAuths struct {

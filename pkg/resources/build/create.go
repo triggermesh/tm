@@ -49,21 +49,30 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	if b.Buildtemplate != "" {
-		newBuildtemplate, err := b.cloneBuildtemplate(clientset)
+		buildtemplateName, err := b.installBuildTemplate(clientset)
 		if err != nil {
-			return "", fmt.Errorf("Creating temporary buildtemplate: %s", err)
-		} else if newBuildtemplate == nil {
-			bt := buildtemplate.Buildtemplate{
-				Name:           b.Name,
-				Namespace:      b.Namespace,
-				File:           b.Buildtemplate,
-				RegistrySecret: b.RegistrySecret,
-			}
-			if newBuildtemplate, err = bt.Deploy(clientset); err != nil {
-				return "", fmt.Errorf("Deploying new buildtemplate: %s", err)
-			}
+			return "", fmt.Errorf("Buildtemplate installation: %s\n", err)
 		}
-		b.Buildtemplate = newBuildtemplate.GetName()
+		b.Buildtemplate = buildtemplateName
+		fmt.Printf("Buildtemplate %q installed\n", b.Buildtemplate)
+
+		defer func() {
+			if err := b.setBuildtemplateOwner(clientset, metav1.OwnerReference{
+				APIVersion: "build.knative.dev/v1alpha1",
+				Kind:       "Build",
+				Name:       build.Name,
+				UID:        build.UID,
+			}); err != nil {
+				fmt.Printf("Can't set build owner, cleaning up\n")
+				bt := buildtemplate.Buildtemplate{
+					Name:      buildtemplateName,
+					Namespace: b.Namespace,
+				}
+				if err = bt.Delete(clientset); err != nil {
+					fmt.Printf("Can't remove buildtemplate %q: %s\n", build.Name, err)
+				}
+			}
+		}()
 	}
 
 	var local bool
@@ -76,12 +85,12 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 			b.Source = path.Clean(path.Dir(b.Source))
 		}
 		b.Args = append(b.Args, "DIRECTORY=.")
-		build.Spec = b.buildPath()
+		build.Spec = b.buildSpecLocalPath()
 	} else if file.IsGit(b.Source) {
 		if len(b.Revision) == 0 {
 			b.Revision = "master"
 		}
-		build.Spec = b.buildSource()
+		build.Spec = b.buildSpecSourceURL()
 	} else {
 		return b.Source, nil
 	}
@@ -102,16 +111,19 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 		Arguments: getBuildArguments(image, b.Args),
 	}
 
-	fmt.Printf("Creating %q build\n", b.Name)
 	if build, err = clientset.Build.BuildV1alpha1().Builds(b.Namespace).Create(build); err != nil {
 		return "", fmt.Errorf("Build creation error: %s", err)
 	}
+	b.Name = build.GetName()
 
-	if err := b.Wait(build, clientset); err != nil {
-		return "", fmt.Errorf("Build error: %s", err)
+	if b.Wait {
+		if err := b.wait(build, clientset); err != nil {
+			return "", fmt.Errorf("Build error: %s", err)
+		}
 	}
 
 	if local {
+		fmt.Printf("Waiting for the build completion\n")
 		if err := b.injectSources(clientset); err != nil {
 			return "", fmt.Errorf("Injecting sources: %s", err)
 		}
@@ -142,7 +154,7 @@ func (b *Build) injectSources(clientset *client.ConfigSet) error {
 		}
 		time.Sleep(time.Second)
 	}
-	fmt.Printf("Uploading sources to %s\n", buildPod)
+	fmt.Printf("Uploading sources to %q\n", buildPod)
 	res, err := clientset.Core.CoreV1().Pods(b.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod})
 	if err != nil {
 		return err
@@ -218,7 +230,7 @@ func (b *Build) injectSources(clientset *client.ConfigSet) error {
 
 func (b *Build) buildPodName(clientset *client.ConfigSet) (string, error) {
 	list, err := clientset.Build.BuildV1alpha1().Builds(b.Namespace).List(metav1.ListOptions{
-		FieldSelector: "metadata.generateName=" + b.Name + "-",
+		FieldSelector: "metadata.name=" + b.Name,
 	})
 	if err != nil {
 		return "", err
@@ -247,6 +259,36 @@ func (b *Build) inProgress(clientset *client.ConfigSet) bool {
 	return cond != nil && cond.Status == corev1.ConditionUnknown
 }
 
+func (b *Build) installBuildTemplate(clientset *client.ConfigSet) (string, error) {
+	newBuildtemplate, err := b.cloneBuildtemplate(clientset)
+	if err != nil {
+		return "", err
+	} else if newBuildtemplate == nil {
+		bt := buildtemplate.Buildtemplate{
+			Name:           b.Name,
+			Namespace:      b.Namespace,
+			File:           b.Buildtemplate,
+			RegistrySecret: b.RegistrySecret,
+		}
+		if _, err = bt.Deploy(clientset); err != nil {
+			return "", err
+		}
+		newBuildtemplate, err = b.cloneBuildtemplate(clientset)
+		if err != nil {
+			return "", err
+		}
+	}
+	return newBuildtemplate.GetName(), nil
+}
+
+func (b *Build) setBuildtemplateOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
+	bt := buildtemplate.Buildtemplate{
+		Name:      b.Buildtemplate,
+		Namespace: b.Namespace,
+	}
+	return bt.SetOwner(clientset, owner)
+}
+
 func (b *Build) cloneBuildtemplate(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
 	bt := buildtemplate.Buildtemplate{
 		Name:           b.Name,
@@ -257,31 +299,28 @@ func (b *Build) cloneBuildtemplate(clientset *client.ConfigSet) (*buildv1alpha1.
 	sourceBt, err := bt.Get(clientset)
 	if err != nil {
 		cbt := clusterbuildtemplate.ClusterBuildtemplate{Name: bt.Name}
-		cb, err := cbt.Get(clientset)
+		sourceCbt, err := cbt.Get(clientset)
 		if err != nil {
 			return nil, nil
 		}
-		sourceBt.Spec = cb.Spec
-		sourceBt.TypeMeta = cb.TypeMeta
-		sourceBt.ObjectMeta = cb.ObjectMeta
+		sourceBt.Spec = sourceCbt.Spec
+		sourceBt.TypeMeta = sourceCbt.TypeMeta
+		sourceBt.ObjectMeta = sourceCbt.ObjectMeta
 	}
 	return bt.Clone(*sourceBt, clientset)
 }
 
-// func (b *Build) setBuildtemplateOwner(buildtemplate *buildv1alpha1.BuildTemplate, owner *servingv1alpha1.Service, clientset *client.ConfigSet) error {
-// 	buildtemplate.SetOwnerReferences([]metav1.OwnerReference{
-// 		{
-// 			APIVersion: "serving.knative.dev/v1alpha1",
-// 			Kind:       "Service",
-// 			Name:       s.Name,
-// 			UID:        owner.GetUID(),
-// 		},
-// 	})
-// 	_, err := clientset.Build.BuildV1alpha1().BuildTemplates(s.Namespace).Update(buildtemplate)
-// 	return err
-// }
+func (b *Build) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
+	build, err := clientset.Build.BuildV1alpha1().Builds(b.Namespace).Get(b.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	build.SetOwnerReferences([]metav1.OwnerReference{owner})
+	_, err = clientset.Build.BuildV1alpha1().Builds(b.Namespace).Update(build)
+	return err
+}
 
-func (b *Build) buildSource() buildv1alpha1.BuildSpec {
+func (b *Build) buildSpecSourceURL() buildv1alpha1.BuildSpec {
 	return buildv1alpha1.BuildSpec{
 		Source: &buildv1alpha1.SourceSpec{
 			Git: &buildv1alpha1.GitSourceSpec{
@@ -292,7 +331,7 @@ func (b *Build) buildSource() buildv1alpha1.BuildSpec {
 	}
 }
 
-func (b *Build) buildPath() buildv1alpha1.BuildSpec {
+func (b *Build) buildSpecLocalPath() buildv1alpha1.BuildSpec {
 	return buildv1alpha1.BuildSpec{
 		Source: &buildv1alpha1.SourceSpec{
 			Custom: &corev1.Container{
@@ -356,7 +395,7 @@ func gitlabEnv() (string, bool) {
 	return os.LookupEnv("CI_REGISTRY_IMAGE")
 }
 
-func (b *Build) Wait(build *buildv1alpha1.Build, clientset *client.ConfigSet) error {
+func (b *Build) wait(build *buildv1alpha1.Build, clientset *client.ConfigSet) error {
 	watch, err := clientset.Build.BuildV1alpha1().Builds(b.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: "metadata.name=" + build.Name,
 	})

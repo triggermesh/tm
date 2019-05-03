@@ -33,9 +33,14 @@ import (
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
-	var configuration servingv1alpha1.ConfigurationSpec
-
+	service := &servingv1alpha1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "serving.knative.dev/v1alpha1",
+		},
+	}
 	build := build.Build{
+		Wait:           true,
 		Name:           s.Name,
 		Source:         s.Source,
 		Registry:       s.Registry,
@@ -46,17 +51,34 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		RegistrySecret: s.RegistrySecret,
 	}
 
+	fmt.Printf("Preparing service image\n")
 	image, err := build.Deploy(clientset)
 	if err != nil {
 		return "", err
 	}
 
-	configuration.Template = &servingv1alpha1.RevisionTemplateSpec{
-		Spec: servingv1alpha1.RevisionSpec{
-			RevisionSpec: servingv1beta1.RevisionSpec{
-				PodSpec: servingv1beta1.PodSpec{
-					Containers: []corev1.Container{
-						{Image: image},
+	defer func() {
+		if err := build.SetOwner(clientset, metav1.OwnerReference{
+			APIVersion: "serving.knative.dev/v1alpha1",
+			Kind:       "Configuration",
+			Name:       service.GetName(),
+			UID:        service.GetUID(),
+		}); err != nil {
+			fmt.Printf("Can't set build owner, cleaning up: %s\n", err)
+			if err = build.Delete(clientset); err != nil {
+				fmt.Printf("Can't remove build %q: %s\n", build.Name, err)
+			}
+		}
+	}()
+
+	configuration := servingv1alpha1.ConfigurationSpec{
+		Template: &servingv1alpha1.RevisionTemplateSpec{
+			Spec: servingv1alpha1.RevisionSpec{
+				RevisionSpec: servingv1beta1.RevisionSpec{
+					PodSpec: servingv1beta1.PodSpec{
+						Containers: []corev1.Container{
+							{Image: image},
+						},
 					},
 				},
 			},
@@ -76,62 +98,30 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	configuration.Template.Spec.RevisionSpec.PodSpec.Containers[0].EnvFrom = s.setupEnvSecrets()
 	configuration.Template.Spec.RevisionSpec.PodSpec.Containers[0].ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
 
-	serviceObject := servingv1alpha1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "serving.knative.dev/v1alpha1",
-		},
-
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              s.Name,
-			Namespace:         s.Namespace,
-			Labels:            configuration.Template.ObjectMeta.Labels,
-			CreationTimestamp: metav1.Time{Time: time.Now()},
-		},
-		Spec: servingv1alpha1.ServiceSpec{
-			ConfigurationSpec: configuration,
-		},
+	service.ObjectMeta = metav1.ObjectMeta{
+		Name:              s.Name,
+		Namespace:         s.Namespace,
+		Labels:            configuration.Template.ObjectMeta.Labels,
+		CreationTimestamp: metav1.Time{Time: time.Now()},
+	}
+	service.Spec = servingv1alpha1.ServiceSpec{
+		ConfigurationSpec: configuration,
 	}
 
 	if client.Dry {
 		var obj []byte
 		if client.Output == "yaml" {
-			obj, err = yaml.Marshal(serviceObject)
+			obj, err = yaml.Marshal(service)
 		} else {
-			obj, err = json.MarshalIndent(serviceObject, "", " ")
+			obj, err = json.MarshalIndent(service, "", " ")
 		}
 		return string(obj), err
 	}
 
 	fmt.Printf("Creating %q service\n", s.Name)
-	if _, err := s.createOrUpdate(serviceObject, clientset); err != nil {
+	if service, err = s.createOrUpdate(service, clientset); err != nil {
 		return "", fmt.Errorf("Creating service: %s", err)
 	}
-
-	// 	conf, err := clientset.Serving.ServingV1alpha1().Configurations(s.Namespace).Get(s.Name, metav1.GetOptions{})
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	trueP := true
-	// 	ref := metav1.OwnerReference{
-	// 		APIVersion:         "serving.knative.dev/v1alpha1",
-	// 		Kind:               "Configuration",
-	// 		Name:               conf.GetName(),
-	// 		UID:                conf.GetUID(),
-	// 		BlockOwnerDeletion: &trueP,
-	// 		Controller:         &trueP,
-	// 	}
-	// 	build.SetOwnerReferences([]metav1.OwnerReference{ref})
-	// 	if _, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).Update(build); err != nil {
-	// 		return "", err
-	// 	}
-	// }
-
-	// if s.Buildtemplate != "" {
-	// 	if err := s.setBuildtemplateOwner(newBuildtemplate, newService, clientset); err != nil {
-	// 		return "", fmt.Errorf("Setting buildtemplate owner: %s", err)
-	// 	}
-	// }
 
 	// TODO Add cronjob yaml into --dry output
 	if len(s.Cronjob.Schedule) != 0 {
@@ -144,8 +134,8 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
 	}
 
-	fmt.Printf("Waiting for %s ready state\n", s.Name)
-	domain, err := s.waitService(clientset)
+	fmt.Printf("Waiting for %q ready state\n", s.Name)
+	domain, err := s.wait(clientset)
 	if err != nil {
 		return "", fmt.Errorf("Waiting for service readiness: %s", err)
 	}
@@ -181,15 +171,15 @@ func (s *Service) setupEnvSecrets() []corev1.EnvFromSource {
 	return env
 }
 
-func (s *Service) createOrUpdate(serviceObject servingv1alpha1.Service, clientset *client.ConfigSet) (*servingv1alpha1.Service, error) {
-	newService, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Create(&serviceObject)
+func (s *Service) createOrUpdate(serviceObject *servingv1alpha1.Service, clientset *client.ConfigSet) (*servingv1alpha1.Service, error) {
+	newService, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Create(serviceObject)
 	if k8sErrors.IsAlreadyExists(err) {
 		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
 		serviceObject.ObjectMeta.ResourceVersion = service.GetResourceVersion()
-		return clientset.Serving.ServingV1alpha1().Services(s.Namespace).Update(&serviceObject)
+		return clientset.Serving.ServingV1alpha1().Services(s.Namespace).Update(serviceObject)
 	}
 	return newService, err
 }
@@ -207,7 +197,7 @@ func mapFromSlice(slice []string) map[string]string {
 	return m
 }
 
-func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
+func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 	res, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 	})

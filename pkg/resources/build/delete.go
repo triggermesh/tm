@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DeleteBuild removes knative build object
-func (b *Build) DeleteBuild(clientset *client.ConfigSet) error {
+// Delete removes knative build object
+func (b *Build) Delete(clientset *client.ConfigSet) error {
 	return clientset.Build.BuildV1alpha1().Builds(b.Namespace).Delete(b.Name, &metav1.DeleteOptions{})
 }
