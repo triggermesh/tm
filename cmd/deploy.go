@@ -99,6 +99,7 @@ func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 			if _, err := b.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
+			fmt.Println("Build created")
 		},
 	}
 

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -33,9 +34,6 @@ import (
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
-	var image string
-	var err error
-
 	service := &servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -54,26 +52,37 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		RegistrySecret: s.RegistrySecret,
 	}
 
-	if !client.Dry {
-		if s.Buildtemplate != "" {
-			defer func() {
-				if err := build.SetOwner(clientset, metav1.OwnerReference{
-					APIVersion: "serving.knative.dev/v1alpha1",
-					Kind:       "Configuration",
-					Name:       service.GetName(),
-					UID:        service.GetUID(),
-				}); err != nil {
-					fmt.Printf("Can't set build owner, cleaning up\n")
-					if err = build.Delete(clientset); err != nil {
-						fmt.Printf("Can't remove buildtemplate %q: %s\n", build.Name, err)
-					}
+	if s.Buildtemplate != "" && !client.Dry {
+		defer func() {
+			if err := build.SetOwner(clientset, metav1.OwnerReference{
+				APIVersion: "serving.knative.dev/v1alpha1",
+				Kind:       "Configuration",
+				Name:       service.GetName(),
+				UID:        service.GetUID(),
+			}); err != nil {
+				fmt.Printf("Can't set build owner, cleaning up\n")
+				if err = build.Delete(clientset); err != nil {
+					fmt.Printf("Can't remove buildtemplate %q: %s\n", build.Name, err)
 				}
-			}()
-		}
+			}
+		}()
+	}
 
-		image, err = build.Deploy(clientset)
-		if err != nil {
-			return "", err
+	buildObject, err := build.Deploy(clientset)
+	if err != nil {
+		return "", err
+	}
+	var buildStruct buildv1alpha1.Build
+	if err := json.Unmarshal(buildObject, &buildStruct); err != nil {
+		return "", err
+	}
+	image := s.Source
+	if buildStruct.Spec.Template != nil {
+		for _, v := range buildStruct.Spec.Template.Arguments {
+			if v.Name == "IMAGE" {
+				image = v.Value
+				break
+			}
 		}
 	}
 

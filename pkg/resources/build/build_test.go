@@ -15,10 +15,12 @@
 package build
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
 
+	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/triggermesh/tm/pkg/client"
 )
@@ -70,10 +72,24 @@ func TestBuild(t *testing.T) {
 			Args:          tt.Args,
 		}
 
-		image, err := build.Deploy(&buildClient)
+		buildObject, err := build.Deploy(&buildClient)
 		if err != nil {
 			assert.Error(t, err)
 			continue
+		}
+		var buildStruct buildv1alpha1.Build
+		if err := json.Unmarshal(buildObject, &buildStruct); err != nil {
+			assert.Error(t, err)
+			continue
+		}
+		var image string
+		if buildStruct.Spec.Template != nil {
+			for _, v := range buildStruct.Spec.Template.Arguments {
+				if v.Name == "IMAGE" {
+					image = v.Value
+					break
+				}
+			}
 		}
 
 		if image != tt.ImageName {
