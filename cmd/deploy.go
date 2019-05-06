@@ -81,6 +81,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVar(&s.EnvSecrets, "env-secret", []string{}, "Name of k8s secrets to populate pod environment variables")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
+	deployServiceCmd.Flags().StringToStringVarP(&s.Annotations, "annotation", "a", map[string]string{}, "Revision template annotations")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
 	return deployServiceCmd
 }
