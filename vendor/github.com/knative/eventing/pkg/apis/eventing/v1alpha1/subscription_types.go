@@ -49,7 +49,7 @@ var _ webhook.GenericCRD = (*Subscription)(nil)
 // for processing those events and where to put the result of the processing. Only
 // From (where the events are coming from) is always required. You can optionally
 // only Process the events (results in no output events) by leaving out the Result.
-// You can also perform an identity transformation on the invoming events by leaving
+// You can also perform an identity transformation on the incoming events by leaving
 // out the Subscriber and only specifying Result.
 //
 // The following are all valid specifications:
@@ -104,8 +104,7 @@ type SubscriptionSpec struct {
 // provide the resolved target of the action.
 // Currently we inspect the objects Status and see if there's a predefined
 // Status field that we will then use to dispatch events to be processed by
-// the target. Currently must resolve to a k8s service or Istio virtual
-// service.
+// the target. Currently must resolve to a k8s service.
 // Note that in the future we should try to utilize subresources (/resolve ?) to
 // make this cleaner, but CRDs do not support subresources yet, so we need
 // to rely on a specified Status field today. By relying on this behaviour

@@ -14,6 +14,9 @@ import (
 // The Header may change between Read() calls in case of concatenated frames.
 type Reader struct {
 	Header
+	// Handler called when a block has been successfully read.
+	// It provides the number of bytes read.
+	OnBlockDone func(size int)
 
 	buf      [8]byte       // Scrap buffer.
 	pos      int64         // Current position in src.
@@ -211,6 +214,9 @@ func (z *Reader) Read(buf []byte) (int, error) {
 				return 0, err
 			}
 			z.pos += int64(bLen)
+			if z.OnBlockDone != nil {
+				z.OnBlockDone(int(bLen))
+			}
 
 			if z.BlockChecksum {
 				checksum, err := z.readUint32()
@@ -255,6 +261,9 @@ func (z *Reader) Read(buf []byte) (int, error) {
 				return 0, err
 			}
 			z.data = z.data[:n]
+			if z.OnBlockDone != nil {
+				z.OnBlockDone(n)
+			}
 		}
 
 		if !z.NoChecksum {

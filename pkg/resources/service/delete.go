@@ -21,6 +21,6 @@ import (
 
 // DeleteService remove knative service object
 func (s *Service) Delete(clientset *client.ConfigSet) error {
-	clientset.EventSources.SourcesV1alpha1().CronJobSources(s.Namespace).Delete(s.Name+"-cronjob", &metav1.DeleteOptions{})
+	// clientset.EventSources.SourcesV1alpha1().CronJobSources(s.Namespace).Delete(s.Name+"-cronjob", &metav1.DeleteOptions{})
 	return clientset.Serving.ServingV1alpha1().Services(s.Namespace).Delete(s.Name, &metav1.DeleteOptions{})
 }

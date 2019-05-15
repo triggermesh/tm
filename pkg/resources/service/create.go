@@ -244,7 +244,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 			continue
 		}
 		if serviceEvent.Status.IsReady() {
-			return serviceEvent.Status.Domain, nil
+			return serviceEvent.Status.Address.Hostname, nil
 		}
 		for _, v := range serviceEvent.Status.Conditions {
 			if v.IsFalse() {

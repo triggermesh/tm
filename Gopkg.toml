@@ -59,15 +59,19 @@
 
 [[constraint]]
   name = "github.com/knative/serving"
-  branch = "master"
+  version = "v0.6.0"
 
 [[constraint]]
   name = "github.com/knative/build"
-  branch = "master"
+  version = "v0.6.0"
 
 [[constraint]]
   name = "github.com/knative/eventing"
-  branch = "master"
+  version = "v0.6.0"
+
+[[constraint]]
+  name = "github.com/knative/eventing-sources"
+  version = "v0.6.0"
 
 [[override]]
   name = "github.com/stretchr/testify"
