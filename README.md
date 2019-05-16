@@ -36,7 +36,7 @@ If you have Dockerfile for your service, you can use kaniko buildtemplate to dep
 tm deploy service foobar \
     -f https://github.com/knative/docs \
     --build-template https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml \
-    --build-argument DIRECTORY=docs/serving/samples/helloworld-go \
+    --build-argument DIRECTORY=docs/serving/samples/hello-world/helloworld-go \
     --wait
 ```
 
