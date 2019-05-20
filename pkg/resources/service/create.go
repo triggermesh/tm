@@ -191,7 +191,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Waiting for service readiness: %s", err)
 	}
-	return fmt.Sprintf("Service %s URL: http://%s", s.Name, domain), nil
+	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), nil
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {
