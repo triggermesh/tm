@@ -18,4 +18,10 @@ package pipelineresource
 type PipelineResource struct {
 	Name      string
 	Namespace string
+	Source    Git
+}
+
+type Git struct {
+	URL      string
+	Revision string
 }
