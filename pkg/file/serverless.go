@@ -34,6 +34,7 @@ type Definition struct {
 type Function struct {
 	Handler     string
 	Source      string
+	Revision    string
 	Runtime     string
 	Concurrency int
 	Buildargs   []string

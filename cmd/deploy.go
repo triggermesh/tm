@@ -43,7 +43,6 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
 	deployCmd.AddCommand(cmdDeployTaskRun(clientset))
 	deployCmd.AddCommand(cmdDeployPipelineResource(clientset))
-
 	return deployCmd
 }
 
@@ -182,5 +181,8 @@ func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
 			fmt.Println("PipelineResource deployment started")
 		},
 	}
+	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.URL, "url", "", "Git URL to get sources from")
+	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.Revision, "rev", "", "Git revision")
+
 	return deployPipelineResourceCmd
 }

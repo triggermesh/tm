@@ -246,6 +246,7 @@ func (s *Service) serviceObject(function file.Function) Service {
 	service := Service{
 		Source:         function.Source,
 		Registry:       s.Registry,
+		Revision:       function.Revision,
 		Namespace:      s.Namespace,
 		Concurrency:    function.Concurrency,
 		Buildtemplate:  function.Runtime,
