@@ -41,6 +41,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployChannel(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
+	deployCmd.AddCommand(cmdDeployTask(clientset))
 	deployCmd.AddCommand(cmdDeployTaskRun(clientset))
 	deployCmd.AddCommand(cmdDeployPipelineResource(clientset))
 	return deployCmd
@@ -150,6 +151,24 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 	return deployChannelCmd
 }
 
+func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
+	deployTaskCmd := &cobra.Command{
+		Use:     "task",
+		Aliases: []string{"tasks"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "Deploy tekton Task object",
+		Run: func(cmd *cobra.Command, args []string) {
+			t.Name = args[0]
+			t.Namespace = client.Namespace
+			if err := t.Deploy(clientset); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("Task deployment started")
+		},
+	}
+	return deployTaskCmd
+}
+
 func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 	deployTaskRunCmd := &cobra.Command{
 		Use:     "taskrun",
@@ -159,12 +178,15 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			tr.Name = args[0]
 			tr.Namespace = client.Namespace
+			tr.Registry = client.Registry
 			if err := tr.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
 			fmt.Println("TaskRun deployment started")
 		},
 	}
+	deployTaskRunCmd.Flags().StringVarP(&tr.Task, "task", "t", "", "Name of task to run")
+	deployTaskRunCmd.Flags().StringVarP(&tr.Resources, "resources", "r", "", "Name of pipelineresource to pass into task")
 	return deployTaskRunCmd
 }
 
