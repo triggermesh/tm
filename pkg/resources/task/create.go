@@ -52,11 +52,11 @@ func (t *Task) Deploy(clientset *client.ConfigSet) error {
 			Steps: []corev1.Container{
 				{
 					Name:    "build",
-					Image:   "gcr.io/kaniko-project/executor:v0.8.0",
+					Image:   "gcr.io/kaniko-project/v0.8.0:debug",
 					Command: []string{"executor"},
-					Args: []string{"--dockerfile=/workspace/Dockerfile",
-						"--context=/workspace/",
-						"--destination=${inputs.params.registry}/"},
+					Args: []string{"--dockerfile=Dockerfile",
+						"--context=/workspace/workspace",
+						"--destination=${inputs.params.registry}"},
 				},
 			},
 		},
