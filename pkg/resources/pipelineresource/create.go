@@ -47,9 +47,10 @@ func (plr *PipelineResource) newObject(clientset *client.ConfigSet) v1alpha1.Pip
 }
 
 func (plr *PipelineResource) createOrUpdate(pipelineResourceObject v1alpha1.PipelineResource, clientset *client.ConfigSet) error {
+	var pipeline *v1alpha1.PipelineResource
 	_, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Create(&pipelineResourceObject)
 	if k8sErrors.IsAlreadyExists(err) {
-		pipeline, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Get(pipelineResourceObject.ObjectMeta.Name, metav1.GetOptions{})
+		pipeline, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Get(pipelineResourceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
