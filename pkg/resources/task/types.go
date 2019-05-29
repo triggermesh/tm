@@ -18,4 +18,5 @@ package task
 type Task struct {
 	Name      string
 	Namespace string
+	// Template  string
 }

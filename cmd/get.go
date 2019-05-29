@@ -374,8 +374,8 @@ func cmdListTaskRuns(clientset *client.ConfigSet) *cobra.Command {
 
 func cmdListPipelineResources(clientset *client.ConfigSet) *cobra.Command {
 	return &cobra.Command{
-		Use:     "pipelineresources",
-		Aliases: []string{"pipelineresourcess"},
+		Use:     "pipelineresource",
+		Aliases: []string{"pipelineresources"},
 		Short:   "List of tekton PipelineResources resources",
 		Run: func(cmd *cobra.Command, args []string) {
 			plr.Namespace = client.Namespace
