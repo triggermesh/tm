@@ -24,8 +24,9 @@ import (
 
 func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd := &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploy knative resource",
+		Use:     "deploy",
+		Aliases: []string{"create"},
+		Short:   "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
 			s.Registry = client.Registry
@@ -166,6 +167,7 @@ func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
 			fmt.Println("Task deployment started")
 		},
 	}
+	deployTaskCmd.Flags().StringVarP(&t.Template, "template", "t", "", "Task template name")
 	return deployTaskCmd
 }
 
@@ -173,20 +175,20 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 	deployTaskRunCmd := &cobra.Command{
 		Use:     "taskrun",
 		Aliases: []string{"taskruns"},
-		Args:    cobra.ExactArgs(1),
 		Short:   "Deploy tekton TaskRun object",
 		Run: func(cmd *cobra.Command, args []string) {
-			tr.Name = args[0]
 			tr.Namespace = client.Namespace
 			tr.Registry = client.Registry
-			if err := tr.Deploy(clientset); err != nil {
+			taskrun, err := tr.Deploy(clientset)
+			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("TaskRun deployment started")
+			fmt.Printf("TaskRun %q deployment started\n", taskrun.GetName())
 		},
 	}
 	deployTaskRunCmd.Flags().StringVarP(&tr.Task, "task", "t", "", "Name of task to run")
 	deployTaskRunCmd.Flags().StringVarP(&tr.Resources, "resources", "r", "", "Name of pipelineresource to pass into task")
+	deployTaskRunCmd.Flags().StringVarP(&tr.RegistrySecret, "secret", "s", "", "Secret name with registry credentials")
 	return deployTaskRunCmd
 }
 

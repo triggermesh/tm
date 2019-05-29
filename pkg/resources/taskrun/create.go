@@ -23,17 +23,24 @@ import (
 
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (tr *TaskRun) Deploy(clientset *client.ConfigSet) error {
+func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error) {
+	plr := pipelineresource.PipelineResource{
+		Name:      tr.Resources,
+		Namespace: tr.Namespace,
+	}
+	if _, err := plr.Get(clientset); err != nil {
+		return nil, err
+	}
 	image, err := tr.imageName(clientset)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	taskRunObject := tr.newObject(image, clientset)
-	return tr.createOrUpdate(taskRunObject, clientset)
+	return clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(&taskRunObject)
 }
 
 func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) v1alpha1.TaskRun {
@@ -43,8 +50,8 @@ func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) v1alp
 			APIVersion: "tekton.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      tr.Name,
-			Namespace: tr.Namespace,
+			GenerateName: tr.Task + "-",
+			Namespace:    tr.Namespace,
 		},
 		Spec: v1alpha1.TaskRunSpec{
 			Trigger: v1alpha1.TaskTrigger{
@@ -76,23 +83,9 @@ func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) v1alp
 	}
 }
 
-func (tr *TaskRun) createOrUpdate(taskRunObject v1alpha1.TaskRun, clientset *client.ConfigSet) error {
-	var taskRun *v1alpha1.TaskRun
-	_, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(&taskRunObject)
-	if k8sErrors.IsAlreadyExists(err) {
-		taskRun, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Get(taskRunObject.ObjectMeta.Name, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		taskRunObject.ObjectMeta.ResourceVersion = taskRun.GetResourceVersion()
-		_, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Update(&taskRunObject)
-	}
-	return err
-}
-
 func (tr *TaskRun) imageName(clientset *client.ConfigSet) (string, error) {
 	if len(tr.RegistrySecret) == 0 {
-		return fmt.Sprintf("%s/%s/%s", tr.Registry, tr.Namespace, tr.Name), nil
+		return fmt.Sprintf("%s/%s/%s", tr.Registry, tr.Namespace, tr.Task), nil
 	}
 	secret, err := clientset.Core.CoreV1().Secrets(tr.Namespace).Get(tr.RegistrySecret, metav1.GetOptions{})
 	if err != nil {
@@ -109,9 +102,9 @@ func (tr *TaskRun) imageName(clientset *client.ConfigSet) (string, error) {
 	}
 	for k, v := range config.Auths {
 		if url, ok := gitlabEnv(); ok {
-			return fmt.Sprintf("%s/%s", url, tr.Name), nil
+			return fmt.Sprintf("%s/%s", url, tr.Task), nil
 		}
-		return fmt.Sprintf("%s/%s/%s", k, v.Username, tr.Name), nil
+		return fmt.Sprintf("%s/%s/%s", k, v.Username, tr.Task), nil
 	}
 	return "", errors.New("empty registry credentials")
 }

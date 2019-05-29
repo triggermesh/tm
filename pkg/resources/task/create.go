@@ -49,19 +49,23 @@ func (t *Task) Deploy(clientset *client.ConfigSet) error {
 					},
 				},
 			},
-			Steps: []corev1.Container{
-				{
-					Name:    "build",
-					Image:   "gcr.io/kaniko-project/v0.8.0:debug",
-					Command: []string{"executor"},
-					Args: []string{"--dockerfile=Dockerfile",
-						"--context=/workspace/workspace",
-						"--destination=${inputs.params.registry}"},
-				},
-			},
+			Steps: t.kaniko(),
 		},
 	}
 	return t.createOrUpdate(task, clientset)
+}
+
+func (t *Task) kaniko() []corev1.Container {
+	return []corev1.Container{
+		{
+			Name:    "build",
+			Image:   "gcr.io/kaniko-project/executor:v0.8.0",
+			Command: []string{"executor"},
+			Args: []string{"--dockerfile=Dockerfile",
+				"--context=/workspace/workspace",
+				"--destination=${inputs.params.registry}"},
+		},
+	}
 }
 
 func (t *Task) createOrUpdate(task tekton.Task, clientset *client.ConfigSet) error {

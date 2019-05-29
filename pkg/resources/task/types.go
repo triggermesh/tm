@@ -14,8 +14,18 @@
 
 package task
 
+// TemplateType represents preconfigured types of task specs
+type TemplateType string
+
+const (
+	// TemplateKaniko uses Kaniko executor to build image from dockerfile
+	TemplateKaniko TemplateType = "kaniko"
+)
+
 // Task represents tekton Task object
 type Task struct {
 	Name      string
 	Namespace string
+	Template  string
+	// Template  TemplateType
 }
