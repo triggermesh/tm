@@ -32,12 +32,12 @@ func TestCreate(t *testing.T) {
 
 	taskRun := &TaskRun{Name: "foo-bar", Namespace: namespace}
 
-	err = taskRun.Deploy(&testClient)
+	_, err = taskRun.Deploy(&testClient)
 	assert.NoError(t, err)
 
 	taskRun = &TaskRun{Name: "foo-bar", Namespace: namespace}
 
-	err = taskRun.Deploy(&testClient)
+	_, err = taskRun.Deploy(&testClient)
 	assert.Error(t, err)
 
 	result, err := taskRun.Get(&testClient)
