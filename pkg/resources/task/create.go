@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Deploy creates dummy task with kaniko executor which accepts source URL and pushes resulting image to registry
 func (t *Task) Deploy(clientset *client.ConfigSet) error {
 	task := tekton.Task{
 		TypeMeta: metav1.TypeMeta{
