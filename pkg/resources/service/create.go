@@ -184,7 +184,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	if !client.Wait {
-		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
+		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details\n", s.Namespace, s.Name), nil
 	}
 
 	fmt.Printf("Waiting for %s ready state\n", s.Name)
