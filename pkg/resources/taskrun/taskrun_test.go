@@ -18,6 +18,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/triggermesh/tm/pkg/client"
 )
@@ -30,21 +32,30 @@ func TestCreate(t *testing.T) {
 	testClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
-	taskRun := &TaskRun{Name: "foo-bar", Namespace: namespace}
+	taskRun := &TaskRun{Task: "foo-bar", Namespace: namespace}
 
-	err = taskRun.Deploy(&testClient)
-	assert.NoError(t, err)
-
-	taskRun = &TaskRun{Name: "foo-bar", Namespace: namespace}
-
-	err = taskRun.Deploy(&testClient)
+	_, err = taskRun.Deploy(&testClient)
 	assert.Error(t, err)
 
-	result, err := taskRun.Get(&testClient)
+	taskRun = &TaskRun{Task: "foo-bar", Resources: "git", Namespace: namespace}
+
+	_, err = taskRun.Deploy(&testClient)
+	assert.Error(t, err)
+
+	pplresource := &pipelineresource.PipelineResource{Name: "git", Namespace: namespace, Source: pipelineresource.Git{URL: "foo"}}
+	err = pplresource.Deploy(&testClient)
 	assert.NoError(t, err)
-	assert.Equal(t, "foo-bar", result.Name)
+
+	result, err := taskRun.Deploy(&testClient)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo-bar-", result.GenerateName)
+
+	taskRun.Name = result.Name
 
 	err = taskRun.Delete(&testClient)
+	assert.NoError(t, err)
+
+	err = pplresource.Delete(&testClient)
 	assert.NoError(t, err)
 }
 

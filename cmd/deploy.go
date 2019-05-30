@@ -165,7 +165,6 @@ func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
 			fmt.Println("Task deployment started")
 		},
 	}
-	deployTaskCmd.Flags().StringVarP(&t.Template, "template", "t", "", "Task template name")
 	return deployTaskCmd
 }
 
