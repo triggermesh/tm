@@ -23,7 +23,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
-	duck "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/apis"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -248,7 +248,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 			return serviceEvent.Status.Address.Hostname, nil
 		}
 		for _, v := range serviceEvent.Status.Conditions {
-			if v.IsFalse() && v.Severity == duck.ConditionSeverityError {
+			if v.IsFalse() && v.Severity == apis.ConditionSeverityError {
 				if v.Reason == "RevisionFailed" && firstError {
 					time.Sleep(time.Second * 3)
 					res.Stop()

@@ -176,11 +176,10 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			tr.Namespace = client.Namespace
 			tr.Registry = client.Registry
-			taskrun, err := tr.Deploy(clientset)
+			_, err := tr.Deploy(clientset)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("TaskRun %q deployment started\n", taskrun.GetName())
 		},
 	}
 	deployTaskRunCmd.Flags().StringVarP(&tr.Task, "task", "t", "", "Name of task to run")

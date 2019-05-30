@@ -21,6 +21,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/knative/pkg/apis"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
@@ -40,7 +41,13 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error
 		return nil, err
 	}
 	taskRunObject := tr.newObject(image, clientset)
-	return clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(&taskRunObject)
+	result, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(&taskRunObject)
+	tr.Name = result.GetName()
+	if client.Wait {
+		fmt.Printf("waiting for %q ready state\n", result.Name)
+		err = tr.wait(clientset)
+	}
+	return result, err
 }
 
 func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) v1alpha1.TaskRun {
@@ -112,4 +119,39 @@ func (tr *TaskRun) imageName(clientset *client.ConfigSet) (string, error) {
 // hack to use correct username in image URL instead of "gitlab-ci-token" in Gitlab CI
 func gitlabEnv() (string, bool) {
 	return os.LookupEnv("CI_REGISTRY_IMAGE")
+}
+
+func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
+	res, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", tr.Name),
+	})
+	if err != nil || res == nil {
+		return fmt.Errorf("can't get watch interface: %s", err)
+	}
+	defer res.Stop()
+
+	for {
+		event := <-res.ResultChan()
+		if event.Object == nil {
+			res.Stop()
+			if res, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("metadata.name=%s", tr.Name),
+			}); err != nil || res == nil {
+				return fmt.Errorf("can't restart watch interface: %s", err)
+			}
+			continue
+		}
+		taskrunEvent, ok := event.Object.(*v1alpha1.TaskRun)
+		if !ok {
+			continue
+		}
+		if taskrunEvent.IsDone() {
+			return nil
+		}
+		for _, v := range taskrunEvent.Status.Conditions {
+			if v.IsFalse() && v.Severity == apis.ConditionSeverityError {
+				return errors.New(v.Message)
+			}
+		}
+	}
 }
