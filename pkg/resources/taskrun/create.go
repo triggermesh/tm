@@ -28,26 +28,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error) {
+func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	plr := pipelineresource.PipelineResource{
 		Name:      tr.Resources,
 		Namespace: tr.Namespace,
 	}
 	if _, err := plr.Get(clientset); err != nil {
-		return nil, err
+		return "", err
 	}
 	image, err := tr.imageName(clientset)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	taskRunObject := tr.newObject(image, clientset)
 	result, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(&taskRunObject)
+	if err != nil {
+		return "", err
+	}
 	tr.Name = result.GetName()
-	if client.Wait {
+	if tr.Wait {
 		fmt.Printf("waiting for %q ready state\n", result.Name)
 		err = tr.wait(clientset)
 	}
-	return result, err
+	return image, err
 }
 
 func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) v1alpha1.TaskRun {
@@ -154,4 +157,14 @@ func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
 			}
 		}
 	}
+}
+
+func (tr *TaskRun) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
+	taskrun, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	taskrun.SetOwnerReferences([]metav1.OwnerReference{owner})
+	_, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Update(taskrun)
+	return err
 }

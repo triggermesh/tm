@@ -29,7 +29,6 @@ import (
 	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,7 +36,7 @@ import (
 const uploadDoneTrigger = "/home/.sourceuploaddone"
 
 // Deploy uses Build structure to generate and deploy knative build
-func (b *Build) Deploy(clientset *client.ConfigSet) ([]byte, error) {
+func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 	build := &buildv1alpha1.Build{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Build",
@@ -58,7 +57,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) ([]byte, error) {
 	if b.Buildtemplate != "" && !client.Dry {
 		buildtemplateName, err := b.installBuildTemplate(clientset)
 		if err != nil {
-			return []byte{}, fmt.Errorf("buildtemplate installation: %s", err)
+			return "", fmt.Errorf("buildtemplate installation: %s", err)
 		}
 		b.Buildtemplate = buildtemplateName
 		fmt.Printf("Buildtemplate %q installed\n", b.Buildtemplate)
@@ -106,7 +105,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) ([]byte, error) {
 				},
 			},
 		}
-		return json.Marshal(build)
+		return "", nil
 	}
 
 	duration, err := time.ParseDuration(b.Timeout)
@@ -116,7 +115,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) ([]byte, error) {
 
 	image, err := b.imageName(clientset)
 	if err != nil {
-		return []byte{}, fmt.Errorf("Composing service image name: %s", err)
+		return "", fmt.Errorf("Composing service image name: %s", err)
 	}
 
 	build.Spec.Timeout = &metav1.Duration{Duration: duration}
@@ -126,31 +125,29 @@ func (b *Build) Deploy(clientset *client.ConfigSet) ([]byte, error) {
 	}
 
 	if client.Dry {
-		if client.Output == "yaml" {
-			return yaml.Marshal(build)
-		}
-		return json.MarshalIndent(build, "", " ")
+		res, err := json.MarshalIndent(build, "", " ")
+		return string(res), err
 	}
 
 	if build, err = clientset.Build.BuildV1alpha1().Builds(b.Namespace).Create(build); err != nil {
-		return []byte{}, fmt.Errorf("Build %q creation error: %s", build.Name, err)
+		return "", fmt.Errorf("Build %q creation error: %s", build.Name, err)
 	}
 	b.Name = build.GetName()
 
 	if local {
 		if err := b.injectSources(clientset); err != nil {
-			return []byte{}, fmt.Errorf("Injecting sources: %s", err)
+			return "", fmt.Errorf("Injecting sources: %s", err)
 		}
 	}
 
 	if b.Wait {
 		fmt.Printf("Waiting for the build %q completion\n", b.Name)
 		if err := b.wait(build, clientset); err != nil {
-			return []byte{}, fmt.Errorf("Build %q error: %s", b.Name, err)
+			return "", fmt.Errorf("Build %q error: %s", b.Name, err)
 		}
 	}
 
-	return json.Marshal(build)
+	return image, nil
 }
 
 func mapFromSlice(slice []string) map[string]string {

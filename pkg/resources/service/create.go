@@ -22,12 +22,10 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/knative/pkg/apis"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
-	"github.com/triggermesh/tm/pkg/resources/build"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,49 +39,31 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 			APIVersion: "serving.knative.dev/v1alpha1",
 		},
 	}
-	build := build.Build{
-		Wait:           true,
-		Source:         s.Source,
-		Registry:       s.Registry,
-		Args:           s.BuildArgs,
-		Namespace:      s.Namespace,
-		GenerateName:   s.Name + "-",
-		Timeout:        s.BuildTimeout,
-		Buildtemplate:  s.Buildtemplate,
-		RegistrySecret: s.RegistrySecret,
-	}
 
-	if s.Buildtemplate != "" && !client.Dry {
+	image := s.Source
+	builder := NewBuilder(s)
+
+	if builder != nil && !client.Dry {
 		defer func() {
-			if err := build.SetOwner(clientset, metav1.OwnerReference{
+			owner := metav1.OwnerReference{
 				APIVersion: "serving.knative.dev/v1alpha1",
 				Kind:       "Configuration",
 				Name:       service.GetName(),
 				UID:        service.GetUID(),
-			}); err != nil {
-				fmt.Printf("Can't set build owner, cleaning up\n")
-				if err = build.Delete(clientset); err != nil {
-					fmt.Printf("Can't remove buildtemplate %q: %s\n", build.Name, err)
+			}
+			if err := builder.SetOwner(clientset, owner); err != nil {
+				fmt.Printf("Can't set builder owner, cleaning up\n")
+				if err = builder.Delete(clientset); err != nil {
+					fmt.Printf("Can't remove buildtemplate: %s\n", err)
 				}
 			}
 		}()
 	}
 
-	buildObject, err := build.Deploy(clientset)
-	if err != nil {
-		return "", err
-	}
-	var buildStruct buildv1alpha1.Build
-	if err := json.Unmarshal(buildObject, &buildStruct); err != nil {
-		return "", err
-	}
-	image := s.Source
-	if buildStruct.Spec.Template != nil {
-		for _, v := range buildStruct.Spec.Template.Arguments {
-			if v.Name == "IMAGE" {
-				image = v.Value
-				break
-			}
+	var err error
+	if builder != nil {
+		if image, err = builder.Deploy(clientset); err != nil {
+			return "", err
 		}
 	}
 
@@ -152,10 +132,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	fmt.Printf("Waiting for %q ready state\n", s.Name)
 	domain, err := s.wait(clientset)
-	if err != nil {
-		return "", fmt.Errorf("Waiting for service readiness: %s", err)
-	}
-	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), nil
+	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), err
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {

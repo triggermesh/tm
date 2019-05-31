@@ -18,10 +18,11 @@ package taskrun
 type TaskRun struct {
 	Name           string
 	Namespace      string
-	Task           string
 	Resources      string
 	Registry       string
 	RegistrySecret string
+	Task           string
+	Wait           bool
 }
 
 type registryAuths struct {

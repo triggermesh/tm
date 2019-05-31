@@ -176,6 +176,7 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			tr.Namespace = client.Namespace
 			tr.Registry = client.Registry
+			tr.Wait = client.Wait
 			_, err := tr.Deploy(clientset)
 			if err != nil {
 				log.Fatal(err)
