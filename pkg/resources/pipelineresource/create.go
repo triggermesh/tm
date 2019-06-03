@@ -59,3 +59,13 @@ func (plr *PipelineResource) createOrUpdate(pipelineResourceObject v1alpha1.Pipe
 	}
 	return err
 }
+
+func (plr *PipelineResource) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
+	pplresource, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Get(plr.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	pplresource.SetOwnerReferences([]metav1.OwnerReference{owner})
+	_, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Update(pplresource)
+	return err
+}

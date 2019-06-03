@@ -33,6 +33,7 @@ import (
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
+	var err error
 	service := &servingv1alpha1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -54,16 +55,13 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 			if err := builder.SetOwner(clientset, owner); err != nil {
 				fmt.Printf("Can't set builder owner, cleaning up\n")
 				if err = builder.Delete(clientset); err != nil {
-					fmt.Printf("Can't remove buildtemplate: %s\n", err)
+					fmt.Printf("Can't remove builder: %s\n", err)
 				}
 			}
 		}()
-	}
 
-	var err error
-	if builder != nil {
 		if image, err = builder.Deploy(clientset); err != nil {
-			return "", err
+			return "", fmt.Errorf("Deploying builder: %s", err)
 		}
 	}
 

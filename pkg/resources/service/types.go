@@ -14,35 +14,26 @@
 
 package service
 
-import "encoding/json"
-
 // Service represents knative service structure
 type Service struct {
-	Name           string
-	Namespace      string
-	Registry       string
-	Source         string
-	Revision       string
-	PullPolicy     string
-	Concurrency    int
-	ResultImageTag string
-	Buildtemplate  string
-	RegistrySecret string // Does not belong to the service, need to be deleted
-	Env            []string
-	EnvSecrets     []string
 	Annotations    map[string]string
-	Labels         []string
 	BuildArgs      []string
 	BuildTimeout   string
+	Concurrency    int
+	Env            []string
+	EnvSecrets     []string
+	Labels         []string
+	Name           string
+	Namespace      string
+	PullPolicy     string
+	Registry       string
+	Revision       string
+	ResultImageTag string
+	RegistrySecret string // Does not belong to the service, need to be deleted
+	Runtime        string // Originally knative/buildtemplate, but now also tekton/task
+	Source         string
 	Cronjob        struct {
 		Schedule string
 		Data     string
 	}
-}
-
-func encode(data interface{}) ([]byte, error) {
-	// if output == "yaml" {
-	// return yaml.Marshal(data)
-	// }
-	return json.MarshalIndent(data, "", "    ")
 }

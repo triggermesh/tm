@@ -29,38 +29,83 @@ import (
 )
 
 func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
-	plr := pipelineresource.PipelineResource{
-		Name:      tr.Resources,
-		Namespace: tr.Namespace,
+	var taskRunObject *v1alpha1.TaskRun
+
+	if tr.PipelineResource == "" {
+		plr := pipelineresource.PipelineResource{
+			Name:      tr.Name,
+			Namespace: tr.Namespace,
+			Source: pipelineresource.Git{
+				URL:      tr.Source.URL,
+				Revision: tr.Source.Revision,
+			},
+		}
+		tr.PipelineResource = plr.Name
+
+		defer func() {
+			owner := metav1.OwnerReference{
+				APIVersion: "tekton.dev/v1alpha1",
+				Kind:       "TaskRun",
+				Name:       taskRunObject.GetName(),
+				UID:        taskRunObject.GetUID(),
+			}
+			fmt.Printf("%+v\n%+v\n", plr, owner)
+			if err := plr.SetOwner(clientset, owner); err != nil {
+				fmt.Printf("Can't set pipelineresource owner, cleaning up\n")
+				if err = plr.Delete(clientset); err != nil {
+					fmt.Printf("Can't remove pipelineresource: %s\n", err)
+				}
+			}
+		}()
+
+		if err := plr.Deploy(clientset); err != nil {
+			return "", fmt.Errorf("Can't install pipelineresource: %s", err)
+		}
 	}
-	if _, err := plr.Get(clientset); err != nil {
+
+	clientset.Serving.ServingV1alpha1().Services("sdfsad").DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{})
+
+	if err := tr.checkPipelineResource(clientset); err != nil {
 		return "", err
 	}
 	image, err := tr.imageName(clientset)
 	if err != nil {
 		return "", err
 	}
-	taskRunObject := tr.newObject(image, clientset)
-	result, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(&taskRunObject)
+	taskRunObject = tr.newObject(image, clientset)
+	taskRunObject, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
 	if err != nil {
 		return "", err
 	}
-	tr.Name = result.GetName()
+	tr.Name = taskRunObject.GetName()
 	if tr.Wait {
-		fmt.Printf("waiting for %q ready state\n", result.Name)
+		fmt.Printf("Waiting for %q ready state\n", taskRunObject.Name)
 		err = tr.wait(clientset)
 	}
 	return image, err
 }
 
-func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) v1alpha1.TaskRun {
-	return v1alpha1.TaskRun{
+func (tr *TaskRun) checkPipelineResource(clientset *client.ConfigSet) error {
+	plr := pipelineresource.PipelineResource{
+		Name:      tr.PipelineResource,
+		Namespace: tr.Namespace,
+	}
+	_, err := plr.Get(clientset)
+	return err
+}
+
+func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) *v1alpha1.TaskRun {
+	name := tr.Name + "-"
+	if tr.Name == "" {
+		name = tr.Task + "-"
+	}
+	return &v1alpha1.TaskRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "TaskRun",
 			APIVersion: "tekton.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: tr.Task + "-",
+			GenerateName: name,
 			Namespace:    tr.Namespace,
 		},
 		Spec: v1alpha1.TaskRunSpec{
@@ -77,7 +122,7 @@ func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) v1alp
 					{
 						Name: "sources",
 						ResourceRef: v1alpha1.PipelineResourceRef{
-							Name:       tr.Resources,
+							Name:       tr.PipelineResource,
 							APIVersion: "tekton.dev/v1alpha1",
 						},
 					},

@@ -63,15 +63,16 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 		fmt.Printf("Buildtemplate %q installed\n", b.Buildtemplate)
 
 		defer func() {
-			if err := b.setBuildtemplateOwner(clientset, metav1.OwnerReference{
+			owner := metav1.OwnerReference{
 				APIVersion: "build.knative.dev/v1alpha1",
 				Kind:       "Build",
 				Name:       build.Name,
 				UID:        build.UID,
-			}); err != nil {
+			}
+			if err := b.setBuildtemplateOwner(clientset, owner); err != nil {
 				fmt.Printf("Can't set buildtemplate owner, cleaning up\n")
 				bt := buildtemplate.Buildtemplate{
-					Name:      buildtemplateName,
+					Name:      b.Buildtemplate,
 					Namespace: b.Namespace,
 				}
 				if err = bt.Delete(clientset); err != nil {

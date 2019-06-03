@@ -221,7 +221,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 	s.Name = definition.Service
 	s.EnvSecrets = definition.Provider.EnvSecrets
 	s.PullPolicy = definition.Provider.PullPolicy
-	s.Buildtemplate = definition.Provider.Runtime
+	s.Runtime = definition.Provider.Runtime
 	s.BuildTimeout = definition.Provider.Buildtimeout
 	s.RegistrySecret = definition.Provider.RegistrySecret
 
@@ -249,7 +249,7 @@ func (s *Service) serviceObject(function file.Function) Service {
 		Revision:       function.Revision,
 		Namespace:      s.Namespace,
 		Concurrency:    function.Concurrency,
-		Buildtemplate:  function.Runtime,
+		Runtime:        function.Runtime,
 		Labels:         function.Labels,
 		PullPolicy:     s.PullPolicy,
 		ResultImageTag: "latest",
@@ -273,8 +273,8 @@ func (s *Service) serviceObject(function file.Function) Service {
 	for k, v := range function.Annotations {
 		service.Annotations[k] = v
 	}
-	if len(service.Buildtemplate) == 0 {
-		service.Buildtemplate = s.Buildtemplate
+	if len(service.Runtime) == 0 {
+		service.Runtime = s.Runtime
 	}
 	if len(function.Description) != 0 {
 		service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)

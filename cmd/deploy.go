@@ -73,7 +73,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 
 	deployServiceCmd.Flags().StringVarP(&s.Source, "from", "f", "", "Service source to deploy: local folder with sources, git repository or docker image")
 	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
-	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
+	deployServiceCmd.Flags().StringVar(&s.Runtime, "build-template", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
 	deployServiceCmd.Flags().StringVar(&s.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
@@ -184,7 +184,7 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		},
 	}
 	deployTaskRunCmd.Flags().StringVarP(&tr.Task, "task", "t", "", "Name of task to run")
-	deployTaskRunCmd.Flags().StringVarP(&tr.Resources, "resources", "r", "", "Name of pipelineresource to pass into task")
+	deployTaskRunCmd.Flags().StringVarP(&tr.PipelineResource, "resources", "r", "", "Name of pipelineresource to pass into task")
 	deployTaskRunCmd.Flags().StringVarP(&tr.RegistrySecret, "secret", "s", "", "Secret name with registry credentials")
 	return deployTaskRunCmd
 }

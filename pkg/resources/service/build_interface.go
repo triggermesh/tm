@@ -18,6 +18,7 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/build"
+	"github.com/triggermesh/tm/pkg/resources/taskrun"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,29 +29,31 @@ type Builder interface {
 }
 
 func NewBuilder(s *Service) Builder {
-	if file.IsRegistry(s.Source) {
-		return nil
-		// } else if file.IsGit(s.Source) {
-		// builder = &taskrun.TaskRun{
-		// 	Wait:           true,
-		// 	Name:           s.Name,
-		// 	Namespace:      s.Namespace,
-		// 	Registry:       s.Registry,
-		// 	RegistrySecret: s.RegistrySecret,
-		// 	Resources:      "",
-		// 	Task:           "",
-		// }
-	} else {
+	if file.IsLocal(s.Source) {
 		return &build.Build{
-			Wait:           true,
-			Source:         s.Source,
-			Registry:       s.Registry,
 			Args:           s.BuildArgs,
-			Namespace:      s.Namespace,
+			Buildtemplate:  s.Runtime,
 			GenerateName:   s.Name + "-",
-			Timeout:        s.BuildTimeout,
-			Buildtemplate:  s.Buildtemplate,
+			Namespace:      s.Namespace,
+			Registry:       s.Registry,
 			RegistrySecret: s.RegistrySecret,
+			Source:         s.Source,
+			Timeout:        s.BuildTimeout,
+			Wait:           true,
+		}
+	} else if file.IsGit(s.Source) {
+		return &taskrun.TaskRun{
+			Name:           s.Name + "-" + s.Runtime,
+			Namespace:      s.Namespace,
+			Registry:       s.Registry,
+			RegistrySecret: s.RegistrySecret,
+			Source: taskrun.Git{
+				URL:      s.Source,
+				Revision: s.Revision,
+			},
+			Task: s.Runtime,
+			Wait: true,
 		}
 	}
+	return nil
 }
