@@ -49,7 +49,6 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 				Name:       taskRunObject.GetName(),
 				UID:        taskRunObject.GetUID(),
 			}
-			fmt.Printf("%+v\n%+v\n", plr, owner)
 			if err := plr.SetOwner(clientset, owner); err != nil {
 				fmt.Printf("Can't set pipelineresource owner, cleaning up\n")
 				if err = plr.Delete(clientset); err != nil {
