@@ -201,7 +201,7 @@ func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			plr.Name = args[0]
 			plr.Namespace = client.Namespace
-			if err := plr.Deploy(clientset); err != nil {
+			if _, err := plr.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
 			fmt.Println("PipelineResource created")

@@ -16,8 +16,9 @@ package task
 
 // Task represents tekton Task object
 type Task struct {
-	GenerateName string
-	Name         string
-	Namespace    string
-	File         string
+	GenerateName   string
+	Name           string
+	Namespace      string
+	File           string
+	RegistrySecret string
 }

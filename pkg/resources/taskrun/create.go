@@ -34,54 +34,17 @@ import (
 func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	var taskRunObject *v1alpha1.TaskRun
 
-	task := task.Task{
-		Name:      tr.Task,
-		Namespace: tr.Namespace,
+	newTask, err := tr.setupTask(clientset)
+	if err != nil {
+		return "", fmt.Errorf("task setup: %s", err)
 	}
-
-	if _, err := task.Get(clientset); err != nil {
-		task.File = tr.Task
-		task.GenerateName = tr.Name + "-"
-		newTask, err := task.Deploy(clientset)
-		if err != nil {
-			return "", fmt.Errorf("task %q installation: %s", task.Name, err)
-		}
-		task.Name = newTask.Name
+	if newTask != nil {
 		tr.Task = newTask.Name
-
-		defer func() {
-			if err := task.SetOwner(clientset, owner(taskRunObject)); err != nil {
-				// fmt.Printf("Can't set task owner, cleaning up: %s\n", err)
-				if err = task.Delete(clientset); err != nil {
-					fmt.Printf("Can't remove task: %s\n", err)
-				}
-			}
-		}()
 	}
 
-	if tr.PipelineResource == "" {
-		plr := pipelineresource.PipelineResource{
-			Name:      tr.Name,
-			Namespace: tr.Namespace,
-			Source: pipelineresource.Git{
-				URL:      tr.Source.URL,
-				Revision: tr.Source.Revision,
-			},
-		}
-		tr.PipelineResource = plr.Name
-
-		defer func() {
-			if err := plr.SetOwner(clientset, owner(taskRunObject)); err != nil {
-				// fmt.Printf("Can't set pipelineresource owner, cleaning up\n")
-				if err = plr.Delete(clientset); err != nil {
-					fmt.Printf("Can't remove pipelineresource: %s\n", err)
-				}
-			}
-		}()
-
-		if err := plr.Deploy(clientset); err != nil {
-			return "", fmt.Errorf("Can't install pipelineresource: %s", err)
-		}
+	newPplRes, err := tr.setupPipelineresources(clientset)
+	if err != nil {
+		return "", fmt.Errorf("pipelineresource setup: %s", err)
 	}
 
 	if err := tr.checkPipelineResource(clientset); err != nil {
@@ -98,11 +61,67 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", err
 	}
 	tr.Name = taskRunObject.GetName()
+
+	if newTask != nil {
+		task := task.Task{
+			Name:      newTask.GetName(),
+			Namespace: newTask.GetNamespace(),
+		}
+		if err := task.SetOwner(clientset, owner(taskRunObject)); err != nil {
+			if err = task.Delete(clientset); err != nil {
+				fmt.Printf("Can't cleanup task: %s\n", err)
+			}
+		}
+	}
+	if newPplRes != nil {
+		plr := pipelineresource.PipelineResource{
+			Name:      newPplRes.GetName(),
+			Namespace: newPplRes.GetNamespace(),
+		}
+		if err := plr.SetOwner(clientset, owner(taskRunObject)); err != nil {
+			if err = plr.Delete(clientset); err != nil {
+				fmt.Printf("Can't remove pipelineresource: %s\n", err)
+			}
+		}
+	}
+
 	if tr.Wait {
 		fmt.Printf("Waiting for taskrun %q ready state\n", taskRunObject.Name)
 		err = tr.wait(clientset)
 	}
 	return image, err
+}
+
+func (tr *TaskRun) setupPipelineresources(clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
+	if tr.PipelineResource == "" {
+		plr := pipelineresource.PipelineResource{
+			Name:      tr.Name,
+			Namespace: tr.Namespace,
+			Source: pipelineresource.Git{
+				URL:      tr.Source.URL,
+				Revision: tr.Source.Revision,
+			},
+		}
+		tr.PipelineResource = plr.Name
+		return plr.Deploy(clientset)
+	}
+	return nil, nil
+}
+
+func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error) {
+	task := task.Task{
+		Name:           tr.Task,
+		Namespace:      tr.Namespace,
+		RegistrySecret: tr.RegistrySecret,
+	}
+	if taskObj, err := task.Get(clientset); err != nil {
+		task.File = tr.Task
+		task.GenerateName = tr.Name + "-"
+		return task.Deploy(clientset)
+	} else if tr.RegistrySecret != "" {
+		return task.Clone(clientset, taskObj)
+	}
+	return nil, nil
 }
 
 func owner(taskRunObject *v1alpha1.TaskRun) metav1.OwnerReference {
