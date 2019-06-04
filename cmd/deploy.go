@@ -70,10 +70,11 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.Source, "from-path", "", "Deprecated, use `-f` flag instead")
 	deployServiceCmd.Flags().StringVar(&s.Source, "from-image", "", "Deprecated, use `-f` flag instead")
 	deployServiceCmd.Flags().StringVar(&s.Source, "from-source", "", "Deprecated, use `-f` flag instead")
+	deployServiceCmd.Flags().StringVar(&s.Runtime, "build-template", "", "Deprecated, use `--runtime` flag instead")
 
 	deployServiceCmd.Flags().StringVarP(&s.Source, "from", "f", "", "Service source to deploy: local folder with sources, git repository or docker image")
 	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
-	deployServiceCmd.Flags().StringVar(&s.Runtime, "build-template", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
+	deployServiceCmd.Flags().StringVar(&s.Runtime, "runtime", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
 	deployServiceCmd.Flags().StringVar(&s.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
 	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
@@ -143,7 +144,7 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 			if err := c.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("Channel deployment started")
+			fmt.Println("Channel created")
 		},
 	}
 	deployChannelCmd.Flags().StringVarP(&c.Provisioner, "provisioner", "p", "in-memory-channel", "Channel provisioner")
@@ -154,17 +155,19 @@ func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
 	deployTaskCmd := &cobra.Command{
 		Use:     "task",
 		Aliases: []string{"tasks"},
-		Args:    cobra.ExactArgs(1),
 		Short:   "Deploy tekton Task object",
 		Run: func(cmd *cobra.Command, args []string) {
-			t.Name = args[0]
+			if len(args) == 1 {
+				t.Name = args[0]
+			}
 			t.Namespace = client.Namespace
-			if err := t.Deploy(clientset); err != nil {
+			if _, err := t.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("Task deployment started")
+			fmt.Println("Task installed")
 		},
 	}
+	deployTaskCmd.Flags().StringVarP(&t.File, "file", "f", "", "Task yaml manifest path")
 	return deployTaskCmd
 }
 
@@ -201,7 +204,7 @@ func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
 			if err := plr.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("PipelineResource deployment started")
+			fmt.Println("PipelineResource created")
 		},
 	}
 	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.URL, "url", "", "Git URL to get sources from")

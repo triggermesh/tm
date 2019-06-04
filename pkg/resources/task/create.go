@@ -15,70 +15,110 @@
 package task
 
 import (
+	"fmt"
+	"io/ioutil"
+
+	"github.com/ghodss/yaml"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/triggermesh/tm/pkg/file"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Deploy creates dummy task with kaniko executor which accepts source URL and pushes resulting image to registry
-func (t *Task) Deploy(clientset *client.ConfigSet) error {
-	task := tekton.Task{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Task",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      t.Name,
-			Namespace: t.Namespace,
-		},
-		Spec: tekton.TaskSpec{
-			Inputs: &tekton.Inputs{
-				Resources: []tekton.TaskResource{
-					{
-						Name:       "sources",
-						Type:       tekton.PipelineResourceType("git"),
-						TargetPath: "/workspace",
-					},
-				},
-				Params: []tekton.TaskParam{
-					{
-						Name:        "registry",
-						Default:     "",
-						Description: "Where to store resulting image",
-					},
-				},
-			},
-			Steps: t.kaniko(),
-		},
+const (
+	kind = "Task"
+	api  = "tekton.dev/v1alpha1"
+)
+
+// Deploy accepts path (local or URL) to tekton Task manifest and installs it
+func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
+	if !file.IsLocal(t.File) {
+		path, err := file.Download(t.File)
+		if err != nil {
+			return nil, fmt.Errorf("task not found")
+		}
+		t.File = path
+	}
+
+	task, err := t.readYAML()
+	if err != nil {
+		return nil, err
+	}
+
+	task.SetNamespace(t.Namespace)
+	if t.GenerateName != "" {
+		task.SetName("")
+		task.SetGenerateName(t.GenerateName)
+	} else if t.Name != "" {
+		task.SetName(t.Name)
 	}
 	return t.createOrUpdate(task, clientset)
 }
 
-func (t *Task) kaniko() []corev1.Container {
-	return []corev1.Container{
-		{
-			Name:    "build",
-			Image:   "gcr.io/kaniko-project/executor:v0.8.0",
-			Command: []string{"executor"},
-			Args: []string{"--dockerfile=Dockerfile",
-				"--context=/workspace/workspace",
-				"--destination=${inputs.params.registry}"},
-		},
+func (t *Task) readYAML() (tekton.Task, error) {
+	var res tekton.Task
+	yamlFile, err := ioutil.ReadFile(t.File)
+	if err != nil {
+		return res, err
+	}
+	err = yaml.Unmarshal(yamlFile, &res)
+	return res, err
+}
+
+func (t *Task) createOrUpdate(task tekton.Task, clientset *client.ConfigSet) (*tekton.Task, error) {
+	if task.TypeMeta.Kind != kind {
+		return nil, fmt.Errorf("Object Kind mismatch: got %q, want %q", task.TypeMeta.Kind, kind)
+	}
+	if task.TypeMeta.APIVersion != api {
+		return nil, fmt.Errorf("Object API mismatch: got %q, want %q", task.TypeMeta.APIVersion, api)
+	}
+
+	checkParams(task)
+
+	if task.GetGenerateName() != "" {
+		return clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Create(&task)
+	}
+
+	taskObj, err := clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Create(&task)
+	if k8sErrors.IsAlreadyExists(err) {
+		if taskObj, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(task.ObjectMeta.Name, metav1.GetOptions{}); err != nil {
+			return nil, err
+		}
+		task.ObjectMeta.ResourceVersion = taskObj.GetResourceVersion()
+		taskObj, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Update(taskObj)
+	}
+	return taskObj, err
+}
+
+func checkParams(task tekton.Task) {
+	var registry, sources bool
+	for _, v := range task.Spec.Inputs.Params {
+		if v.Name == "registry" {
+			sources = true
+			break
+		}
+	}
+	for _, v := range task.Spec.Inputs.Resources {
+		if v.Name == "sources" {
+			registry = true
+			break
+		}
+	}
+	if !registry {
+		fmt.Printf("Warning. Task %q does not have parameter \"registry\"", task.Name)
+	}
+	if !sources {
+		fmt.Printf("Warning. Task %q does not have resource \"sources\"", task.Name)
 	}
 }
 
-func (t *Task) createOrUpdate(task tekton.Task, clientset *client.ConfigSet) error {
-	var taskObj *tekton.Task
-	_, err := clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Create(&task)
-	if k8sErrors.IsAlreadyExists(err) {
-		taskObj, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(task.ObjectMeta.Name, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		task.ObjectMeta.ResourceVersion = taskObj.GetResourceVersion()
-		_, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Update(taskObj)
+func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
+	task, err := clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
 	}
+	task.SetOwnerReferences([]metav1.OwnerReference{owner})
+	_, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Update(task)
 	return err
 }

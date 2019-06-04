@@ -46,7 +46,7 @@ func (c *Copy) Upload(clientset *client.ConfigSet) error {
 		return err
 	}
 
-	tar := path.Join(uploadPath, randString(10))
+	tar := path.Join(uploadPath, RandString(10))
 	if err := archiver.Tar.Make(tar, []string{c.Source}); err != nil {
 		return err
 	}

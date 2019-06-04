@@ -21,6 +21,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/triggermesh/tm/pkg/file"
+	"github.com/triggermesh/tm/pkg/resources/task"
+
 	"github.com/knative/pkg/apis"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -30,6 +33,31 @@ import (
 
 func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	var taskRunObject *v1alpha1.TaskRun
+
+	task := task.Task{
+		Name:      tr.Task,
+		Namespace: tr.Namespace,
+	}
+
+	if _, err := task.Get(clientset); err != nil {
+		task.File = tr.Task
+		task.GenerateName = tr.Name + "-"
+		newTask, err := task.Deploy(clientset)
+		if err != nil {
+			return "", fmt.Errorf("task %q installation: %s", task.Name, err)
+		}
+		task.Name = newTask.Name
+		tr.Task = newTask.Name
+
+		defer func() {
+			if err := task.SetOwner(clientset, owner(taskRunObject)); err != nil {
+				// fmt.Printf("Can't set task owner, cleaning up: %s\n", err)
+				if err = task.Delete(clientset); err != nil {
+					fmt.Printf("Can't remove task: %s\n", err)
+				}
+			}
+		}()
+	}
 
 	if tr.PipelineResource == "" {
 		plr := pipelineresource.PipelineResource{
@@ -43,14 +71,8 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		tr.PipelineResource = plr.Name
 
 		defer func() {
-			owner := metav1.OwnerReference{
-				APIVersion: "tekton.dev/v1alpha1",
-				Kind:       "TaskRun",
-				Name:       taskRunObject.GetName(),
-				UID:        taskRunObject.GetUID(),
-			}
-			if err := plr.SetOwner(clientset, owner); err != nil {
-				fmt.Printf("Can't set pipelineresource owner, cleaning up\n")
+			if err := plr.SetOwner(clientset, owner(taskRunObject)); err != nil {
+				// fmt.Printf("Can't set pipelineresource owner, cleaning up\n")
 				if err = plr.Delete(clientset); err != nil {
 					fmt.Printf("Can't remove pipelineresource: %s\n", err)
 				}
@@ -62,8 +84,6 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		}
 	}
 
-	clientset.Serving.ServingV1alpha1().Services("sdfsad").DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{})
-
 	if err := tr.checkPipelineResource(clientset); err != nil {
 		return "", err
 	}
@@ -71,6 +91,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	image = fmt.Sprintf("%s:%s", image, file.RandString(6))
 	taskRunObject = tr.newObject(image, clientset)
 	taskRunObject, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
 	if err != nil {
@@ -78,10 +99,19 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 	tr.Name = taskRunObject.GetName()
 	if tr.Wait {
-		fmt.Printf("Waiting for %q ready state\n", taskRunObject.Name)
+		fmt.Printf("Waiting for taskrun %q ready state\n", taskRunObject.Name)
 		err = tr.wait(clientset)
 	}
 	return image, err
+}
+
+func owner(taskRunObject *v1alpha1.TaskRun) metav1.OwnerReference {
+	return metav1.OwnerReference{
+		APIVersion: "tekton.dev/v1alpha1",
+		Kind:       "TaskRun",
+		Name:       taskRunObject.GetName(),
+		UID:        taskRunObject.GetUID(),
+	}
 }
 
 func (tr *TaskRun) checkPipelineResource(clientset *client.ConfigSet) error {
@@ -139,7 +169,7 @@ func (tr *TaskRun) newObject(registry string, clientset *client.ConfigSet) *v1al
 
 func (tr *TaskRun) imageName(clientset *client.ConfigSet) (string, error) {
 	if len(tr.RegistrySecret) == 0 {
-		return fmt.Sprintf("%s/%s/%s", tr.Registry, tr.Namespace, tr.Task), nil
+		return fmt.Sprintf("%s/%s/%s", tr.Registry, tr.Namespace, tr.Name), nil
 	}
 	secret, err := clientset.Core.CoreV1().Secrets(tr.Namespace).Get(tr.RegistrySecret, metav1.GetOptions{})
 	if err != nil {
@@ -156,9 +186,9 @@ func (tr *TaskRun) imageName(clientset *client.ConfigSet) (string, error) {
 	}
 	for k, v := range config.Auths {
 		if url, ok := gitlabEnv(); ok {
-			return fmt.Sprintf("%s/%s", url, tr.Task), nil
+			return fmt.Sprintf("%s/%s", url, tr.Name), nil
 		}
-		return fmt.Sprintf("%s/%s/%s", k, v.Username, tr.Task), nil
+		return fmt.Sprintf("%s/%s/%s", k, v.Username, tr.Name), nil
 	}
 	return "", errors.New("empty registry credentials")
 }

@@ -43,7 +43,7 @@ func NewBuilder(s *Service) Builder {
 		}
 	} else if file.IsGit(s.Source) {
 		return &taskrun.TaskRun{
-			Name:           s.Name + "-" + s.Runtime,
+			Name:           s.Name,
 			Namespace:      s.Namespace,
 			Registry:       s.Registry,
 			RegistrySecret: s.RegistrySecret,
