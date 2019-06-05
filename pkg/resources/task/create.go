@@ -28,8 +28,9 @@ import (
 )
 
 const (
-	kind = "Task"
-	api  = "tekton.dev/v1alpha1"
+	kind              = "Task"
+	api               = "tekton.dev/v1alpha1"
+	uploadDoneTrigger = ".uploadIsDone"
 )
 
 // Deploy accepts path (local or URL) to tekton Task manifest and installs it
@@ -60,6 +61,12 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 		t.setupVolume(task)
 	}
 
+	if t.FromLocalSource {
+		task.Spec.Steps = append([]corev1.Container{t.customStep()}, task.Spec.Steps...)
+		if task.Spec.Inputs != nil {
+			task.Spec.Inputs.Resources = []tekton.TaskResource{}
+		}
+	}
 	return t.createOrUpdate(task, clientset)
 }
 
@@ -73,7 +80,30 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 		t.setupEnv(task)
 		t.setupVolume(task)
 	}
+	if t.FromLocalSource {
+		task.Spec.Steps = append([]corev1.Container{t.customStep()}, task.Spec.Steps...)
+		if task.Spec.Inputs != nil {
+			task.Spec.Inputs.Resources = []tekton.TaskResource{}
+		}
+	}
 	return t.createOrUpdate(task, clientset)
+}
+
+func (t *Task) customStep() corev1.Container {
+	return corev1.Container{
+		Name:    "sources",
+		Image:   "busybox",
+		Command: []string{"sh"},
+		Args: []string{"-c", fmt.Sprintf(`
+			while [ ! -f %s ]; do 
+				sleep 1; 
+			done; 
+			sync;
+			mkdir -p /workspace/workspace;
+			mv /home/*/* /workspace/workspace/;
+			sync;`,
+			uploadDoneTrigger)},
+	}
 }
 
 func (t *Task) readYAML() (*tekton.Task, error) {
@@ -94,8 +124,6 @@ func (t *Task) createOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*
 		return nil, fmt.Errorf("Object API mismatch: got %q, want %q", task.TypeMeta.APIVersion, api)
 	}
 
-	checkParams(task)
-
 	if task.GetGenerateName() != "" {
 		return clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Create(task)
 	}
@@ -109,28 +137,6 @@ func (t *Task) createOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*
 		taskObj, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Update(taskObj)
 	}
 	return taskObj, err
-}
-
-func checkParams(task *tekton.Task) {
-	var registry, sources bool
-	for _, v := range task.Spec.Inputs.Params {
-		if v.Name == "registry" {
-			sources = true
-			break
-		}
-	}
-	for _, v := range task.Spec.Inputs.Resources {
-		if v.Name == "sources" {
-			registry = true
-			break
-		}
-	}
-	if !registry {
-		fmt.Printf("Warning. Task %q does not have parameter \"registry\"", task.Name)
-	}
-	if !sources {
-		fmt.Printf("Warning. Task %q does not have resource \"sources\"", task.Name)
-	}
 }
 
 func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {

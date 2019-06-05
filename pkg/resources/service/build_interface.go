@@ -17,7 +17,6 @@ package service
 import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
-	"github.com/triggermesh/tm/pkg/resources/build"
 	"github.com/triggermesh/tm/pkg/resources/taskrun"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,19 +28,20 @@ type Builder interface {
 }
 
 func NewBuilder(s *Service) Builder {
-	if file.IsLocal(s.Source) {
-		return &build.Build{
-			Args:           s.BuildArgs,
-			Buildtemplate:  s.Runtime,
-			GenerateName:   s.Name + "-",
-			Namespace:      s.Namespace,
-			Registry:       s.Registry,
-			RegistrySecret: s.RegistrySecret,
-			Source:         s.Source,
-			Timeout:        s.BuildTimeout,
-			Wait:           true,
-		}
-	} else if file.IsGit(s.Source) {
+	// if file.IsLocal(s.Source) {
+	// 	return &build.Build{
+	// 		Args:           s.BuildArgs,
+	// 		Buildtemplate:  s.Runtime,
+	// 		GenerateName:   s.Name + "-",
+	// 		Namespace:      s.Namespace,
+	// 		Registry:       s.Registry,
+	// 		RegistrySecret: s.RegistrySecret,
+	// 		Source:         s.Source,
+	// 		Timeout:        s.BuildTimeout,
+	// 		Wait:           true,
+	// 	}
+	// } else
+	if file.IsLocal(s.Source) || file.IsGit(s.Source) {
 		return &taskrun.TaskRun{
 			Name:           s.Name,
 			Namespace:      s.Namespace,
