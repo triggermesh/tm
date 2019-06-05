@@ -186,8 +186,8 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 			}
 		},
 	}
-	deployTaskRunCmd.Flags().StringVarP(&tr.Task, "task", "t", "", "Name of task to run")
-	deployTaskRunCmd.Flags().StringVarP(&tr.PipelineResource, "resources", "r", "", "Name of pipelineresource to pass into task")
+	deployTaskRunCmd.Flags().StringVarP(&tr.Task.Name, "task", "t", "", "Name of task to run")
+	deployTaskRunCmd.Flags().StringVarP(&tr.PipelineResource.Name, "resources", "r", "", "Name of pipelineresource to pass into task")
 	deployTaskRunCmd.Flags().StringVarP(&tr.RegistrySecret, "secret", "s", "", "Secret name with registry credentials")
 	return deployTaskRunCmd
 }

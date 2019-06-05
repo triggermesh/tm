@@ -51,7 +51,9 @@ func NewBuilder(s *Service) Builder {
 				URL:      s.Source,
 				Revision: s.Revision,
 			},
-			Task: s.Runtime,
+			Task: taskrun.Resource{
+				Name: s.Runtime,
+			},
 			Wait: true,
 		}
 	}

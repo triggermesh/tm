@@ -37,7 +37,7 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	if !file.IsLocal(t.File) {
 		path, err := file.Download(t.File)
 		if err != nil {
-			return nil, fmt.Errorf("task not found")
+			return nil, fmt.Errorf("task not found: %s", err)
 		}
 		t.File = path
 	}
