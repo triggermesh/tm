@@ -54,6 +54,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	image = fmt.Sprintf("%s:%s", image, file.RandString(6))
 	taskRunObject = tr.newTaskRun()
 	taskRunObject.Spec.Inputs.Params = tr.getBuildArguments(image)
+
 	taskRunObject, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
 	if err != nil {
 		return "", fmt.Errorf("creating taskrun: %s", err)
