@@ -18,11 +18,13 @@ package taskrun
 type TaskRun struct {
 	Name             string
 	Namespace        string
+	Params           []string
 	PipelineResource Resource
 	Registry         string
 	RegistrySecret   string
 	Source           Git
 	Task             Resource
+	Timeout          string
 	Wait             bool
 }
 

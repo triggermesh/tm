@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -48,10 +49,11 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 	image, err := tr.imageName(clientset)
 	if err != nil {
-		return "", fmt.Errorf("composing iamge name: %s", err)
+		return "", fmt.Errorf("composing image name: %s", err)
 	}
 	image = fmt.Sprintf("%s:%s", image, file.RandString(6))
-	taskRunObject = tr.newTaskRun(image, clientset)
+	taskRunObject = tr.newTaskRun()
+	taskRunObject.Spec.Inputs.Params = tr.getBuildArguments(image)
 	taskRunObject, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
 	if err != nil {
 		return "", fmt.Errorf("creating taskrun: %s", err)
@@ -181,7 +183,7 @@ func (tr *TaskRun) checkPipelineResource(clientset *client.ConfigSet) error {
 	return err
 }
 
-func (tr *TaskRun) newTaskRun(registry string, clientset *client.ConfigSet) *v1alpha1.TaskRun {
+func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 	name := tr.Name + "-"
 	if tr.Name == "" {
 		name = tr.Task.Name + "-"
@@ -204,14 +206,7 @@ func (tr *TaskRun) newTaskRun(registry string, clientset *client.ConfigSet) *v1a
 				APIVersion: "tekton.dev/v1alpha1",
 				Name:       tr.Task.Name,
 			},
-			Inputs: v1alpha1.TaskRunInputs{
-				Params: []v1alpha1.Param{
-					{
-						Name:  "registry",
-						Value: registry,
-					},
-				},
-			},
+			Inputs: v1alpha1.TaskRunInputs{},
 		},
 	}
 	if tr.PipelineResource.Name != "" {
@@ -271,7 +266,7 @@ func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
 	for {
 		event := <-res.ResultChan()
 		if event.Object == nil {
-			continue
+			return tr.wait(clientset)
 		}
 		taskrun, ok := event.Object.(*v1alpha1.TaskRun)
 		if !ok || taskrun == nil {
@@ -307,10 +302,10 @@ func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
 	}
 	defer watch.Stop()
 
-	duration, err := time.ParseDuration("5m")
-	// if err != nil {
-	// duration = 10 * time.Minute
-	// }
+	duration, err := time.ParseDuration(tr.Timeout)
+	if err != nil {
+		duration = 10 * time.Minute
+	}
 
 	ticker := time.NewTicker(duration)
 	defer ticker.Stop()
@@ -318,6 +313,9 @@ func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
 	for {
 		select {
 		case event := <-watch.ResultChan():
+			if event.Object == nil {
+				return tr.taskPod(clientset)
+			}
 			res, ok := event.Object.(*v1alpha1.TaskRun)
 			if !ok || res == nil {
 				continue
@@ -339,10 +337,10 @@ func (tr *TaskRun) sourceContainer(clientset *client.ConfigSet, podName string) 
 	}
 	defer watch.Stop()
 
-	duration, err := time.ParseDuration("5m")
-	// if err != nil {
-	// duration = 10 * time.Minute
-	// }
+	duration, err := time.ParseDuration(tr.Timeout)
+	if err != nil {
+		duration = 10 * time.Minute
+	}
 
 	ticker := time.NewTicker(duration)
 	defer ticker.Stop()
@@ -350,6 +348,9 @@ func (tr *TaskRun) sourceContainer(clientset *client.ConfigSet, podName string) 
 	for {
 		select {
 		case event := <-watch.ResultChan():
+			if event.Object == nil {
+				return tr.sourceContainer(clientset, podName)
+			}
 			pod, ok := event.Object.(*corev1.Pod)
 			if !ok || pod == nil {
 				continue
@@ -382,10 +383,36 @@ func (tr *TaskRun) injectSources(clientset *client.ConfigSet, pod, container str
 	if err := c.Upload(clientset); err != nil {
 		return err
 	}
-
 	if _, _, err := c.RemoteExec(clientset, "touch "+uploadDoneTrigger, nil); err != nil {
 		return err
 	}
-
 	return nil
+}
+
+func (tr *TaskRun) getBuildArguments(image string) []v1alpha1.Param {
+	params := []v1alpha1.Param{
+		{
+			Name:  "IMAGE",
+			Value: image,
+		},
+	}
+	for k, v := range mapFromSlice(tr.Params) {
+		params = append(params, v1alpha1.Param{
+			Name: k, Value: v,
+		})
+	}
+	return params
+}
+
+func mapFromSlice(slice []string) map[string]string {
+	m := make(map[string]string)
+	for _, s := range slice {
+		t := regexp.MustCompile("[:=]").Split(s, 2)
+		if len(t) != 2 {
+			fmt.Printf("Can't parse argument slice %s\n", s)
+			continue
+		}
+		m[t[0]] = t[1]
+	}
+	return m
 }

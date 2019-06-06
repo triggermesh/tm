@@ -45,6 +45,7 @@ func NewBuilder(s *Service) Builder {
 		return &taskrun.TaskRun{
 			Name:           s.Name,
 			Namespace:      s.Namespace,
+			Params:         s.BuildArgs,
 			Registry:       s.Registry,
 			RegistrySecret: s.RegistrySecret,
 			Source: taskrun.Git{
@@ -54,7 +55,8 @@ func NewBuilder(s *Service) Builder {
 			Task: taskrun.Resource{
 				Name: s.Runtime,
 			},
-			Wait: true,
+			Timeout: s.BuildTimeout,
+			Wait:    true,
 		}
 	}
 	return nil

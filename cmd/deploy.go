@@ -38,6 +38,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 
 	deployCmd.Flags().StringVarP(&YAML, "from", "f", "serverless.yaml", "Deploy functions defined in yaml")
 	deployCmd.Flags().IntVarP(&concurrency, "concurrency", "c", 3, "Number on concurrent deployment threads")
+
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployChannel(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
@@ -63,7 +64,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(output)
+			fmt.Print(output)
 		},
 	}
 	// kept for back compatibility

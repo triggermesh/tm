@@ -53,10 +53,10 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 				UID:        service.GetUID(),
 			}
 			if err := builder.SetOwner(clientset, owner); err != nil {
-				fmt.Printf("Can't set builder owner, cleaning up\n")
-				if err = builder.Delete(clientset); err != nil {
-					fmt.Printf("Can't remove builder: %s\n", err)
-				}
+				// fmt.Printf("Can't set builder owner\n")
+				// if err = builder.Delete(clientset); err != nil {
+				// fmt.Printf("Can't remove builder: %s\n", err)
+				// }
 			}
 		}()
 

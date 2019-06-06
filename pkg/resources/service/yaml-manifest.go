@@ -73,9 +73,9 @@ func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threa
 	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
 			errs = true
-			fmt.Fprint(Output, r.Error)
+			fmt.Fprintln(Output, r.Error)
 		} else {
-			fmt.Fprint(Output, r.Message)
+			fmt.Fprintln(Output, r.Message)
 		}
 	}
 
