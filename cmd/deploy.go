@@ -64,7 +64,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Print(output)
+			fmt.Println(output)
 		},
 	}
 	// kept for back compatibility

@@ -125,12 +125,12 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	// }
 
 	if !client.Wait {
-		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details\n", s.Namespace, s.Name), nil
+		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
 	}
 
 	fmt.Printf("Waiting for service %q ready state\n", s.Name)
 	domain, err := s.wait(clientset)
-	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), err
+	return fmt.Sprintf("Service %s URL: http://%s", s.Name, domain), err
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {

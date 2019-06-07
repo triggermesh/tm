@@ -55,6 +55,15 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	taskRunObject = tr.newTaskRun()
 	taskRunObject.Spec.Inputs.Params = tr.getBuildArguments(image)
 
+	if file.IsLocal(tr.Source.URL) {
+		if file.IsDir(tr.Source.URL) {
+			tr.Source.URL = path.Clean(tr.Source.URL)
+		} else {
+			tr.Params = append(tr.Params, "HANDLER="+path.Base(tr.Source.URL))
+			tr.Source.URL = path.Clean(path.Dir(tr.Source.URL))
+		}
+	}
+
 	taskRunObject, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
 	if err != nil {
 		return "", fmt.Errorf("creating taskrun: %s", err)
@@ -84,7 +93,9 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 	if tr.Wait {
 		fmt.Printf("Waiting for taskrun %q ready state\n", taskRunObject.Name)
-		err = tr.wait(clientset)
+		if err = tr.wait(clientset); err != nil {
+			return image, fmt.Errorf("taskrun %q deployment failed: %s", tr.Name, err)
+		}
 	}
 	return image, err
 }
@@ -92,7 +103,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 func (tr *TaskRun) SetupResources(clientset *client.ConfigSet) error {
 	newTask, err := tr.setupTask(clientset)
 	if err != nil {
-		return fmt.Errorf("task setup: %s", err)
+		return fmt.Errorf("task %q setup: %s", tr.Task.Name, err)
 	}
 	if newTask != nil {
 		tr.Task.Name = newTask.Name
@@ -133,7 +144,7 @@ func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error
 		task.File = tr.Task.Name
 		task.GenerateName = tr.Name + "-"
 		return task.Deploy(clientset)
-	} else if tr.RegistrySecret != "" {
+	} else if tr.RegistrySecret != "" || task.FromLocalSource {
 		return task.Clone(clientset, taskObj)
 	}
 	return nil, nil

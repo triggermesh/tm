@@ -136,7 +136,7 @@ func (t *Task) createOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*
 		task.ObjectMeta.ResourceVersion = taskObj.GetResourceVersion()
 		taskObj, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Update(taskObj)
 	}
-	return taskObj, err
+	return taskObj, fmt.Errorf("can't create task %q: %s", t.Name, err)
 }
 
 func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {

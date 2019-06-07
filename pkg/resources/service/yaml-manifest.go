@@ -118,7 +118,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 
 	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
-			fmt.Fprint(Output, r.Error)
+			fmt.Fprintln(Output, r.Error)
 		}
 	}
 	return nil
