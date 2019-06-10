@@ -67,6 +67,9 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 			task.Spec.Inputs.Resources = []tekton.TaskResource{}
 		}
 	}
+	if client.Dry {
+		return task, nil
+	}
 	return t.createOrUpdate(task, clientset)
 }
 
@@ -85,6 +88,9 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 		if task.Spec.Inputs != nil {
 			task.Spec.Inputs.Resources = []tekton.TaskResource{}
 		}
+	}
+	if client.Dry {
+		return task, nil
 	}
 	return t.createOrUpdate(task, clientset)
 }

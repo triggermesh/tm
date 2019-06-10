@@ -210,6 +210,5 @@ func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
 	}
 	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.URL, "url", "", "Git URL to get sources from")
 	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.Revision, "rev", "", "Git revision")
-
 	return deployPipelineResourceCmd
 }

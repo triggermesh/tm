@@ -134,12 +134,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {
-	env := []corev1.EnvVar{
-		{
-			Name:  "timestamp",
-			Value: time.Now().Format("2006-01-02 15:04:05"),
-		},
-	}
+	var env []corev1.EnvVar
 	for k, v := range mapFromSlice(s.Env) {
 		env = append(env, corev1.EnvVar{Name: k, Value: v})
 	}

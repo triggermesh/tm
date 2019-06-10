@@ -16,13 +16,13 @@ package taskrun
 
 // TaskRun represents tekton TaskRun object
 type TaskRun struct {
+	Function         Source
 	Name             string
 	Namespace        string
 	Params           []string
 	PipelineResource Resource
 	Registry         string
 	RegistrySecret   string
-	Source           Git
 	Task             Resource
 	Timeout          string
 	Wait             bool
@@ -33,8 +33,8 @@ type Resource struct {
 	Owned bool
 }
 
-type Git struct {
-	URL      string
+type Source struct {
+	Path     string
 	Revision string
 }
 

@@ -23,6 +23,9 @@ import (
 
 func (plr *PipelineResource) Deploy(clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
 	pipelineResourceObject := plr.newObject(clientset)
+	if client.Dry {
+		return &pipelineResourceObject, nil
+	}
 	return plr.createOrUpdate(pipelineResourceObject, clientset)
 }
 

@@ -48,8 +48,8 @@ func NewBuilder(s *Service) Builder {
 			Params:         s.BuildArgs,
 			Registry:       s.Registry,
 			RegistrySecret: s.RegistrySecret,
-			Source: taskrun.Git{
-				URL:      s.Source,
+			Function: taskrun.Source{
+				Path:     s.Source,
 				Revision: s.Revision,
 			},
 			Task: taskrun.Resource{

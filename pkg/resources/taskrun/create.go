@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/triggermesh/tm/pkg/file"
-	"github.com/triggermesh/tm/pkg/resources/task"
-
+	"github.com/ghodss/yaml"
 	"github.com/knative/pkg/apis"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
+	"github.com/triggermesh/tm/pkg/resources/task"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,28 +40,45 @@ const (
 )
 
 func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
-	var taskRunObject *v1alpha1.TaskRun
-	if err := tr.SetupResources(clientset); err != nil {
-		return "", fmt.Errorf("setup taskrun resources: %s", err)
+	if tr.Name == "" {
+		return "", fmt.Errorf("taskrun name cannot be empty")
+	}
+	if tr.Task.Name == "" {
+		return "", fmt.Errorf("task name cannot be empty")
+	}
+	if !client.Dry {
+		if err := tr.SetupResources(clientset); err != nil {
+			return "", fmt.Errorf("setup taskrun resources: %s", err)
+		}
 	}
 	if err := tr.checkPipelineResource(clientset); err != nil {
-		return "", fmt.Errorf("checking taskrun pipelineresources: %s", err)
+		return "", fmt.Errorf("pipelineresource %q not found", tr.PipelineResource.Name)
 	}
 	image, err := tr.imageName(clientset)
 	if err != nil {
 		return "", fmt.Errorf("composing image name: %s", err)
 	}
 	image = fmt.Sprintf("%s:%s", image, file.RandString(6))
-	taskRunObject = tr.newTaskRun()
+	taskRunObject := tr.newTaskRun()
 	taskRunObject.Spec.Inputs.Params = tr.getBuildArguments(image)
 
-	if file.IsLocal(tr.Source.URL) {
-		if file.IsDir(tr.Source.URL) {
-			tr.Source.URL = path.Clean(tr.Source.URL)
+	if file.IsLocal(tr.Function.Path) {
+		if file.IsDir(tr.Function.Path) {
+			tr.Function.Path = path.Clean(tr.Function.Path)
 		} else {
-			tr.Params = append(tr.Params, "HANDLER="+path.Base(tr.Source.URL))
-			tr.Source.URL = path.Clean(path.Dir(tr.Source.URL))
+			tr.Params = append(tr.Params, "HANDLER="+path.Base(tr.Function.Path))
+			tr.Function.Path = path.Clean(path.Dir(tr.Function.Path))
 		}
+	}
+
+	if client.Dry {
+		var taskObj []byte
+		if client.Output == "yaml" {
+			taskObj, err = yaml.Marshal(taskRunObject)
+		} else {
+			taskObj, err = json.MarshalIndent(taskRunObject, "", " ")
+		}
+		return string(taskObj), err
 	}
 
 	taskRunObject, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
@@ -77,7 +94,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	if tr.PipelineResource.Owned {
 		tr.setPipelineResourceOwner(clientset, ownerRef)
 	}
-	if file.IsLocal(tr.Source.URL) {
+	if file.IsLocal(tr.Function.Path) {
 		pod, err := tr.taskPod(clientset)
 		if err != nil {
 			return "", fmt.Errorf("getting taskrun pod: %s", err)
@@ -110,7 +127,7 @@ func (tr *TaskRun) SetupResources(clientset *client.ConfigSet) error {
 		tr.Task.Owned = true
 	}
 
-	if tr.PipelineResource.Name == "" && file.IsGit(tr.Source.URL) {
+	if tr.PipelineResource.Name == "" && file.IsGit(tr.Function.Path) {
 		newPplRes, err := tr.setupPipelineresources(clientset)
 		if err != nil {
 			return fmt.Errorf("pipelineresource setup: %s", err)
@@ -126,8 +143,8 @@ func (tr *TaskRun) setupPipelineresources(clientset *client.ConfigSet) (*v1alpha
 		Name:      tr.Name,
 		Namespace: tr.Namespace,
 		Source: pipelineresource.Git{
-			URL:      tr.Source.URL,
-			Revision: tr.Source.Revision,
+			URL:      tr.Function.Path,
+			Revision: tr.Function.Revision,
 		},
 	}
 	return plr.Deploy(clientset)
@@ -138,7 +155,7 @@ func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error
 		Name:            tr.Task.Name,
 		Namespace:       tr.Namespace,
 		RegistrySecret:  tr.RegistrySecret,
-		FromLocalSource: file.IsLocal(tr.Source.URL),
+		FromLocalSource: file.IsLocal(tr.Function.Path),
 	}
 	if taskObj, err := task.Get(clientset); err != nil {
 		task.File = tr.Task.Name
@@ -389,8 +406,8 @@ func (tr *TaskRun) injectSources(clientset *client.ConfigSet, pod, container str
 		Pod:         pod,
 		Namespace:   tr.Namespace,
 		Container:   container,
-		Source:      tr.Source.URL,
-		Destination: path.Join("/home", path.Base(tr.Source.URL)),
+		Source:      tr.Function.Path,
+		Destination: path.Join("/home", path.Base(tr.Function.Path)),
 	}
 	if err := c.Upload(clientset); err != nil {
 		return err
