@@ -130,7 +130,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	fmt.Printf("Waiting for service %q ready state\n", s.Name)
 	domain, err := s.wait(clientset)
-	return fmt.Sprintf("Service %s URL: http://%s", s.Name, domain), err
+	return fmt.Sprintf("Service %s URL: %s", s.Name, domain), err
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {
@@ -215,7 +215,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 			continue
 		}
 		if serviceEvent.Status.IsReady() {
-			return serviceEvent.Status.Address.Hostname, nil
+			return serviceEvent.Status.URL.String(), nil
 		}
 		for _, v := range serviceEvent.Status.Conditions {
 			if v.IsFalse() && v.Severity == apis.ConditionSeverityError {
