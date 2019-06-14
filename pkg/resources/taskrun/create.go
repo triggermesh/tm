@@ -103,7 +103,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("waiting for source container: %s", err)
 		}
-		fmt.Printf("Uploading sources to %s\n", pod)
+		fmt.Printf("Uploading %q to %s\n", tr.Function.Path, pod)
 		if err := tr.injectSources(clientset, pod, sourceContainer); err != nil {
 			return "", fmt.Errorf("injecting sources: %s", err)
 		}
@@ -348,6 +348,10 @@ func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
 			res, ok := event.Object.(*v1alpha1.TaskRun)
 			if !ok || res == nil {
 				continue
+			}
+			status := res.Status.GetCondition(apis.ConditionType("Succeeded"))
+			if status != nil && status.IsFalse() {
+				return "", fmt.Errorf("taskrun failed: %s", status.Message)
 			}
 			if pod := res.Status.PodName; pod != "" {
 				return pod, nil

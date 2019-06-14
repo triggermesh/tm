@@ -107,6 +107,10 @@ func (t *Task) customStep() corev1.Container {
 			sync;
 			mkdir -p /workspace/workspace;
 			mv /home/*/* /workspace/workspace/;
+			if [[ $? != 0 ]]; then
+				mv /home/* /workspace/workspace/;
+			fi
+			ls -lah /workspace/workspace;
 			sync;`,
 			uploadDoneTrigger)},
 	}

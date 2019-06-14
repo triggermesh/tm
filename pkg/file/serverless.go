@@ -6,44 +6,47 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/afero"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // Definition represents serverless.yaml file structure
 type Definition struct {
-	Service     string
-	Description string
-	Provider    struct {
-		Name           string
-		Registry       string
-		RegistrySecret string `yaml:"registry-secret"`
-		PullPolicy     string `yaml:"pull-policy"`
-		Namespace      string
-		Runtime        string
-		Buildtimeout   string
-		Environment    map[string]string
-		EnvSecrets     []string `yaml:"env-secrets"`
-		Annotations    map[string]string
-	}
-	Repository string
-	Functions  map[string]Function
-	Include    []string
+	Service     string              `yaml:"service,omitempty"`
+	Description string              `yaml:"description,omitempty"`
+	Provider    TriggermeshProvider `yaml:"provider,omitempty"`
+	Repository  string              `yaml:"repository,omitempty"`
+	Functions   map[string]Function `yaml:"functions,omitempty"`
+	Include     []string            `yaml:"include,omitempty"`
+}
+
+// TriggermeshProvider structure contains serverless provider parameters specific to triggermesh
+type TriggermeshProvider struct {
+	Name           string            `yaml:"name,omitempty"`
+	Registry       string            `yaml:"registry,omitempty"`
+	RegistrySecret string            `yaml:"registry-secret,omitempty"`
+	PullPolicy     string            `yaml:"pull-policy,omitempty"`
+	Namespace      string            `yaml:"namespace,omitempty"`
+	Runtime        string            `yaml:"runtime,omitempty"`
+	Buildtimeout   string            `yaml:"buildtimeout,omitempty"`
+	Environment    map[string]string `yaml:"environment,omitempty"`
+	EnvSecrets     []string          `yaml:"env-secrets,omitempty"`
+	Annotations    map[string]string `yaml:"annotations,omitempty"`
 }
 
 // Function describes function definition in serverless format
 type Function struct {
-	Handler     string
-	Source      string
-	Revision    string
-	Runtime     string
-	Concurrency int
-	Buildargs   []string
-	Description string
-	Labels      []string
-	Environment map[string]string
-	EnvSecrets  []string `yaml:"env-secrets"`
-	Annotations map[string]string
-	Events      []map[string]interface{}
+	Handler     string                   `yaml:"handler,omitempty"`
+	Source      string                   `yaml:"source,omitempty"`
+	Revision    string                   `yaml:"revision,omitempty"`
+	Runtime     string                   `yaml:"runtime,omitempty"`
+	Concurrency int                      `yaml:"concurrency,omitempty"`
+	Buildargs   []string                 `yaml:"buildargs,omitempty"`
+	Description string                   `yaml:"description,omitempty"`
+	Labels      []string                 `yaml:"labels,omitempty"`
+	Environment map[string]string        `yaml:"environment,omitempty"`
+	EnvSecrets  []string                 `yaml:"env-secrets,omitempty"`
+	Annotations map[string]string        `yaml:"annotations,omitempty"`
+	Events      []map[string]interface{} `yaml:"events,omitempty"`
 }
 
 type Schedule struct {
