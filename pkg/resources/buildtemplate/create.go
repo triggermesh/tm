@@ -36,7 +36,7 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (*buildv1alpha1.Buil
 	if !file.IsLocal(b.File) {
 		path, err := file.Download(b.File)
 		if err != nil {
-			return nil, fmt.Errorf("Buildtemplate %s: %s", b.File, err)
+			return nil, fmt.Errorf("Buildtemplate %q not found", b.File)
 		}
 		b.File = path
 	}
@@ -58,15 +58,16 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (*buildv1alpha1.Buil
 	return createBuildTemplate(bt, clientset)
 }
 
-func (b *Buildtemplate) Clone(source buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
-	source.SetName(b.Name)
-	source.SetNamespace(b.Namespace)
+func (bt *Buildtemplate) Clone(source buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
+	source.SetName("")
+	source.SetGenerateName(bt.Name + "-")
+	source.SetNamespace(bt.Namespace)
 	source.SetOwnerReferences([]metav1.OwnerReference{})
 	source.SetResourceVersion("")
 	source.Kind = "BuildTemplate"
-	if len(b.RegistrySecret) != 0 {
-		addSecretVolume(b.RegistrySecret, &source)
-		setEnvConfig(b.RegistrySecret, &source)
+	if len(bt.RegistrySecret) != 0 {
+		addSecretVolume(bt.RegistrySecret, &source)
+		setEnvConfig(bt.RegistrySecret, &source)
 	}
 	return createBuildTemplate(source, clientset)
 }
@@ -126,6 +127,9 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 	if !hasImage {
 		return nil, errors.New("Build template \"IMAGE\" parameter is missing")
 	}
+	if template.ObjectMeta.GenerateName != "" {
+		return clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Create(&template)
+	}
 	btOld, err := clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Get(template.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil {
 		template.ObjectMeta.ResourceVersion = btOld.ObjectMeta.ResourceVersion
@@ -134,4 +138,14 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 		return clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Create(&template)
 	}
 	return nil, err
+}
+
+func (bt *Buildtemplate) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
+	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).Get(bt.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	buildtemplate.SetOwnerReferences([]metav1.OwnerReference{owner})
+	_, err = clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).Update(buildtemplate)
+	return err
 }

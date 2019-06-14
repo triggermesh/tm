@@ -61,7 +61,7 @@ func cmdDeleteBuild(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			b.Name = args[0]
 			b.Namespace = client.Namespace
-			if err := b.DeleteBuild(clientset); err != nil {
+			if err := b.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
 			fmt.Println("Build is being deleted")

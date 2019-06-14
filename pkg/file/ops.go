@@ -33,7 +33,7 @@ const (
 
 const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func randString(n int) string {
+func RandString(n int) string {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]byte, n)
 	for i := range b {
@@ -140,7 +140,7 @@ func Download(url string) (string, error) {
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return "", err
 	}
-	path = fmt.Sprintf("%s/%s", path, randString(10))
+	path = fmt.Sprintf("%s/%s", path, RandString(10))
 	out, err := os.Create(path)
 	if err != nil {
 		return "", err
@@ -163,7 +163,7 @@ func Download(url string) (string, error) {
 
 // Clone runs `git clone` operation for specified URL and returns local path to repository root directory
 func Clone(url string) (string, error) {
-	path := fmt.Sprintf("%s/git/%s", tmpPath, randString(10))
+	path := fmt.Sprintf("%s/git/%s", tmpPath, RandString(10))
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return "", err
 	}
