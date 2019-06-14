@@ -37,9 +37,6 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 	}
 
 	var buildArgs []string
-	if sample.directory != "" {
-		buildArgs = append(buildArgs, fmt.Sprintf("DIRECTORY=%s", sample.directory))
-	}
 	if sample.handler != "" {
 		buildArgs = append(buildArgs, fmt.Sprintf("HANDLER=%s", sample.handler))
 	}
@@ -61,9 +58,10 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 	}
 
 	template := file.Definition{
-		Service:   "Sample knative service",
-		Provider:  provider,
-		Functions: functions,
+		Service:     "triggermesh-demo",
+		Description: "Sample knative service",
+		Provider:    provider,
+		Functions:   functions,
 	}
 
 	manifest, err := yaml.Marshal(&template)

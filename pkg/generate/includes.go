@@ -17,11 +17,10 @@ package generate
 type samplesTable map[string]handler
 
 type handler struct {
-	name      string
-	template  string
-	function  string
-	directory string
-	handler   string
+	name     string
+	template string
+	function string
+	handler  string
 }
 
 const (
@@ -47,11 +46,10 @@ return response`
 func NewTable() *samplesTable {
 	return &samplesTable{
 		"python": handler{
-			name:      "handler.py",
-			template:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
-			function:  pythonFunc,
-			directory: "aws-python-simple-http-endpoint",
-			handler:   "handler.endpoint",
+			name:     "handler.py",
+			template: "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
+			function: pythonFunc,
+			handler:  "handler.endpoint",
 		},
 		"golang": handler{
 			name:     "main.go",
