@@ -30,6 +30,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
+	duck "github.com/knative/pkg/apis/duck/v1alpha1"
 	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
@@ -183,7 +184,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	if !client.Wait {
-		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
+		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details\n", s.Namespace, s.Name), nil
 	}
 
 	fmt.Printf("Waiting for %s ready state\n", s.Name)
@@ -191,7 +192,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Waiting for service readiness: %s", err)
 	}
-	return fmt.Sprintf("Service %s URL: http://%s", s.Name, domain), nil
+	return fmt.Sprintf("Service %s URL: http://%s\n", s.Name, domain), nil
 }
 
 func (s *Service) setupEnv() []corev1.EnvVar {
@@ -336,6 +337,15 @@ func mapFromSlice(slice []string) map[string]string {
 	return m
 }
 
+func (s *Service) inProgress(clientset *client.ConfigSet) bool {
+	service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(s.Name, metav1.GetOptions{})
+	if err != nil {
+		return false
+	}
+	cond := service.Status.GetCondition(servingv1alpha1.ServiceConditionReady)
+	return cond != nil && cond.Status == corev1.ConditionUnknown
+}
+
 func (s *Service) buildPodName(clientset *client.ConfigSet) (string, error) {
 	list, err := clientset.Build.BuildV1alpha1().Builds(s.Namespace).List(metav1.ListOptions{
 		IncludeUninitialized: true,
@@ -407,9 +417,15 @@ func (s *Service) injectSources(clientset *client.ConfigSet) error {
 			if v.Name == "build-step-custom-source" {
 				if v.State.Terminated != nil {
 					// Looks like we got watch interface for "previous" service version
-					// Trying to get latest build pod name one last time
-					if buildPod, err = s.buildPodName(clientset); err != nil {
-						return err
+					// Trying to get latest build pod name
+					for buildPod = ""; buildPod == "" && s.inProgress(clientset); {
+						if buildPod, err = s.buildPodName(clientset); err != nil {
+							return err
+						}
+						time.Sleep(2 * time.Second)
+					}
+					if buildPod == "" {
+						return fmt.Errorf("Can't get build pod name, please check service status")
 					}
 					res.Stop()
 					fmt.Printf("Updating build pod name to %s\n", buildPod)
@@ -479,7 +495,7 @@ func (s *Service) waitService(clientset *client.ConfigSet) (string, error) {
 			return serviceEvent.Status.Domain, nil
 		}
 		for _, v := range serviceEvent.Status.Conditions {
-			if v.IsFalse() {
+			if v.IsFalse() && v.Severity == duck.ConditionSeverityError {
 				if v.Reason == "RevisionFailed" && firstError {
 					time.Sleep(time.Second * 3)
 					res.Stop()

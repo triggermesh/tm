@@ -15,8 +15,9 @@
 package service
 
 import (
-	"errors"
 	"fmt"
+	"io"
+	"os"
 	"path"
 	"strings"
 
@@ -27,6 +28,7 @@ import (
 )
 
 var yamlFile = "serverless.yaml"
+var Output io.Writer = os.Stdout
 
 type status struct {
 	Message string
@@ -34,6 +36,24 @@ type status struct {
 }
 
 func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, threads int, clientset *client.ConfigSet) error {
+	services, err := s.ManifestToServices(yamlFile)
+	if err != nil {
+		return err
+	}
+
+	var functions []Service
+	for _, service := range services {
+		if s.inList(service.Name, functionsToDeploy) {
+			functions = append(functions, service)
+		}
+	}
+
+	removeOrphans := (len(functionsToDeploy) == 0)
+
+	return s.DeployFunctions(functions, removeOrphans, threads, clientset)
+}
+
+func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threads int, clientset *client.ConfigSet) error {
 	jobs := make(chan Service, 100)
 	results := make(chan status, 100)
 	defer close(jobs)
@@ -43,16 +63,8 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, thread
 		go deploymentWorker(jobs, results, clientset)
 	}
 
-	functions, err := s.parseYAML(yamlFile)
-	if err != nil {
-		return err
-	}
-
 	var inProgress int
 	for _, function := range functions {
-		if !s.inList(function.Name, functionsToDeploy) {
-			continue
-		}
 		jobs <- function
 		inProgress++
 	}
@@ -61,17 +73,18 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, thread
 	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
 			errs = true
-			fmt.Println(r.Error)
+			fmt.Fprint(Output, r.Error)
 		} else {
-			fmt.Println(r.Message)
+			fmt.Fprint(Output, r.Message)
 		}
 	}
 
-	if len(functionsToDeploy) == 0 {
-		if err = s.removeOrphans(functions, clientset); err != nil {
+	if removeOrphans && !client.Dry {
+		if err := s.removeOrphans(functions, clientset); err != nil {
 			return err
 		}
 	}
+
 	if errs {
 		return fmt.Errorf("There were errors during manifest deployment")
 	}
@@ -88,7 +101,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 		go deletionWorker(jobs, results, clientset)
 	}
 
-	functions, err := s.parseYAML(yamlFile)
+	functions, err := s.ManifestToServices(yamlFile)
 	if err != nil {
 		return err
 	}
@@ -105,13 +118,13 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 
 	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
-			fmt.Println(r.Error)
+			fmt.Fprint(Output, r.Error)
 		}
 	}
 	return nil
 }
 
-func (s *Service) parseYAML(YAML string) ([]Service, error) {
+func (s *Service) ManifestToServices(YAML string) ([]Service, error) {
 	var err error
 	if YAML, err = getYAML(YAML); err != nil {
 		return nil, err
@@ -120,12 +133,12 @@ func (s *Service) parseYAML(YAML string) ([]Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	if definition.Provider.Name != "" && definition.Provider.Name != "triggermesh" {
-		return nil, fmt.Errorf("%s provider is not supported", definition.Provider.Name)
+
+	err = definition.Validate()
+	if err != nil {
+		return nil, err
 	}
-	if len(definition.Service) == 0 {
-		return nil, errors.New("Service name can't be empty")
-	}
+
 	s.setupParentVars(definition)
 
 	functions := s.parseFunctions(definition.Functions, path.Dir(YAML))
@@ -233,6 +246,7 @@ func (s *Service) serviceObject(function file.Function) Service {
 	service := Service{
 		Source:         function.Source,
 		Registry:       s.Registry,
+		Revision:       function.Revision,
 		Namespace:      s.Namespace,
 		Concurrency:    function.Concurrency,
 		Buildtemplate:  function.Runtime,
@@ -290,7 +304,7 @@ func (s *Service) removeOrphans(created []Service, clientset *client.ConfigSet) 
 				Name:      existing.Name,
 				Namespace: existing.Namespace,
 			}
-			fmt.Printf("Removing orphaned function %s\n", orphan.Name)
+			fmt.Fprintf(Output, "Removing orphaned function %s\n", orphan.Name)
 			if err = orphan.Delete(clientset); err != nil {
 				return err
 			}

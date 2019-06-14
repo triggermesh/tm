@@ -36,7 +36,7 @@ If you have Dockerfile for your service, you can use kaniko buildtemplate to dep
 tm deploy service foobar \
     -f https://github.com/knative/docs \
     --build-template https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml \
-    --build-argument DIRECTORY=serving/samples/helloworld-go \
+    --build-argument DIRECTORY=docs/serving/samples/hello-world/helloworld-go \
     --wait
 ```
 
@@ -52,7 +52,19 @@ tm deploy service bar \
 Moreover, for more complex deployments, tm CLI supports function definition parsing from [YAML](https://github.com/tzununbekov/serverless/blob/master/serverless.yaml) file and ability to combine multiple functions, runtimes and repositories
 ```
 tm deploy -f https://github.com/tzununbekov/serverless
-```  
+```
+
+### Running Tests Locally
+
+To run tests you first have to set namespace you have access to with the following command:
+```
+export NAMESPACE=yourNamespace
+```
+Run unit-tests with following command from project root directory: 
+```
+make test
+```
+
 
 ## AWS Lambda
 

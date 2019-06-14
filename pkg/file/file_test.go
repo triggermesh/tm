@@ -1,7 +1,6 @@
 package file
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -95,23 +94,23 @@ func TestIsRegistry(t *testing.T) {
 }
 
 // Download receives URL and return path to saved file
-func TestDownload(t *testing.T) {
-	path, err := Download("https://github.com/triggermesh/tm")
-	assert.NoError(t, err)
+// func TestDownload(t *testing.T) {
+// 	path, err := Download("https://github.com/triggermesh/tm")
+// 	assert.NoError(t, err)
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		t.Errorf("Clone failed. Expecting folder at %v", path)
-	}
-	os.Remove(path)
-}
+// 	if _, err := os.Stat(path); os.IsNotExist(err) {
+// 		t.Errorf("Clone failed. Expecting folder at %v", path)
+// 	}
+// 	os.Remove(path)
+// }
 
 // Clone runs `git clone` operation for specified URL and returns local path to repository root directory
-func TestClone(t *testing.T) {
-	path, err := Clone("https://github.com/triggermesh/tm")
-	assert.NoError(t, err)
+// func TestClone(t *testing.T) {
+// 	path, err := Clone("https://github.com/triggermesh/tm")
+// 	assert.NoError(t, err)
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		t.Errorf("Clone failed. Expecting folder at %v", path)
-	}
-	os.Remove(path)
-}
+// 	if _, err := os.Stat(path); os.IsNotExist(err) {
+// 		t.Errorf("Clone failed. Expecting folder at %v", path)
+// 	}
+// 	os.Remove(path)
+// }

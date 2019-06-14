@@ -24,8 +24,9 @@ import (
 
 func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd := &cobra.Command{
-		Use:   "deploy",
-		Short: "Deploy knative resource",
+		Use:     "deploy",
+		Aliases: []string{"create"},
+		Short:   "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
 			s.Registry = client.Registry
@@ -41,6 +42,9 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 	deployCmd.AddCommand(cmdDeployChannel(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
 	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
+	deployCmd.AddCommand(cmdDeployTask(clientset))
+	deployCmd.AddCommand(cmdDeployTaskRun(clientset))
+	deployCmd.AddCommand(cmdDeployPipelineResource(clientset))
 	return deployCmd
 }
 
@@ -78,6 +82,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVar(&s.EnvSecrets, "env-secret", []string{}, "Name of k8s secrets to populate pod environment variables")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
+	deployServiceCmd.Flags().StringToStringVarP(&s.Annotations, "annotation", "a", map[string]string{}, "Revision template annotations")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
 	return deployServiceCmd
 }
@@ -145,4 +150,64 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 	}
 	deployChannelCmd.Flags().StringVarP(&c.Provisioner, "provisioner", "p", "in-memory-channel", "Channel provisioner")
 	return deployChannelCmd
+}
+
+func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
+	deployTaskCmd := &cobra.Command{
+		Use:     "task",
+		Aliases: []string{"tasks"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "Deploy tekton Task object",
+		Run: func(cmd *cobra.Command, args []string) {
+			t.Name = args[0]
+			t.Namespace = client.Namespace
+			if err := t.Deploy(clientset); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("Task deployment started")
+		},
+	}
+	return deployTaskCmd
+}
+
+func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
+	deployTaskRunCmd := &cobra.Command{
+		Use:     "taskrun",
+		Aliases: []string{"taskruns"},
+		Short:   "Deploy tekton TaskRun object",
+		Run: func(cmd *cobra.Command, args []string) {
+			tr.Namespace = client.Namespace
+			tr.Registry = client.Registry
+			taskrun, err := tr.Deploy(clientset)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("TaskRun %q deployment started\n", taskrun.GetName())
+		},
+	}
+	deployTaskRunCmd.Flags().StringVarP(&tr.Task, "task", "t", "", "Name of task to run")
+	deployTaskRunCmd.Flags().StringVarP(&tr.Resources, "resources", "r", "", "Name of pipelineresource to pass into task")
+	deployTaskRunCmd.Flags().StringVarP(&tr.RegistrySecret, "secret", "s", "", "Secret name with registry credentials")
+	return deployTaskRunCmd
+}
+
+func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
+	deployPipelineResourceCmd := &cobra.Command{
+		Use:     "pipelineresource",
+		Aliases: []string{"pipelineresources"},
+		Args:    cobra.ExactArgs(1),
+		Short:   "Deploy tekton PipelineResource object",
+		Run: func(cmd *cobra.Command, args []string) {
+			plr.Name = args[0]
+			plr.Namespace = client.Namespace
+			if err := plr.Deploy(clientset); err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("PipelineResource deployment started")
+		},
+	}
+	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.URL, "url", "", "Git URL to get sources from")
+	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.Revision, "rev", "", "Git revision")
+
+	return deployPipelineResourceCmd
 }

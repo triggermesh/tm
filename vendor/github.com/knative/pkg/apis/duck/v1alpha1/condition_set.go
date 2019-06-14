@@ -153,7 +153,7 @@ func (r ConditionSet) Manage(status interface{}) ConditionManager {
 		}
 	}
 
-	// We tried. This object is not understood by the the condition manager.
+	// We tried. This object is not understood by the condition manager.
 	//panic(fmt.Sprintf("Error converting %T into a ConditionsAccessor", status))
 	// TODO: not sure which way. using panic above means passing nil status panics the system.
 	return conditionsImpl{
@@ -280,7 +280,7 @@ func (r conditionsImpl) MarkUnknown(t ConditionType, reason, messageFormat strin
 			// Double check that the happy condition is also false.
 			happy := r.GetCondition(r.happy)
 			if !happy.IsFalse() {
-				r.MarkFalse(r.happy, reason, messageFormat, messageA)
+				r.MarkFalse(r.happy, reason, messageFormat, messageA...)
 			}
 			return
 		}
