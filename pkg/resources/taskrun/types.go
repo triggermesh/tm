@@ -16,12 +16,26 @@ package taskrun
 
 // TaskRun represents tekton TaskRun object
 type TaskRun struct {
-	Name           string
-	Namespace      string
-	Task           string
-	Resources      string
-	Registry       string
-	RegistrySecret string
+	Function         Source
+	Name             string
+	Namespace        string
+	Params           []string
+	PipelineResource Resource
+	Registry         string
+	RegistrySecret   string
+	Task             Resource
+	Timeout          string
+	Wait             bool
+}
+
+type Resource struct {
+	Name  string
+	Owned bool
+}
+
+type Source struct {
+	Path     string
+	Revision string
 }
 
 type registryAuths struct {

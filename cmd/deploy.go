@@ -38,6 +38,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 
 	deployCmd.Flags().StringVarP(&YAML, "from", "f", "serverless.yaml", "Deploy functions defined in yaml")
 	deployCmd.Flags().IntVarP(&concurrency, "concurrency", "c", 3, "Number on concurrent deployment threads")
+
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployChannel(clientset))
 	deployCmd.AddCommand(cmdDeployBuild(clientset))
@@ -54,7 +55,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 		Aliases: []string{"services", "svc"},
 		Short:   "Deploy knative service",
 		Args:    cobra.ExactArgs(1),
-		Example: "tm -n default deploy service foo --build-template kaniko --from-image gcr.io/google-samples/hello-app:1.0",
+		Example: "tm deploy service foo -f gcr.io/google-samples/hello-app:1.0",
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Name = args[0]
 			s.Namespace = client.Namespace
@@ -70,13 +71,14 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVar(&s.Source, "from-path", "", "Deprecated, use `-f` flag instead")
 	deployServiceCmd.Flags().StringVar(&s.Source, "from-image", "", "Deprecated, use `-f` flag instead")
 	deployServiceCmd.Flags().StringVar(&s.Source, "from-source", "", "Deprecated, use `-f` flag instead")
+	deployServiceCmd.Flags().StringVar(&s.Runtime, "build-template", "", "Deprecated, use `--runtime` flag instead")
 
 	deployServiceCmd.Flags().StringVarP(&s.Source, "from", "f", "", "Service source to deploy: local folder with sources, git repository or docker image")
 	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
-	deployServiceCmd.Flags().StringVar(&s.Buildtemplate, "build-template", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
+	deployServiceCmd.Flags().StringVar(&s.Runtime, "runtime", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
 	deployServiceCmd.Flags().StringVar(&s.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
-	deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
-	deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
+	// deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
+	// deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployServiceCmd.Flags().StringVar(&s.BuildTimeout, "build-timeout", "10m", "Service image build timeout")
 	deployServiceCmd.Flags().IntVar(&s.Concurrency, "concurrency", 0, "Number of concurrent events per container: 0 - multiple events, 1 - single event, N - particular number of events")
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
@@ -97,18 +99,16 @@ func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			b.Name = args[0]
 			b.Namespace = client.Namespace
-			if err := b.Deploy(clientset); err != nil {
+			if _, err := b.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
+			fmt.Println("Build created")
 		},
 	}
 
-	deployBuildCmd.Flags().StringVar(&b.Source, "source", "", "Git URL to get sources from")
+	deployBuildCmd.Flags().StringVar(&b.Source, "source", "", "Git URL or local path to get sources from")
 	deployBuildCmd.Flags().StringVar(&b.Revision, "revision", "master", "Git source revision")
 	deployBuildCmd.Flags().StringVar(&b.Buildtemplate, "buildtemplate", "", "Buildtemplate name to use with build")
-	deployBuildCmd.Flags().StringVar(&b.Step, "step", "", "Build step (container) to run on provided source")
-	deployBuildCmd.Flags().StringVar(&b.Image, "image", "", "Image for build step")
-	deployBuildCmd.Flags().StringSliceVar(&b.Command, "command", []string{}, "Build step (container) command")
 	deployBuildCmd.Flags().StringSliceVar(&b.Args, "args", []string{}, "Build arguments")
 	deployBuildCmd.MarkFlagRequired("source")
 	return deployBuildCmd
@@ -145,7 +145,7 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 			if err := c.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("Channel deployment started")
+			fmt.Println("Channel created")
 		},
 	}
 	deployChannelCmd.Flags().StringVarP(&c.Provisioner, "provisioner", "p", "in-memory-channel", "Channel provisioner")
@@ -156,17 +156,19 @@ func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
 	deployTaskCmd := &cobra.Command{
 		Use:     "task",
 		Aliases: []string{"tasks"},
-		Args:    cobra.ExactArgs(1),
 		Short:   "Deploy tekton Task object",
 		Run: func(cmd *cobra.Command, args []string) {
-			t.Name = args[0]
+			if len(args) == 1 {
+				t.Name = args[0]
+			}
 			t.Namespace = client.Namespace
-			if err := t.Deploy(clientset); err != nil {
+			if _, err := t.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("Task deployment started")
+			fmt.Println("Task installed")
 		},
 	}
+	deployTaskCmd.Flags().StringVarP(&t.File, "file", "f", "", "Task yaml manifest path")
 	return deployTaskCmd
 }
 
@@ -178,15 +180,15 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			tr.Namespace = client.Namespace
 			tr.Registry = client.Registry
-			taskrun, err := tr.Deploy(clientset)
+			tr.Wait = client.Wait
+			_, err := tr.Deploy(clientset)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("TaskRun %q deployment started\n", taskrun.GetName())
 		},
 	}
-	deployTaskRunCmd.Flags().StringVarP(&tr.Task, "task", "t", "", "Name of task to run")
-	deployTaskRunCmd.Flags().StringVarP(&tr.Resources, "resources", "r", "", "Name of pipelineresource to pass into task")
+	deployTaskRunCmd.Flags().StringVarP(&tr.Task.Name, "task", "t", "", "Name of task to run")
+	deployTaskRunCmd.Flags().StringVarP(&tr.PipelineResource.Name, "resources", "r", "", "Name of pipelineresource to pass into task")
 	deployTaskRunCmd.Flags().StringVarP(&tr.RegistrySecret, "secret", "s", "", "Secret name with registry credentials")
 	return deployTaskRunCmd
 }
@@ -200,14 +202,13 @@ func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			plr.Name = args[0]
 			plr.Namespace = client.Namespace
-			if err := plr.Deploy(clientset); err != nil {
+			if _, err := plr.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("PipelineResource deployment started")
+			fmt.Println("PipelineResource created")
 		},
 	}
 	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.URL, "url", "", "Git URL to get sources from")
 	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.Revision, "rev", "", "Git revision")
-
 	return deployPipelineResourceCmd
 }

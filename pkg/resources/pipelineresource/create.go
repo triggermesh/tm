@@ -21,8 +21,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (plr *PipelineResource) Deploy(clientset *client.ConfigSet) error {
+func (plr *PipelineResource) Deploy(clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
 	pipelineResourceObject := plr.newObject(clientset)
+	if client.Dry {
+		return &pipelineResourceObject, nil
+	}
 	return plr.createOrUpdate(pipelineResourceObject, clientset)
 }
 
@@ -46,16 +49,26 @@ func (plr *PipelineResource) newObject(clientset *client.ConfigSet) v1alpha1.Pip
 	}
 }
 
-func (plr *PipelineResource) createOrUpdate(pipelineResourceObject v1alpha1.PipelineResource, clientset *client.ConfigSet) error {
+func (plr *PipelineResource) createOrUpdate(pipelineResourceObject v1alpha1.PipelineResource, clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
 	var pipeline *v1alpha1.PipelineResource
-	_, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Create(&pipelineResourceObject)
+	res, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Create(&pipelineResourceObject)
 	if k8sErrors.IsAlreadyExists(err) {
 		pipeline, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Get(pipelineResourceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
-			return err
+			return res, err
 		}
 		pipelineResourceObject.ObjectMeta.ResourceVersion = pipeline.GetResourceVersion()
-		_, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Update(&pipelineResourceObject)
+		res, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Update(&pipelineResourceObject)
 	}
+	return res, err
+}
+
+func (plr *PipelineResource) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
+	pplresource, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Get(plr.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	pplresource.SetOwnerReferences([]metav1.OwnerReference{owner})
+	_, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Update(pplresource)
 	return err
 }

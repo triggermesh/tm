@@ -8,7 +8,7 @@ provider:
 
 functions:
   bar:
-    handler: bar/main.go
+    source: docker.io/hello-world
     description: "go function"
     environment:
       FUNCTION: bar
