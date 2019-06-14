@@ -17,8 +17,8 @@ package generate
 type samplesTable map[string]handler
 
 type handler struct {
-	name     string
-	template string
+	source   string
+	runtime  string
 	function string
 	handler  string
 }
@@ -38,7 +38,25 @@ def endpoint(event, context):
        "body": json.dumps(body)
    }
 return response`
-	golangFunc = ``
+	golangFunc = `package main
+
+import (
+		"fmt"
+		"context"
+		"github.com/aws/aws-lambda-go/lambda"
+)
+
+type MyEvent struct {
+		Name string
+}
+
+func HandleRequest(ctx context.Context, name MyEvent) (string, error) {
+		return fmt.Sprintf("Hello %s!", name.Name ), nil
+}
+
+func main() {
+		lambda.Start(HandleRequest)
+}`
 	rubyFunc   = ``
 	nodejsFunc = ``
 )
@@ -46,21 +64,22 @@ return response`
 func NewTable() *samplesTable {
 	return &samplesTable{
 		"python": handler{
-			name:     "handler.py",
-			template: "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
+			source:   "handler.py",
+			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
 			function: pythonFunc,
 			handler:  "handler.endpoint",
 		},
-		"golang": handler{
-			name:     "main.go",
+		"go": handler{
+			source:   "main.go",
+			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/go-runtime.yaml",
 			function: golangFunc,
 		},
 		"ruby": handler{
-			name:     "handler.rb",
+			source:   "handler.rb",
 			function: rubyFunc,
 		},
 		"node": handler{
-			name:     "handler.js",
+			source:   "handler.js",
 			function: nodejsFunc,
 		},
 	}

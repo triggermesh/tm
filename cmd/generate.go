@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"log"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
@@ -29,7 +28,7 @@ func newGenerateCmd(clientset *client.ConfigSet) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			p.Namespace = client.Namespace
-			p.Runtime = strings.TrimRight(args[0], "--")
+			p.Runtime = args[0]
 			if err := p.Generate(clientset); err != nil {
 				log.Fatal(err)
 			}

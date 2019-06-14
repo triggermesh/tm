@@ -47,9 +47,9 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 	}
 
 	functions := map[string]file.Function{
-		"example-function": file.Function{
-			Source:    sample.name,
-			Runtime:   sample.template,
+		fmt.Sprintf("%s-function", p.Runtime): file.Function{
+			Source:    sample.source,
+			Runtime:   sample.runtime,
 			Buildargs: buildArgs,
 			Environment: map[string]string{
 				"foo": "bar",
@@ -58,7 +58,7 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 	}
 
 	template := file.Definition{
-		Service:     "triggermesh-demo",
+		Service:     "demo-service",
 		Description: "Sample knative service",
 		Provider:    provider,
 		Functions:   functions,
@@ -69,15 +69,18 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 		return err
 	}
 	if client.Dry {
-		fmt.Printf("%s:\n---\n%s\n\n", sample.name, sample.function)
+		fmt.Printf("%s:\n---\n%s\n\n", sample.source, sample.function)
 		fmt.Printf("%s:\n---\n%s\n", manifestName, manifest)
 		return nil
 	}
-	if err := file.Write(sample.name, sample.function); err != nil {
+	if err := file.Write(sample.source, sample.function); err != nil {
 		return fmt.Errorf("writing function to file: %s", err)
 	}
 	if err := file.Write(manifestName, string(manifest)); err != nil {
 		return fmt.Errorf("writing manifest to file: %s", err)
 	}
+	fmt.Printf("Sample %s project has been created in current directory\n", p.Runtime)
+	fmt.Printf("%s\t\t- function code\n%s\t\t- service manifest\n", sample.source, manifestName)
+	fmt.Printf("You can deploy this project using \"tm deploy\" command\n")
 	return nil
 }
