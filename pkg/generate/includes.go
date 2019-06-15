@@ -21,6 +21,7 @@ type service struct {
 	runtime      string
 	function     string
 	handler      string
+	apiGateway   bool
 	dependencies []stuff
 }
 
@@ -35,15 +36,15 @@ const (
 	pythonFunc = `import json
 import datetime
 def endpoint(event, context):
-   current_time = datetime.datetime.now().time()
-   body = {
+	current_time = datetime.datetime.now().time()
+	body = {
        "message": "Hello, the current time is " + str(current_time)
    }
-   response = {
+   	response = {
        "statusCode": 200,
        "body": json.dumps(body)
    }
-return response`
+	return response`
 	golangFunc = `package main
 
 import (
@@ -63,7 +64,10 @@ func HandleRequest(ctx context.Context, name MyEvent) (string, error) {
 func main() {
 		lambda.Start(HandleRequest)
 }`
-	rubyFunc   = ``
+	rubyFunc = `def endpoint(event:, context:)
+hash = {date: Time.new}
+{ statusCode: 200, body: JSON.generate(hash) }
+end`
 	nodejsFunc = `'use strict';
 
 module.exports.landingPage = (event, context, callback) => {
@@ -98,10 +102,11 @@ module.exports.landingPage = (event, context, callback) => {
 func NewTable() *samplesTable {
 	return &samplesTable{
 		"python": service{
-			source:   "handler.py",
-			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
-			function: pythonFunc,
-			handler:  "handler.endpoint",
+			source:     "handler.py",
+			runtime:    "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
+			function:   pythonFunc,
+			handler:    "handler.endpoint",
+			apiGateway: true,
 		},
 		"go": service{
 			source:   "main.go",
@@ -109,14 +114,18 @@ func NewTable() *samplesTable {
 			function: golangFunc,
 		},
 		"ruby": service{
-			source:   "handler.rb",
-			function: rubyFunc,
+			source:     "handler.rb",
+			runtime:    "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/ruby25-runtime.yaml",
+			function:   rubyFunc,
+			handler:    "handler.endpoint",
+			apiGateway: true,
 		},
 		"node": service{
-			source:   "handler.js",
-			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/node4-runtime.yaml",
-			function: nodejsFunc,
-			handler:  "handler.landingPage",
+			source:     "handler.js",
+			runtime:    "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/node4-runtime.yaml",
+			function:   nodejsFunc,
+			handler:    "handler.landingPage",
+			apiGateway: true,
 			dependencies: []stuff{
 				{name: "package.json", data: packageJSON},
 			},

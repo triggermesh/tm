@@ -182,3 +182,7 @@ func Write(filename, data string) error {
 	_, err = f.WriteString(data)
 	return err
 }
+
+func MakeDir(path string) error {
+	return os.MkdirAll(path, os.FileMode(0700))
+}

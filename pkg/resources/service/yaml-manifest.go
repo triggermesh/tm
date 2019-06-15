@@ -325,6 +325,9 @@ func getYAML(filepath string) (string, error) {
 		}
 		filepath = path.Join(localfilepath, yamlFile)
 	}
+	if file.IsDir(filepath) {
+		filepath = path.Join(filepath, yamlFile)
+	}
 	if !file.IsLocal(filepath) {
 		/* Add a secondary check against /serverless.yml */
 		filepath = strings.TrimSuffix(filepath, ".yaml")

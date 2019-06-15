@@ -29,9 +29,8 @@ type Project struct {
 }
 
 func (p *Project) Generate(clientset *client.ConfigSet) error {
-	ss := NewTable()
-
-	sample, exist := (*ss)[p.Runtime]
+	samples := NewTable()
+	sample, exist := (*samples)[p.Runtime]
 	if !exist {
 		return fmt.Errorf("runtime %q does not exist", p.Runtime)
 	}
@@ -46,8 +45,9 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 		Registry: client.Registry,
 	}
 
+	functionName := fmt.Sprintf("%s-function", p.Runtime)
 	functions := map[string]file.Function{
-		fmt.Sprintf("%s-function", p.Runtime): file.Function{
+		functionName: file.Function{
 			Source:    sample.source,
 			Runtime:   sample.runtime,
 			Buildargs: buildArgs,
@@ -55,6 +55,10 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 				"foo": "bar",
 			},
 		},
+	}
+
+	if sample.apiGateway {
+		functions[functionName].Environment["EVENT"] = "API_GATEWAY"
 	}
 
 	template := file.Definition{
@@ -69,23 +73,28 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 		return err
 	}
 	if client.Dry {
-		fmt.Printf("%s:\n---\n%s\n\n", sample.source, sample.function)
-		fmt.Printf("%s:\n---\n%s\n", manifestName, manifest)
+		fmt.Printf("%s/%s:\n---\n%s\n\n", p.Runtime, sample.source, sample.function)
+		fmt.Printf("%s/%s:\n---\n%s\n", p.Runtime, manifestName, manifest)
 		return nil
 	}
+
+	if err := file.MakeDir(p.Runtime); err != nil {
+		return err
+	}
+
 	for _, dep := range sample.dependencies {
-		if err := file.Write(dep.name, dep.data); err != nil {
+		if err := file.Write(fmt.Sprintf("%s/%s", p.Runtime, dep.name), dep.data); err != nil {
 			return fmt.Errorf("writing dependencies to file: %s", err)
 		}
 	}
-	if err := file.Write(sample.source, sample.function); err != nil {
+	if err := file.Write(fmt.Sprintf("%s/%s", p.Runtime, sample.source), sample.function); err != nil {
 		return fmt.Errorf("writing function to file: %s", err)
 	}
-	if err := file.Write(manifestName, string(manifest)); err != nil {
+	if err := file.Write(fmt.Sprintf("%s/%s", p.Runtime, manifestName), string(manifest)); err != nil {
 		return fmt.Errorf("writing manifest to file: %s", err)
 	}
-	fmt.Printf("Sample %s project has been created in current directory\n", p.Runtime)
-	fmt.Printf("%s\t\t- function code\n%s\t\t- service manifest\n", sample.source, manifestName)
-	fmt.Printf("You can deploy this project using \"tm deploy\" command\n")
+	fmt.Printf("Sample %s project has been created\n", p.Runtime)
+	fmt.Printf("%s/%s\t\t- function code\n%s/%s\t\t- service manifest\n", p.Runtime, sample.source, p.Runtime, manifestName)
+	fmt.Printf("You can deploy this project using \"tm deploy -f %s --wait\" command\n", p.Runtime)
 	return nil
 }
