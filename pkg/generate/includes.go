@@ -14,13 +14,19 @@
 
 package generate
 
-type samplesTable map[string]handler
+type samplesTable map[string]service
 
-type handler struct {
-	source   string
-	runtime  string
-	function string
-	handler  string
+type service struct {
+	source       string
+	runtime      string
+	function     string
+	handler      string
+	dependencies []stuff
+}
+
+type stuff struct {
+	name string
+	data string
 }
 
 const (
@@ -58,29 +64,62 @@ func main() {
 		lambda.Start(HandleRequest)
 }`
 	rubyFunc   = ``
-	nodejsFunc = ``
+	nodejsFunc = `'use strict';
+
+module.exports.landingPage = (event, context, callback) => {
+  let dynamicHtml = '<p>Hey Unknown!</p>';
+  // check for GET params and use if available
+  if (event.queryStringParameters && event.queryStringParameters.name) {
+	dynamicHtml = ` + "`<p>Hey ${event.queryStringParameters.name}!</p>`" + `;
+  }
+
+  const html = ` + "`<html><style>h1 { color: #73757d; }</style><body><h1>Landing Page</h1>${dynamicHtml}</body></html>`" + `;
+
+  const response = {
+	statusCode: 200,
+	headers: {
+	  'Content-Type': 'text/html',
+	},
+	body: html,
+  };
+
+  // callback is sending HTML back
+  callback(null, response);
+};`
+	packageJSON = `{
+	"name": "aws-serve-dynamic-html-via-http-endpoint",
+	"version": "1.0.0",
+	"description": "Hookup an AWS API Gateway endpoint to a Lambda function to render HTML on a GET request",
+	"author": "",
+	"license": "MIT"
+}`
 )
 
 func NewTable() *samplesTable {
 	return &samplesTable{
-		"python": handler{
+		"python": service{
 			source:   "handler.py",
 			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
 			function: pythonFunc,
 			handler:  "handler.endpoint",
 		},
-		"go": handler{
+		"go": service{
 			source:   "main.go",
 			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/go-runtime.yaml",
 			function: golangFunc,
 		},
-		"ruby": handler{
+		"ruby": service{
 			source:   "handler.rb",
 			function: rubyFunc,
 		},
-		"node": handler{
+		"node": service{
 			source:   "handler.js",
+			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/node4-runtime.yaml",
 			function: nodejsFunc,
+			handler:  "handler.landingPage",
+			dependencies: []stuff{
+				{name: "package.json", data: packageJSON},
+			},
 		},
 	}
 }

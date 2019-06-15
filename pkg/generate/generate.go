@@ -73,6 +73,11 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 		fmt.Printf("%s:\n---\n%s\n", manifestName, manifest)
 		return nil
 	}
+	for _, dep := range sample.dependencies {
+		if err := file.Write(dep.name, dep.data); err != nil {
+			return fmt.Errorf("writing dependencies to file: %s", err)
+		}
+	}
 	if err := file.Write(sample.source, sample.function); err != nil {
 		return fmt.Errorf("writing function to file: %s", err)
 	}
