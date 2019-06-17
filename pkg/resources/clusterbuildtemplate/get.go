@@ -23,3 +23,13 @@ import (
 func (cbt *ClusterBuildtemplate) Get(clientset *client.ConfigSet) (*buildv1alpha1.ClusterBuildTemplate, error) {
 	return clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(cbt.Name, metav1.GetOptions{})
 }
+
+func Exist(clientset *client.ConfigSet, name string) bool {
+	c := ClusterBuildtemplate{
+		Name: name,
+	}
+	if _, err := c.Get(clientset); err == nil {
+		return true
+	}
+	return false
+}

@@ -23,3 +23,14 @@ import (
 func (tr *TaskRun) Get(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error) {
 	return clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 }
+
+func Exist(clientset *client.ConfigSet, name string) bool {
+	c := TaskRun{
+		Name:      name,
+		Namespace: client.Namespace,
+	}
+	if _, err := c.Get(clientset); err == nil {
+		return true
+	}
+	return false
+}

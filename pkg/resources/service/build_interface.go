@@ -15,8 +15,13 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
+	"github.com/triggermesh/tm/pkg/resources/build"
+	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
+	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/taskrun"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,37 +32,65 @@ type Builder interface {
 	Delete(clientset *client.ConfigSet) error
 }
 
-func NewBuilder(s *Service) Builder {
-	// if file.IsLocal(s.Source) {
-	// 	return &build.Build{
-	// 		Args:           s.BuildArgs,
-	// 		Buildtemplate:  s.Runtime,
-	// 		GenerateName:   s.Name + "-",
-	// 		Namespace:      s.Namespace,
-	// 		Registry:       s.Registry,
-	// 		RegistrySecret: s.RegistrySecret,
-	// 		Source:         s.Source,
-	// 		Timeout:        s.BuildTimeout,
-	// 		Wait:           true,
-	// 	}
-	// } else
-	if file.IsLocal(s.Source) || file.IsGit(s.Source) {
-		return &taskrun.TaskRun{
-			Name:           s.Name,
-			Namespace:      s.Namespace,
-			Params:         s.BuildArgs,
-			Registry:       s.Registry,
-			RegistrySecret: s.RegistrySecret,
-			Function: taskrun.Source{
-				Path:     s.Source,
-				Revision: s.Revision,
-			},
-			Task: taskrun.Resource{
-				Name: s.Runtime,
-			},
-			Timeout: s.BuildTimeout,
-			Wait:    true,
+func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
+	if !file.IsLocal(s.Source) && !file.IsGit(s.Source) {
+		return nil
+	}
+
+	if taskrun.Exist(clientset, s.Runtime) {
+		return s.taskRun()
+	} else if buildtemplate.Exist(clientset, s.Runtime) ||
+		clusterbuildtemplate.Exist(clientset, s.Runtime) {
+		return s.build()
+	}
+
+	if file.IsRemote(s.Runtime) {
+		if localFile, err := file.Download(s.Runtime); err != nil {
+			fmt.Printf("Warning! Cannot fetch runtime: %s\n", err)
+		} else {
+			s.Runtime = localFile
 		}
 	}
-	return nil
+
+	if file.IsBuildTemplate(s.Runtime) {
+		return s.build()
+	}
+	return s.taskRun()
+}
+
+func (s *Service) taskRun() *taskrun.TaskRun {
+	return &taskrun.TaskRun{
+		Name:           s.Name,
+		Namespace:      s.Namespace,
+		Params:         s.BuildArgs,
+		Registry:       s.Registry,
+		RegistrySecret: s.RegistrySecret,
+		Function: taskrun.Source{
+			Path:     s.Source,
+			Revision: s.Revision,
+		},
+		Task: taskrun.Resource{
+			Name: s.Runtime,
+		},
+		Timeout: s.BuildTimeout,
+		Wait:    true,
+	}
+}
+
+func (s *Service) build() *build.Build {
+	fmt.Println("*******")
+	fmt.Println("Warning! You're using deprecated knative/build component. Please use tekton/pipelines instead")
+	fmt.Println("https://github.com/triggermesh/runtime-build-tasks")
+	fmt.Println("*******")
+	return &build.Build{
+		Args:           s.BuildArgs,
+		Buildtemplate:  s.Runtime,
+		GenerateName:   s.Name + "-",
+		Namespace:      s.Namespace,
+		Registry:       s.Registry,
+		RegistrySecret: s.RegistrySecret,
+		Source:         s.Source,
+		Timeout:        s.BuildTimeout,
+		Wait:           true,
+	}
 }
