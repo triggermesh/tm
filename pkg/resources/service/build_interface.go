@@ -22,6 +22,8 @@ import (
 	"github.com/triggermesh/tm/pkg/resources/build"
 	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
+	"github.com/triggermesh/tm/pkg/resources/clustertask"
+	"github.com/triggermesh/tm/pkg/resources/task"
 	"github.com/triggermesh/tm/pkg/resources/taskrun"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,7 +39,8 @@ func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 		return nil
 	}
 
-	if taskrun.Exist(clientset, s.Runtime) {
+	if task.Exist(clientset, s.Runtime) ||
+		clustertask.Exist(clientset, s.Runtime) {
 		return s.taskRun()
 	} else if buildtemplate.Exist(clientset, s.Runtime) ||
 		clusterbuildtemplate.Exist(clientset, s.Runtime) {
