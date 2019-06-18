@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package task
+package clustertask
 
 import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
@@ -20,16 +20,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (t *Task) Get(clientset *client.ConfigSet) (*v1alpha1.Task, error) {
-	return clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
+func (ct *ClusterTask) Get(clientset *client.ConfigSet) (*v1alpha1.ClusterTask, error) {
+	return clientset.Tekton.TektonV1alpha1().ClusterTasks().Get(ct.Name, metav1.GetOptions{})
 }
 
 func Exist(clientset *client.ConfigSet, name string) bool {
-	t := Task{
-		Name:      name,
-		Namespace: client.Namespace,
+	c := ClusterTask{
+		Name: name,
 	}
-	if _, err := t.Get(clientset); err == nil {
+	if _, err := c.Get(clientset); err == nil {
 		return true
 	}
 	return false

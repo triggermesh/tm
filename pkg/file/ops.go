@@ -17,6 +17,7 @@ package file
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -25,11 +26,19 @@ import (
 	"time"
 
 	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/yaml.v2"
 )
 
 const (
-	tmpPath = "/tmp/tm/"
+	tmpPath   = "/tmp/tm/"
+	buildAPI  = "build.knative.dev/v1alpha1"
+	buildKind = "BuildTemplate"
 )
+
+type buildTemplate struct {
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
+}
 
 const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -181,4 +190,23 @@ func Write(filename, data string) error {
 	defer f.Close()
 	_, err = f.WriteString(data)
 	return err
+}
+
+func MakeDir(path string) error {
+	return os.MkdirAll(path, os.FileMode(0700))
+}
+
+func IsBuildTemplate(path string) bool {
+	body, err := ioutil.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	var object buildTemplate
+	if err := yaml.Unmarshal(body, &object); err != nil {
+		return false
+	}
+	if object.APIVersion == buildAPI && object.Kind == buildKind {
+		return true
+	}
+	return false
 }

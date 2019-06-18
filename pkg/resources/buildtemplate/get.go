@@ -23,3 +23,14 @@ import (
 func (bt *Buildtemplate) Get(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
 	return clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).Get(bt.Name, metav1.GetOptions{})
 }
+
+func Exist(clientset *client.ConfigSet, name string) bool {
+	b := Buildtemplate{
+		Name:      name,
+		Namespace: client.Namespace,
+	}
+	if _, err := b.Get(clientset); err == nil {
+		return true
+	}
+	return false
+}

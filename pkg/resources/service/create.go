@@ -42,7 +42,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	image := s.Source
-	builder := NewBuilder(s)
+	builder := NewBuilder(clientset, s)
 
 	if builder != nil && !client.Dry {
 		defer func() {

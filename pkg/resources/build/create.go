@@ -118,11 +118,12 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Composing service image name: %s", err)
 	}
+	tag := file.RandString(6)
 
 	build.Spec.Timeout = &metav1.Duration{Duration: duration}
 	build.Spec.Template = &buildv1alpha1.TemplateInstantiationSpec{
 		Name:      b.Buildtemplate,
-		Arguments: getBuildArguments(image, b.Args),
+		Arguments: getBuildArguments(image, tag, b.Args),
 	}
 
 	if client.Dry {
@@ -148,7 +149,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 		}
 	}
 
-	return image, nil
+	return fmt.Sprintf("%s:%s", image, tag), nil
 }
 
 func mapFromSlice(slice []string) map[string]string {
@@ -369,11 +370,14 @@ func (b *Build) buildSpecLocalPath() buildv1alpha1.BuildSpec {
 	}
 }
 
-func getBuildArguments(image string, buildArgs []string) []buildv1alpha1.ArgumentSpec {
+func getBuildArguments(image, tag string, buildArgs []string) []buildv1alpha1.ArgumentSpec {
 	args := []buildv1alpha1.ArgumentSpec{
 		{
 			Name:  "IMAGE",
 			Value: image,
+		}, {
+			Name:  "TAG",
+			Value: tag,
 		},
 	}
 	for k, v := range mapFromSlice(buildArgs) {
@@ -418,11 +422,8 @@ func (b *Build) wait(build *buildv1alpha1.Build, clientset *client.ConfigSet) er
 	watch, err := clientset.Build.BuildV1alpha1().Builds(b.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: "metadata.name=" + build.Name,
 	})
-	if err != nil {
-		return err
-	}
-	if watch == nil {
-		return fmt.Errorf("Can't get build %q watch interface", b.Name)
+	if err != nil || watch == nil {
+		return fmt.Errorf("Can't get build %q watch interface: %s", b.Name, err)
 	}
 	defer watch.Stop()
 
@@ -437,6 +438,9 @@ func (b *Build) wait(build *buildv1alpha1.Build, clientset *client.ConfigSet) er
 	for {
 		select {
 		case event := <-watch.ResultChan():
+			if event.Object == nil {
+				return b.wait(build, clientset)
+			}
 			res, ok := event.Object.(*buildv1alpha1.Build)
 			if !ok {
 				continue
