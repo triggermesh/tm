@@ -29,8 +29,9 @@ type TaskRun struct {
 }
 
 type Resource struct {
-	Name  string
-	Owned bool
+	Name         string
+	Owned        bool
+	ClusterScope bool
 }
 
 type Source struct {

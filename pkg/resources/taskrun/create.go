@@ -29,6 +29,7 @@ import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
+	"github.com/triggermesh/tm/pkg/resources/clustertask"
 	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
 	"github.com/triggermesh/tm/pkg/resources/task"
 	corev1 "k8s.io/api/core/v1"
@@ -36,6 +37,10 @@ import (
 )
 
 const (
+	tektonAPI         = "tekton.dev/v1alpha1"
+	taskRunKind       = "TaskRun"
+	taskKind          = "Task"
+	clusterTaskKind   = "ClusterTask"
 	uploadDoneTrigger = ".uploadIsDone"
 )
 
@@ -47,8 +52,11 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("task name cannot be empty")
 	}
 	if !client.Dry {
-		if err := tr.SetupResources(clientset); err != nil {
-			return "", fmt.Errorf("setup taskrun resources: %s", err)
+		if err := tr.SetupTask(clientset); err != nil {
+			return "", fmt.Errorf("setup task: %s", err)
+		}
+		if err := tr.SetupPipelineresources(clientset); err != nil {
+			return "", fmt.Errorf("setup pipelineresource: %s", err)
 		}
 	}
 	if err := tr.checkPipelineResource(clientset); err != nil {
@@ -117,7 +125,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	return image, err
 }
 
-func (tr *TaskRun) SetupResources(clientset *client.ConfigSet) error {
+func (tr *TaskRun) SetupTask(clientset *client.ConfigSet) error {
 	newTask, err := tr.setupTask(clientset)
 	if err != nil {
 		return fmt.Errorf("task %q setup: %s", tr.Task.Name, err)
@@ -126,7 +134,10 @@ func (tr *TaskRun) SetupResources(clientset *client.ConfigSet) error {
 		tr.Task.Name = newTask.Name
 		tr.Task.Owned = true
 	}
+	return nil
+}
 
+func (tr *TaskRun) SetupPipelineresources(clientset *client.ConfigSet) error {
 	if tr.PipelineResource.Name == "" && file.IsGit(tr.Function.Path) {
 		newPplRes, err := tr.setupPipelineresources(clientset)
 		if err != nil {
@@ -157,11 +168,24 @@ func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error
 		RegistrySecret:  tr.RegistrySecret,
 		FromLocalSource: file.IsLocal(tr.Function.Path),
 	}
-	if taskObj, err := task.Get(clientset); err != nil {
-		task.File = tr.Task.Name
-		task.GenerateName = tr.Name + "-"
-		return task.Deploy(clientset)
-	} else if tr.RegistrySecret != "" || task.FromLocalSource {
+	taskObj, err := task.Get(clientset)
+	if err != nil {
+		clusterTask := clustertask.ClusterTask{
+			Name: task.Name,
+		}
+		clustertaskObj, err := clusterTask.Get(clientset)
+		if err != nil {
+			task.File = tr.Task.Name
+			task.GenerateName = tr.Name + "-"
+			return task.Deploy(clientset)
+		}
+		taskObj.Spec = clustertaskObj.Spec
+		taskObj.TypeMeta = clustertaskObj.TypeMeta
+		taskObj.ObjectMeta = clustertaskObj.ObjectMeta
+		tr.Task.ClusterScope = true
+	}
+	if tr.RegistrySecret != "" || task.FromLocalSource {
+		tr.Task.ClusterScope = false
 		return task.Clone(clientset, taskObj)
 	}
 	return nil, nil
@@ -217,10 +241,18 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 	if tr.Name == "" {
 		name = tr.Task.Name + "-"
 	}
+	taskref := &v1alpha1.TaskRef{
+		Kind:       taskKind,
+		APIVersion: tektonAPI,
+		Name:       tr.Task.Name,
+	}
+	if tr.Task.ClusterScope {
+		taskref.Kind = clusterTaskKind
+	}
 	taskrun := &v1alpha1.TaskRun{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "TaskRun",
-			APIVersion: "tekton.dev/v1alpha1",
+			Kind:       taskRunKind,
+			APIVersion: tektonAPI,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: name,
@@ -230,12 +262,8 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 			Trigger: v1alpha1.TaskTrigger{
 				Type: v1alpha1.TaskTriggerTypeManual,
 			},
-			TaskRef: &v1alpha1.TaskRef{
-				Kind:       "Task",
-				APIVersion: "tekton.dev/v1alpha1",
-				Name:       tr.Task.Name,
-			},
-			Inputs: v1alpha1.TaskRunInputs{},
+			TaskRef: taskref,
+			Inputs:  v1alpha1.TaskRunInputs{},
 		},
 	}
 	if tr.PipelineResource.Name != "" {
