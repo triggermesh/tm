@@ -70,7 +70,7 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	if client.Dry {
 		return task, nil
 	}
-	return t.createOrUpdate(task, clientset)
+	return t.CreateOrUpdate(task, clientset)
 }
 
 func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Task, error) {
@@ -92,7 +92,7 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 	if client.Dry {
 		return task, nil
 	}
-	return t.createOrUpdate(task, clientset)
+	return t.CreateOrUpdate(task, clientset)
 }
 
 func (t *Task) customStep() corev1.Container {
@@ -126,7 +126,7 @@ func (t *Task) readYAML() (*tekton.Task, error) {
 	return &res, err
 }
 
-func (t *Task) createOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*tekton.Task, error) {
+func (t *Task) CreateOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*tekton.Task, error) {
 	if task.TypeMeta.Kind != kind {
 		return nil, fmt.Errorf("Object Kind mismatch: got %q, want %q", task.TypeMeta.Kind, kind)
 	}

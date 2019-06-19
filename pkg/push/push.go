@@ -18,9 +18,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ghodss/yaml"
+
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
+	"github.com/triggermesh/tm/pkg/resources/task"
 	"gopkg.in/src-d/go-git.v4"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,18 +67,62 @@ func Push(clientset *client.ConfigSet) error {
 		return err
 	}
 
-	return nil
+	t := task.Task{
+		Name:      project,
+		Namespace: client.Namespace,
+	}
+
+	if _, err := t.CreateOrUpdate(getTask(project, client.Namespace), clientset); err != nil {
+		return err
+	}
+
+	res, err := yaml.Marshal(getTaskRun(project, client.Namespace))
+	if err != nil {
+		return err
+	}
+	return file.Write("taskrun.yaml", string(res))
+}
+
+func getTaskRun(taskName, namespace string) *tekton.TaskRun {
+	return &tekton.TaskRun{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "tekton.dev/v1alpha1",
+			Kind:       "TaskRun",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      taskName,
+			Namespace: namespace,
+		},
+		Spec: tekton.TaskRunSpec{
+			Inputs: tekton.TaskRunInputs{
+				Resources: []v1alpha1.TaskResourceBinding{
+					{
+						Name: "sources",
+						ResourceRef: v1alpha1.PipelineResourceRef{
+							Name:       taskName,
+							APIVersion: "tekton.dev/v1alpha1",
+						},
+					},
+				},
+			},
+			TaskRef: &tekton.TaskRef{
+				Name:       taskName,
+				Kind:       "Task",
+				APIVersion: "tekton.dev/v1alpha1",
+			},
+		},
+	}
 }
 
 func getTask(name, namespace string) *tekton.Task {
 	return &tekton.Task{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "tekton.dev/v1alpha1",
 			Kind:       "Task",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
 		},
 		Spec: tekton.TaskSpec{
 			Inputs: &tekton.Inputs{
