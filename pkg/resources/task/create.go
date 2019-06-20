@@ -144,7 +144,7 @@ func (t *Task) CreateOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*
 			return nil, err
 		}
 		task.ObjectMeta.ResourceVersion = taskObj.GetResourceVersion()
-		taskObj, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Update(taskObj)
+		taskObj, err = clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Update(task)
 	}
 	return taskObj, err
 }

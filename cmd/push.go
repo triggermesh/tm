@@ -25,7 +25,6 @@ import (
 func newPushCmd(clientset *client.ConfigSet) *cobra.Command {
 	pushCmd := &cobra.Command{
 		Use: "push",
-		// Short:              "",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := push.Push(clientset); err != nil {
 				log.Fatal(err)

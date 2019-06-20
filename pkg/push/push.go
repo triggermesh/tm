@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -53,6 +52,7 @@ func Push(clientset *client.ConfigSet) error {
 		url = strings.TrimRight(url, ".git")
 	}
 
+	url = fmt.Sprintf("https://%s", url)
 	parts := strings.Split(url, "/")
 	project := parts[len(parts)-1]
 
@@ -80,7 +80,8 @@ func Push(clientset *client.ConfigSet) error {
 	if err != nil {
 		return err
 	}
-	return file.Write("taskrun.yaml", string(res))
+	fmt.Printf("%s\n", res)
+	return nil
 }
 
 func getTaskRun(taskName, namespace string) *tekton.TaskRun {
@@ -90,7 +91,7 @@ func getTaskRun(taskName, namespace string) *tekton.TaskRun {
 			Kind:       "TaskRun",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      taskName,
+			Name:      fmt.Sprintf("%s-%s", taskName, file.RandStringDNS(6)),
 			Namespace: namespace,
 		},
 		Spec: tekton.TaskRunSpec{
@@ -128,7 +129,7 @@ func getTask(name, namespace string) *tekton.Task {
 			Inputs: &tekton.Inputs{
 				Resources: []tekton.TaskResource{
 					{
-						Name: name,
+						Name: "sources",
 						Type: tekton.PipelineResourceType("git"),
 					},
 				},
@@ -138,7 +139,7 @@ func getTask(name, namespace string) *tekton.Task {
 					Name:    "deploy",
 					Image:   "triggermesh/tm",
 					Command: []string{"tm"},
-					Args:    []string{"deploy"},
+					Args:    []string{"deploy", "-f", "/workspace/sources/"},
 				},
 			},
 		},

@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  creationTimestamp: null
+  name: tm-hej9h7
+  namespace: tzununbekov
+spec:
+  inputs:
+    resources:
+    - name: sources
+      resourceRef:
+        apiVersion: tekton.dev/v1alpha1
+        name: tm
+  outputs: {}
+  taskRef:
+    apiVersion: tekton.dev/v1alpha1
+    kind: Task
+    name: tm
+  trigger:
+    type: ""
+status:
+  podName: ""
