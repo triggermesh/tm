@@ -16,6 +16,7 @@ package generate
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
@@ -29,10 +30,14 @@ type Project struct {
 }
 
 func (p *Project) Generate(clientset *client.ConfigSet) error {
+	p.Runtime = strings.TrimLeft(p.Runtime, "-")
 	samples := NewTable()
+	if p.Runtime == "" || p.Runtime == "h" || p.Runtime == "help" {
+		return p.help(samples)
+	}
 	sample, exist := (*samples)[p.Runtime]
 	if !exist {
-		return fmt.Errorf("runtime %q does not exist", p.Runtime)
+		return p.help(samples)
 	}
 
 	var buildArgs []string
@@ -97,4 +102,12 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 	fmt.Printf("%s/%s\t\t- function code\n%s/%s\t\t- service manifest\n", p.Runtime, sample.source, p.Runtime, manifestName)
 	fmt.Printf("You can deploy this project using \"tm deploy -f %s --wait\" command\n", p.Runtime)
 	return nil
+}
+
+func (p *Project) help(samples *samplesTable) error {
+	fmt.Printf("Please specify one of available runtimes (e.g. \"tm generate --go\"):\n")
+	for runtime := range *samples {
+		fmt.Printf("--%s\n", runtime)
+	}
+	return fmt.Errorf("runtime not found")
 }
