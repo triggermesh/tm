@@ -137,7 +137,7 @@ func getTask(name, namespace string) *tekton.Task {
 			Steps: []corev1.Container{
 				{
 					Name:    "deploy",
-					Image:   "triggermesh/tm",
+					Image:   "gcr.io/triggermesh/tm",
 					Command: []string{"tm"},
 					Args:    []string{"deploy", "-f", "/workspace/sources/"},
 				},
