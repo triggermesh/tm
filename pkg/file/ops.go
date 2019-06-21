@@ -40,6 +40,7 @@ type buildTemplate struct {
 	Kind       string `yaml:"kind"`
 }
 
+const letterBytesDNS = "abcdefghijklmnopqrstuvwxyz"
 const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func RandString(n int) string {
@@ -47,6 +48,15 @@ func RandString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = letterBytes[random.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+func RandStringDNS(n int) string {
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[random.Intn(len(letterBytesDNS))]
 	}
 	return string(b)
 }

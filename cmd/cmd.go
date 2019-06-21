@@ -88,6 +88,7 @@ func init() {
 	tmCmd.AddCommand(newDeployCmd(&clientset))
 	tmCmd.AddCommand(newDeleteCmd(&clientset))
 	tmCmd.AddCommand(newGenerateCmd(&clientset))
+	tmCmd.AddCommand(newPushCmd(&clientset))
 	tmCmd.AddCommand(newSetCmd(&clientset))
 	tmCmd.AddCommand(newGetCmd(&clientset))
 	// Describe is an alias for "get" command
