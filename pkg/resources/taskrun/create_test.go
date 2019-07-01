@@ -16,7 +16,6 @@ package taskrun
 
 import (
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,9 +24,9 @@ import (
 
 func TestTaskRunDryDeployment(t *testing.T) {
 	namespace := "test-namespace"
-	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
-		namespace = ns
-	}
+	// if ns, ok := os.LookupEnv("NAMESPACE"); ok {
+	// namespace = ns
+	// }
 
 	client.Dry = true
 	clientset, err := client.NewClient("../../../testfiles/cfgfile-test.json")
