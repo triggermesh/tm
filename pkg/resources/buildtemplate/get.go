@@ -20,6 +20,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Get returns knative BuildTemplate object by its name and namespace
 func (bt *Buildtemplate) Get(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
 	return clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).Get(bt.Name, metav1.GetOptions{})
+}
+
+// Exist returns true if BuildTemplate with provided name is available in current namespace
+func Exist(clientset *client.ConfigSet, name string) bool {
+	b := Buildtemplate{
+		Name:      name,
+		Namespace: client.Namespace,
+	}
+	if _, err := b.Get(clientset); err == nil {
+		return true
+	}
+	return false
 }

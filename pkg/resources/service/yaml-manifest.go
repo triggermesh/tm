@@ -27,14 +27,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var yamlFile = "serverless.yaml"
+// Output contains input-output writer interface
 var Output io.Writer = os.Stdout
+var yamlFile = "serverless.yaml"
 
 type status struct {
 	Message string
 	Error   error
 }
 
+// DeployYAML accepts service YAML manifest and deploys it to cluster
 func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, threads int, clientset *client.ConfigSet) error {
 	services, err := s.ManifestToServices(yamlFile)
 	if err != nil {
@@ -53,6 +55,10 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, thread
 	return s.DeployFunctions(functions, removeOrphans, threads, clientset)
 }
 
+// DeployFunctions creates a deployment worker pool, reads provided Service array and
+// if service is in list to deploy, sends it to the worker pool with given concurrency rate.
+// After deployment it checks which functions from current service are left untouched
+// and removes them as orphans
 func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threads int, clientset *client.ConfigSet) error {
 	jobs := make(chan Service, 100)
 	results := make(chan status, 100)
@@ -73,9 +79,9 @@ func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threa
 	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
 			errs = true
-			fmt.Fprint(Output, r.Error)
+			fmt.Fprintln(Output, r.Error)
 		} else {
-			fmt.Fprint(Output, r.Message)
+			fmt.Fprintln(Output, r.Message)
 		}
 	}
 
@@ -91,6 +97,7 @@ func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threa
 	return nil
 }
 
+// DeleteYAML creates deletion worker pool and removes functions listed in provided YAML manifest
 func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, threads int, clientset *client.ConfigSet) error {
 	jobs := make(chan Service, 100)
 	results := make(chan status, 100)
@@ -118,12 +125,13 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 
 	for i := 0; i < inProgress; i++ {
 		if r := <-results; r.Error != nil {
-			fmt.Fprint(Output, r.Error)
+			fmt.Fprintln(Output, r.Error)
 		}
 	}
 	return nil
 }
 
+// ManifestToServices parses and validates YAML manifest and returns an array of Service objects
 func (s *Service) ManifestToServices(YAML string) ([]Service, error) {
 	var err error
 	if YAML, err = getYAML(YAML); err != nil {
@@ -221,7 +229,7 @@ func (s *Service) setupParentVars(definition file.Definition) {
 	s.Name = definition.Service
 	s.EnvSecrets = definition.Provider.EnvSecrets
 	s.PullPolicy = definition.Provider.PullPolicy
-	s.Buildtemplate = definition.Provider.Runtime
+	s.Runtime = definition.Provider.Runtime
 	s.BuildTimeout = definition.Provider.Buildtimeout
 	s.RegistrySecret = definition.Provider.RegistrySecret
 
@@ -249,7 +257,7 @@ func (s *Service) serviceObject(function file.Function) Service {
 		Revision:       function.Revision,
 		Namespace:      s.Namespace,
 		Concurrency:    function.Concurrency,
-		Buildtemplate:  function.Runtime,
+		Runtime:        function.Runtime,
 		Labels:         function.Labels,
 		PullPolicy:     s.PullPolicy,
 		ResultImageTag: "latest",
@@ -273,8 +281,8 @@ func (s *Service) serviceObject(function file.Function) Service {
 	for k, v := range function.Annotations {
 		service.Annotations[k] = v
 	}
-	if len(service.Buildtemplate) == 0 {
-		service.Buildtemplate = s.Buildtemplate
+	if len(service.Runtime) == 0 {
+		service.Runtime = s.Runtime
 	}
 	if len(function.Description) != 0 {
 		service.Annotations["Description"] = fmt.Sprintf("%s\n%s", service.Annotations["Description"], function.Description)
@@ -324,6 +332,9 @@ func getYAML(filepath string) (string, error) {
 			return "", err
 		}
 		filepath = path.Join(localfilepath, yamlFile)
+	}
+	if file.IsDir(filepath) {
+		filepath = path.Join(filepath, yamlFile)
 	}
 	if !file.IsLocal(filepath) {
 		/* Add a secondary check against /serverless.yml */

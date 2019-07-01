@@ -16,12 +16,30 @@ package taskrun
 
 // TaskRun represents tekton TaskRun object
 type TaskRun struct {
-	Name           string
-	Namespace      string
-	Task           string
-	Resources      string
-	Registry       string
-	RegistrySecret string
+	Function         Source
+	Name             string
+	Namespace        string
+	Params           []string
+	PipelineResource Resource
+	Registry         string
+	RegistrySecret   string
+	Task             Resource
+	Timeout          string
+	Wait             bool
+}
+
+// Resource is a generic structure to describe k8s resource
+type Resource struct {
+	Name         string
+	Owned        bool
+	ClusterScope bool
+}
+
+// Source contains path (local or URL) to function sources.
+// May contain revision if path is Git repository.
+type Source struct {
+	Path     string
+	Revision string
 }
 
 type registryAuths struct {

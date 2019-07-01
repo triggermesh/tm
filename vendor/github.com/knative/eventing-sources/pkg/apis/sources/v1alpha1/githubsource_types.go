@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	"github.com/knative/pkg/apis/duck"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -54,7 +56,7 @@ type GitHubSourceSpec struct {
 	// https://developer.github.com/v3/activity/events/types/ - ie
 	// "pull_request"
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Enum=commit_comment,create,delete,deployment,deployment_status,fork,gollum,installation,integration_installation,issue_comment,issues,label,member,membership,milestone,organization,org_block,page_build,ping,project_card,project_column,project,public,pull_request,pull_request_review,pull_request_review_comment,push,release,repository,status,team,team_add,watch
+	// +kubebuilder:validation:Enum=check_suite,commit_comment,create,delete,deployment,deployment_status,fork,gollum,installation,integration_installation,issue_comment,issues,label,member,membership,milestone,organization,org_block,page_build,ping,project_card,project_column,project,public,pull_request,pull_request_review,pull_request_review_comment,push,release,repository,status,team,team_add,watch
 	EventTypes []string `json:"eventTypes"`
 
 	// AccessToken is the Kubernetes secret containing the GitHub
@@ -69,6 +71,14 @@ type GitHubSourceSpec struct {
 	// name to use as the sink.
 	// +optional
 	Sink *corev1.ObjectReference `json:"sink,omitempty"`
+
+	// API URL if using github enterprise (default https://api.github.com)
+	// +optional
+	GitHubAPIURL string `json:"githubAPIURL,omitempty"`
+
+	// Secure can be set to true to configure the webhook to use https.
+	// +optional
+	Secure bool `json:"secure,omitempty"`
 }
 
 // SecretValueFromSource represents the source of a secret value
@@ -78,10 +88,24 @@ type SecretValueFromSource struct {
 }
 
 const (
-	// GitHubSourceEventPrefix is what all GitHub event types get
-	// prefixed with when converting to CloudEvent EventType
-	GitHubSourceEventPrefix = "dev.knative.source.github"
+	// gitHubEventTypePrefix is what all GitHub event types get
+	// prefixed with when converting to CloudEvents.
+	gitHubEventTypePrefix = "dev.knative.source.github"
+
+	// gitHubEventSourcePrefix is what all GitHub event sources get
+	// prefixed with when converting to CloudEvents.
+	gitHubEventSourcePrefix = "https://github.com"
 )
+
+// GitHubEventType returns the GitHub CloudEvent type value.
+func GitHubEventType(ghEventType string) string {
+	return fmt.Sprintf("%s.%s", gitHubEventTypePrefix, ghEventType)
+}
+
+// GitHubEventSource returns the GitHub CloudEvent source value.
+func GitHubEventSource(ownerAndRepo string) string {
+	return fmt.Sprintf("%s/%s", gitHubEventSourcePrefix, ownerAndRepo)
+}
 
 const (
 	// GitHubSourceConditionReady has status True when the
@@ -95,6 +119,10 @@ const (
 	// GitHubSourceConditionSinkProvided has status True when the
 	// GitHubSource has been configured with a sink target.
 	GitHubSourceConditionSinkProvided duckv1alpha1.ConditionType = "SinkProvided"
+
+	// GitHubSourceConditionEventTypesProvided has status True when the
+	// GitHubSource has been configured with event types.
+	GitHubSourceConditionEventTypesProvided duckv1alpha1.ConditionType = "EventTypeProvided"
 )
 
 var gitHubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
@@ -103,11 +131,10 @@ var gitHubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
 
 // GitHubSourceStatus defines the observed state of GitHubSource
 type GitHubSourceStatus struct {
-	// Conditions holds the state of a source at a point in time.
-	// +optional
-	// +patchMergeKey=type
-	// +patchStrategy=merge
-	Conditions duckv1alpha1.Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	// inherits duck/v1alpha1 Status, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
+	// * Conditions - the latest available observations of a resource's current state.
+	duckv1alpha1.Status `json:",inline"`
 
 	// WebhookIDKey is the ID of the webhook registered with GitHub
 	WebhookIDKey string `json:"webhookIDKey,omitempty"`
@@ -157,6 +184,16 @@ func (s *GitHubSourceStatus) MarkSink(uri string) {
 // MarkNoSink sets the condition that the source does not have a sink configured.
 func (s *GitHubSourceStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{}) {
 	gitHubSourceCondSet.Manage(s).MarkFalse(GitHubSourceConditionSinkProvided, reason, messageFormat, messageA...)
+}
+
+// MarkEventTypes sets the condition that the source has set its event types.
+func (s *GitHubSourceStatus) MarkEventTypes() {
+	gitHubSourceCondSet.Manage(s).MarkTrue(GitHubSourceConditionEventTypesProvided)
+}
+
+// MarkNoEventTypes sets the condition that the source does not its event types configured.
+func (s *GitHubSourceStatus) MarkNoEventTypes(reason, messageFormat string, messageA ...interface{}) {
+	gitHubSourceCondSet.Manage(s).MarkFalse(GitHubSourceConditionEventTypesProvided, reason, messageFormat, messageA...)
 }
 
 // +genclient

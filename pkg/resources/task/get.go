@@ -16,11 +16,23 @@ package task
 
 import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Get return tekton Task object
 func (t *Task) Get(clientset *client.ConfigSet) (*v1alpha1.Task, error) {
 	return clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
+}
+
+// Exist returns true if Task with provided name is available in current namespace
+func Exist(clientset *client.ConfigSet, name string) bool {
+	t := Task{
+		Name:      name,
+		Namespace: client.Namespace,
+	}
+	if _, err := t.Get(clientset); err == nil {
+		return true
+	}
+	return false
 }

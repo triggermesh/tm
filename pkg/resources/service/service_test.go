@@ -22,55 +22,45 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 )
 
-// func TestDeployAndDelete(t *testing.T) {
-// 	namespace := "test-namespace"
-// 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
-// 		namespace = ns
-// 	}
-// 	serviceClient, err := client.NewClient(client.ConfigPath(""))
-// 	assert.NoError(t, err)
+func TestDeployAndDelete(t *testing.T) {
+	namespace := "test-namespace"
+	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
+		namespace = ns
+	}
+	client.Dry = false
+	client.Wait = true
+	serviceClient, err := client.NewClient(client.ConfigPath(""))
+	assert.NoError(t, err)
 
-// 	foo := &Service{
-// 		Name:          "foo",
-// 		Namespace:     namespace,
-// 		Source:        "https://github.com/golang/example",
-// 		Buildtemplate: "https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/go/openfaas-go-runtime.yaml",
-// 		BuildArgs:     []string{"DIRECTORY=hello"},
-// 	}
+	foo := &Service{
+		Name:      "test-service-buildtemplate",
+		Registry:  "knative.registry.svc.cluster.local",
+		Namespace: namespace,
+		Source:    "https://github.com/golang/example",
+		Runtime:   "https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/go/openfaas-go-runtime.yaml",
+		BuildArgs: []string{"DIRECTORY=hello"},
+	}
 
-// 	_, err = foo.Deploy(&serviceClient)
-// 	assert.NoError(t, err)
-// 	err = foo.Delete(&serviceClient)
-// 	assert.NoError(t, err)
+	_, err = foo.Deploy(&serviceClient)
+	assert.NoError(t, err)
+	err = foo.Delete(&serviceClient)
+	assert.NoError(t, err)
 
-// 	bar := &Service{
-// 		Name:      "bar",
-// 		Namespace: namespace,
-// 		Source:    "gcr.io/google-samples/hello-app:1.0",
-// 	}
+	bar := &Service{
+		Name:      "test-service-taskrun",
+		Registry:  "knative.registry.svc.cluster.local",
+		Namespace: namespace,
+		Source:    "https://github.com/serverless/examples",
+		Runtime:   "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
+		BuildArgs: []string{"DIRECTORY=aws-python-simple-http-endpoint", "HANDLER=handler.endpoint"},
+	}
 
-// 	_, err = bar.Deploy(&serviceClient)
-// 	assert.NoError(t, err)
-// 	err = bar.Delete(&serviceClient)
-// 	assert.NoError(t, err)
+	_, err = bar.Deploy(&serviceClient)
+	assert.NoError(t, err)
+	err = bar.Delete(&serviceClient)
+	assert.NoError(t, err)
 
-// 	foobar := &Service{
-// 		Name:          "foobar",
-// 		Namespace:     namespace,
-// 		Source:        "https://github.com/knative/docs",
-// 		Buildtemplate: "https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml",
-// 		BuildArgs:     []string{"DIRECTORY=serving/samples/helloworld-go"},
-// 	}
-
-// 	foobar.Cronjob.Schedule = "*/5 * * * *"
-// 	foobar.Cronjob.Data = "foo"
-
-// 	_, err = foobar.Deploy(&serviceClient)
-// 	assert.NoError(t, err)
-// 	err = foobar.Delete(&serviceClient)
-// 	assert.NoError(t, err)
-
-// }
+}
 
 func TestList(t *testing.T) {
 	namespace := "test-namespace"

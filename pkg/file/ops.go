@@ -17,6 +17,7 @@ package file
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -25,19 +26,39 @@ import (
 	"time"
 
 	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/yaml.v2"
 )
 
 const (
-	tmpPath = "/tmp/tm/"
+	tmpPath   = "/tmp/tm/"
+	buildAPI  = "build.knative.dev/v1alpha1"
+	buildKind = "BuildTemplate"
 )
 
+type buildTemplate struct {
+	APIVersion string `yaml:"apiVersion"`
+	Kind       string `yaml:"kind"`
+}
+
+const letterBytesDNS = "abcdefghijklmnopqrstuvwxyz"
 const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func randString(n int) string {
+// RandString accepts integer value N and returns random string with length of N
+func RandString(n int) string {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = letterBytes[random.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+// RandStringDNS accepts integer value N and returns "DNS-friendly" random string with length of N
+func RandStringDNS(n int) string {
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[random.Intn(len(letterBytesDNS))]
 	}
 	return string(b)
 }
@@ -94,6 +115,9 @@ func IsGit(path string) bool {
 	return false
 }
 
+// IsGitFile accepts string and, if this string is git repsotiry,
+// returns URL to clone and relative file path inside cloned repository directory
+// Otherwise it returns empty strings
 func IsGitFile(path string) (string, string) {
 	uri := strings.Split(path, "/")
 	if len(uri) < 8 {
@@ -140,7 +164,7 @@ func Download(url string) (string, error) {
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return "", err
 	}
-	path = fmt.Sprintf("%s/%s", path, randString(10))
+	path = fmt.Sprintf("%s/%s", path, RandString(10))
 	out, err := os.Create(path)
 	if err != nil {
 		return "", err
@@ -163,7 +187,7 @@ func Download(url string) (string, error) {
 
 // Clone runs `git clone` operation for specified URL and returns local path to repository root directory
 func Clone(url string) (string, error) {
-	path := fmt.Sprintf("%s/git/%s", tmpPath, randString(10))
+	path := fmt.Sprintf("%s/git/%s", tmpPath, RandString(10))
 	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		return "", err
 	}
@@ -171,4 +195,37 @@ func Clone(url string) (string, error) {
 		URL: url,
 	})
 	return path, err
+}
+
+// Write creates file named as passed filename and writes data into this file
+func Write(filename, data string) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(data)
+	return err
+}
+
+// MakeDir created directory and all missing parents
+func MakeDir(path string) error {
+	return os.MkdirAll(path, os.FileMode(0700))
+}
+
+// IsBuildTemplate reads file located in provided path and returns true if
+// file contains BuildTemplate knative object
+func IsBuildTemplate(path string) bool {
+	body, err := ioutil.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	var object buildTemplate
+	if err := yaml.Unmarshal(body, &object); err != nil {
+		return false
+	}
+	if object.APIVersion == buildAPI && object.Kind == buildKind {
+		return true
+	}
+	return false
 }

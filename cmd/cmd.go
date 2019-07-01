@@ -20,6 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/generate"
 	"github.com/triggermesh/tm/pkg/resources/build"
 	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/channel"
@@ -42,7 +43,7 @@ var (
 	err         error
 	kubeConf    string
 	clientset   client.ConfigSet
-	YAML        string
+	yaml        string
 	concurrency int
 
 	b   build.Build
@@ -50,6 +51,7 @@ var (
 	t   task.Task
 	tr  taskrun.TaskRun
 	plr pipelineresource.PipelineResource
+	p   generate.Project
 	s   service.Service
 	r   revision.Revision
 	rt  route.Route
@@ -67,6 +69,7 @@ var tmCmd = &cobra.Command{
 	Version: version,
 }
 
+// Execute runs main CLI command
 func Execute() {
 	if err := tmCmd.Execute(); err != nil {
 		log.Fatalln(err)
@@ -85,6 +88,8 @@ func init() {
 	tmCmd.AddCommand(versionCmd)
 	tmCmd.AddCommand(newDeployCmd(&clientset))
 	tmCmd.AddCommand(newDeleteCmd(&clientset))
+	tmCmd.AddCommand(newGenerateCmd(&clientset))
+	tmCmd.AddCommand(newPushCmd(&clientset))
 	tmCmd.AddCommand(newSetCmd(&clientset))
 	tmCmd.AddCommand(newGetCmd(&clientset))
 	// Describe is an alias for "get" command
