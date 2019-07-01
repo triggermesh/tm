@@ -49,14 +49,18 @@ type Function struct {
 	Events      []map[string]interface{} `yaml:"events,omitempty"`
 }
 
+// Schedule represents simple structure of event schedule
+// with cronjob-style rate string and data to use in event.
+// Deprecated.
 type Schedule struct {
 	Rate string
 	Data string
 }
 
+// Aos returns filesystem object with standard set of os methods implemented by afero package
 var Aos = afero.NewOsFs()
 
-// ParseServerless accepts serverless yaml file path and returns decoded structure
+// ParseManifest accepts serverless yaml file path and returns decoded structure
 func ParseManifest(path string) (Definition, error) {
 	var definition Definition
 
@@ -78,6 +82,7 @@ func ParseManifest(path string) (Definition, error) {
 	return definition, err
 }
 
+// Validate function verifies that provided service Definition object contains required set of keys and values
 func (definition Definition) Validate() error {
 	if definition.Provider.Name != "" && definition.Provider.Name != "triggermesh" {
 		return fmt.Errorf("%s provider is not supported", definition.Provider.Name)

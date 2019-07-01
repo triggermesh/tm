@@ -43,6 +43,7 @@ type buildTemplate struct {
 const letterBytesDNS = "abcdefghijklmnopqrstuvwxyz"
 const letterBytes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+// RandString accepts integer value N and returns random string with length of N
 func RandString(n int) string {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]byte, n)
@@ -52,6 +53,7 @@ func RandString(n int) string {
 	return string(b)
 }
 
+// RandStringDNS accepts integer value N and returns "DNS-friendly" random string with length of N
 func RandStringDNS(n int) string {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]byte, n)
@@ -113,6 +115,9 @@ func IsGit(path string) bool {
 	return false
 }
 
+// IsGitFile accepts string and, if this string is git repsotiry,
+// returns URL to clone and relative file path inside cloned repository directory
+// Otherwise it returns empty strings
 func IsGitFile(path string) (string, string) {
 	uri := strings.Split(path, "/")
 	if len(uri) < 8 {
@@ -192,6 +197,7 @@ func Clone(url string) (string, error) {
 	return path, err
 }
 
+// Write creates file named as passed filename and writes data into this file
 func Write(filename, data string) error {
 	f, err := os.Create(filename)
 	if err != nil {
@@ -202,10 +208,13 @@ func Write(filename, data string) error {
 	return err
 }
 
+// MakeDir created directory and all missing parents
 func MakeDir(path string) error {
 	return os.MkdirAll(path, os.FileMode(0700))
 }
 
+// IsBuildTemplate reads file located in provided path and returns true if
+// file contains BuildTemplate knative object
 func IsBuildTemplate(path string) bool {
 	body, err := ioutil.ReadFile(path)
 	if err != nil {

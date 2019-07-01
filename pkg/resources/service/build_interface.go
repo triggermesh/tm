@@ -28,12 +28,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Builder interface contains image build methods which are common for both
+// tekton pipelines and knative builds
 type Builder interface {
 	Deploy(clientset *client.ConfigSet) (string, error)
 	SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error
 	Delete(clientset *client.ConfigSet) error
 }
 
+// NewBuilder checks Service build method (knative buildtemplate or tekton task)
+// and returns corresponding builder interface
 func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 	if !file.IsLocal(s.Source) && !file.IsGit(s.Source) {
 		return nil

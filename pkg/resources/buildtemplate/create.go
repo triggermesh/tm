@@ -58,16 +58,17 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (*buildv1alpha1.Buil
 	return createBuildTemplate(bt, clientset)
 }
 
-func (bt *Buildtemplate) Clone(source buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
+// Clone accepts knative BuildTemplate object and creates a copy of this buildtemplate with random name suffix
+func (b *Buildtemplate) Clone(source buildv1alpha1.BuildTemplate, clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
 	source.SetName("")
-	source.SetGenerateName(bt.Name + "-")
-	source.SetNamespace(bt.Namespace)
+	source.SetGenerateName(b.Name + "-")
+	source.SetNamespace(b.Namespace)
 	source.SetOwnerReferences([]metav1.OwnerReference{})
 	source.SetResourceVersion("")
 	source.Kind = "BuildTemplate"
-	if len(bt.RegistrySecret) != 0 {
-		addSecretVolume(bt.RegistrySecret, &source)
-		setEnvConfig(bt.RegistrySecret, &source)
+	if len(b.RegistrySecret) != 0 {
+		addSecretVolume(b.RegistrySecret, &source)
+		setEnvConfig(b.RegistrySecret, &source)
 	}
 	return createBuildTemplate(source, clientset)
 }
@@ -140,12 +141,13 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 	return nil, err
 }
 
-func (bt *Buildtemplate) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
-	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).Get(bt.Name, metav1.GetOptions{})
+// SetOwner accepts onwer object reference and updates installed Buildtemplate with this owner
+func (b *Buildtemplate) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
+	buildtemplate, err := clientset.Build.BuildV1alpha1().BuildTemplates(b.Namespace).Get(b.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	buildtemplate.SetOwnerReferences([]metav1.OwnerReference{owner})
-	_, err = clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).Update(buildtemplate)
+	_, err = clientset.Build.BuildV1alpha1().BuildTemplates(b.Namespace).Update(buildtemplate)
 	return err
 }

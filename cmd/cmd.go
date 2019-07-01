@@ -43,7 +43,7 @@ var (
 	err         error
 	kubeConf    string
 	clientset   client.ConfigSet
-	YAML        string
+	yaml        string
 	concurrency int
 
 	b   build.Build
@@ -69,6 +69,7 @@ var tmCmd = &cobra.Command{
 	Version: version,
 }
 
+// Execute runs main CLI command
 func Execute() {
 	if err := tmCmd.Execute(); err != nil {
 		log.Fatalln(err)

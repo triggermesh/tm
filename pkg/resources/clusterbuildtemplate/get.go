@@ -20,10 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Get returns knative ClusterBuildTemplate object by its name
 func (cbt *ClusterBuildtemplate) Get(clientset *client.ConfigSet) (*buildv1alpha1.ClusterBuildTemplate, error) {
 	return clientset.Build.BuildV1alpha1().ClusterBuildTemplates().Get(cbt.Name, metav1.GetOptions{})
 }
 
+// Exist returns true if ClusterBuildTemplate with provided name is available
 func Exist(clientset *client.ConfigSet, name string) bool {
 	c := ClusterBuildtemplate{
 		Name: name,

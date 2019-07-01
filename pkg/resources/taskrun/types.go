@@ -28,12 +28,15 @@ type TaskRun struct {
 	Wait             bool
 }
 
+// Resource is a generic structure to describe k8s resource
 type Resource struct {
 	Name         string
 	Owned        bool
 	ClusterScope bool
 }
 
+// Source contains path (local or URL) to function sources.
+// May contain revision if path is Git repository.
 type Source struct {
 	Path     string
 	Revision string

@@ -44,6 +44,9 @@ const (
 	uploadDoneTrigger = ".uploadIsDone"
 )
 
+// Deploy prepares and verifies tekton resources (Task and PipelineResource) required for TaskRun,
+// creates TaskRun object and optionally waits for its result.
+// Deploy function returns resulting image URL and build error.
 func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	if tr.Name == "" {
 		return "", fmt.Errorf("taskrun name cannot be empty")
@@ -52,10 +55,10 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("task name cannot be empty")
 	}
 	if !client.Dry {
-		if err := tr.SetupTask(clientset); err != nil {
+		if err := tr.prepareTask(clientset); err != nil {
 			return "", fmt.Errorf("setup task: %s", err)
 		}
-		if err := tr.SetupPipelineresources(clientset); err != nil {
+		if err := tr.preparePipelineresources(clientset); err != nil {
 			return "", fmt.Errorf("setup pipelineresource: %s", err)
 		}
 	}
@@ -125,7 +128,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	return image, err
 }
 
-func (tr *TaskRun) SetupTask(clientset *client.ConfigSet) error {
+func (tr *TaskRun) prepareTask(clientset *client.ConfigSet) error {
 	newTask, err := tr.setupTask(clientset)
 	if err != nil {
 		return fmt.Errorf("task %q setup: %s", tr.Task.Name, err)
@@ -137,7 +140,7 @@ func (tr *TaskRun) SetupTask(clientset *client.ConfigSet) error {
 	return nil
 }
 
-func (tr *TaskRun) SetupPipelineresources(clientset *client.ConfigSet) error {
+func (tr *TaskRun) preparePipelineresources(clientset *client.ConfigSet) error {
 	if tr.PipelineResource.Name == "" && file.IsGit(tr.Function.Path) {
 		newPplRes, err := tr.setupPipelineresources(clientset)
 		if err != nil {
@@ -340,6 +343,7 @@ func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
 	}
 }
 
+// SetOwner updates TaskRun object with provided owner reference
 func (tr *TaskRun) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
 	taskrun, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 	if err != nil {
@@ -388,7 +392,6 @@ func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
 			return "", fmt.Errorf("watch taskrun timeout")
 		}
 	}
-	return "", nil
 }
 
 func (tr *TaskRun) sourceContainer(clientset *client.ConfigSet, podName string) (string, error) {

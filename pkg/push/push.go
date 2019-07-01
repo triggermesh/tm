@@ -30,6 +30,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Push tries to read git configuration in current directory and if it succeeds
+// tekton pipeline resource and task are being prepared to run "tm deploy" command.
+// Corresponding TaskRun object which binds these pipelineresources and tasks
+// is printed to stdout.
 func Push(clientset *client.ConfigSet) error {
 	repo, err := git.PlainOpen(".")
 	if err != nil {

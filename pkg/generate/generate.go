@@ -23,12 +23,15 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Project structure contains generic fields to generate sample knative service
 type Project struct {
 	Name      string
 	Namespace string
 	Runtime   string
 }
 
+// Generate accept Project object and creates tm-deployable project structure
+// with all required manifests, functions, etc
 func (p *Project) Generate(clientset *client.ConfigSet) error {
 	p.Runtime = strings.TrimLeft(p.Runtime, "-")
 	samples := NewTable()
@@ -52,7 +55,7 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 
 	functionName := fmt.Sprintf("%s-function", p.Runtime)
 	functions := map[string]file.Function{
-		functionName: file.Function{
+		functionName: {
 			Source:    sample.source,
 			Runtime:   sample.runtime,
 			Buildargs: buildArgs,
@@ -104,7 +107,7 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 	return nil
 }
 
-func (p *Project) help(samples *samplesTable) error {
+func (p *Project) help(samples *SamplesTable) error {
 	fmt.Printf("Please specify one of available runtimes (e.g. \"tm generate --go\"):\n")
 	for runtime := range *samples {
 		fmt.Printf("--%s\n", runtime)

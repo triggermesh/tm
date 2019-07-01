@@ -73,6 +73,7 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	return t.CreateOrUpdate(task, clientset)
 }
 
+// Clone installs a copy of provided tekton task object with generated name suffix
 func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Task, error) {
 	task.Kind = kind
 	task.APIVersion = api
@@ -126,6 +127,7 @@ func (t *Task) readYAML() (*tekton.Task, error) {
 	return &res, err
 }
 
+// CreateOrUpdate creates new tekton Task object or updates existing one
 func (t *Task) CreateOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*tekton.Task, error) {
 	if task.TypeMeta.Kind != kind {
 		return nil, fmt.Errorf("Object Kind mismatch: got %q, want %q", task.TypeMeta.Kind, kind)
@@ -149,6 +151,7 @@ func (t *Task) CreateOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*
 	return taskObj, err
 }
 
+// SetOwner updates tekton Task object with provided owner reference
 func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
 	task, err := clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
 	if err != nil {

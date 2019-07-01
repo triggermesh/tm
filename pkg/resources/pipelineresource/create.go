@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Deploy creates tekton PipelineResource with provided git URL
 func (plr *PipelineResource) Deploy(clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
 	pipelineResourceObject := plr.newObject(clientset)
 	if client.Dry {
@@ -63,6 +64,7 @@ func (plr *PipelineResource) createOrUpdate(pipelineResourceObject v1alpha1.Pipe
 	return res, err
 }
 
+// SetOwner updates PipelineResource object with provided owner reference
 func (plr *PipelineResource) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
 	pplresource, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Get(plr.Name, metav1.GetOptions{})
 	if err != nil {

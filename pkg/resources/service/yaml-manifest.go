@@ -27,14 +27,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var yamlFile = "serverless.yaml"
+// Output contains input-output writer interface
 var Output io.Writer = os.Stdout
+var yamlFile = "serverless.yaml"
 
 type status struct {
 	Message string
 	Error   error
 }
 
+// DeployYAML accepts service YAML manifest and deploys it to cluster
 func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, threads int, clientset *client.ConfigSet) error {
 	services, err := s.ManifestToServices(yamlFile)
 	if err != nil {
@@ -53,6 +55,10 @@ func (s *Service) DeployYAML(yamlFile string, functionsToDeploy []string, thread
 	return s.DeployFunctions(functions, removeOrphans, threads, clientset)
 }
 
+// DeployFunctions creates a deployment worker pool, reads provided Service array and
+// if service is in list to deploy, sends it to the worker pool with given concurrency rate.
+// After deployment it checks which functions from current service are left untouched
+// and removes them as orphans
 func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threads int, clientset *client.ConfigSet) error {
 	jobs := make(chan Service, 100)
 	results := make(chan status, 100)
@@ -91,6 +97,7 @@ func (s *Service) DeployFunctions(functions []Service, removeOrphans bool, threa
 	return nil
 }
 
+// DeleteYAML creates deletion worker pool and removes functions listed in provided YAML manifest
 func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, threads int, clientset *client.ConfigSet) error {
 	jobs := make(chan Service, 100)
 	results := make(chan status, 100)
@@ -124,6 +131,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 	return nil
 }
 
+// ManifestToServices parses and validates YAML manifest and returns an array of Service objects
 func (s *Service) ManifestToServices(YAML string) ([]Service, error) {
 	var err error
 	if YAML, err = getYAML(YAML); err != nil {

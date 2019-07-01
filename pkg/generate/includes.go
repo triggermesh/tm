@@ -14,7 +14,8 @@
 
 package generate
 
-type samplesTable map[string]service
+// SamplesTable is a set of service samples with its dependencies, names, fucntions, etc
+type SamplesTable map[string]service
 
 type service struct {
 	source       string
@@ -99,8 +100,9 @@ module.exports.landingPage = (event, context, callback) => {
 }`
 )
 
-func NewTable() *samplesTable {
-	return &samplesTable{
+// NewTable returns map with runtime name as key and service structure as value
+func NewTable() *SamplesTable {
+	return &SamplesTable{
 		"python": service{
 			source:     "handler.py",
 			runtime:    "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",

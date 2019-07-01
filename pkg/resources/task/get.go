@@ -20,10 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Get return tekton Task object
 func (t *Task) Get(clientset *client.ConfigSet) (*v1alpha1.Task, error) {
 	return clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
 }
 
+// Exist returns true if Task with provided name is available in current namespace
 func Exist(clientset *client.ConfigSet, name string) bool {
 	t := Task{
 		Name:      name,

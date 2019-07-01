@@ -330,6 +330,7 @@ func (b *Build) cloneBuildtemplate(clientset *client.ConfigSet) (*buildv1alpha1.
 	return bt.Clone(*sourceBt, clientset)
 }
 
+// SetOwner sets passed owner object as owner reference in Build structure
 func (b *Build) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
 	build, err := clientset.Build.BuildV1alpha1().Builds(b.Namespace).Get(b.Name, metav1.GetOptions{})
 	if err != nil {
