@@ -15,12 +15,10 @@
 package build
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
 
-	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/triggermesh/tm/pkg/client"
 )
@@ -68,33 +66,14 @@ func TestBuild(t *testing.T) {
 			Namespace:     namespace,
 			Source:        tt.Source,
 			Revision:      tt.Revision,
+			Registry:      "knative.registry.svc.cluster.local",
 			Buildtemplate: tt.Buildtemplate,
 			Args:          tt.Args,
 		}
 
-		buildObject, err := build.Deploy(&buildClient)
-		if err != nil {
-			assert.Error(t, err)
-			continue
-		}
-		var buildStruct buildv1alpha1.Build
-		if err := json.Unmarshal(buildObject, &buildStruct); err != nil {
-			assert.Error(t, err)
-			continue
-		}
-		var image string
-		if buildStruct.Spec.Template != nil {
-			for _, v := range buildStruct.Spec.Template.Arguments {
-				if v.Name == "IMAGE" {
-					image = v.Value
-					break
-				}
-			}
-		}
-
-		if image != tt.ImageName {
-			assert.Error(t, fmt.Errorf("Unexpected image name: want %q, got %q", tt.ImageName, image))
-		}
+		image, err := build.Deploy(&buildClient)
+		assert.NoError(t, err)
+		assert.Contains(t, image, build.Name)
 
 		b, err := build.Get(&buildClient)
 		assert.NoError(t, err)

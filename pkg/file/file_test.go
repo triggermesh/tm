@@ -19,7 +19,7 @@ func TestParseManifest(t *testing.T) {
 func TestRandString(t *testing.T) {
 	testCases := []int{1, 2, 3, 10, 0}
 	for _, tc := range testCases {
-		result := randString(tc)
+		result := RandString(tc)
 		assert.Equal(t, tc, len(result))
 	}
 }
