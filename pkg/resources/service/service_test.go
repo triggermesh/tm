@@ -27,6 +27,7 @@ func TestDeployAndDelete(t *testing.T) {
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {
 		namespace = ns
 	}
+	client.Dry = false
 	client.Wait = true
 	serviceClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
