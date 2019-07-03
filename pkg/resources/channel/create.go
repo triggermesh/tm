@@ -17,7 +17,6 @@ package channel
 import (
 	eventingApi "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
-	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -31,19 +30,12 @@ func (c *Channel) Deploy(clientset *client.ConfigSet) error {
 func (c *Channel) newObject(clientset *client.ConfigSet) eventingApi.Channel {
 	return eventingApi.Channel{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Channel",
-			APIVersion: "eventing.knative.dev/v1alpha1",
+			Kind:       c.Kind,
+			APIVersion: "messaging.knative.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      c.Name,
 			Namespace: c.Namespace,
-		},
-		Spec: eventingApi.ChannelSpec{
-			Provisioner: &corev1.ObjectReference{
-				APIVersion: "eventing.knative.dev/v1alpha1",
-				Kind:       "ClusterChannelProvisioner",
-				Name:       c.Provisioner,
-			},
 		},
 	}
 }
