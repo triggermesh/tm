@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/knative/pkg/apis"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
 	net "github.com/knative/serving/pkg/apis/networking"
 	"github.com/knative/serving/pkg/apis/serving"
@@ -40,13 +39,17 @@ const (
 	// use for connecting to the user container.
 	DefaultUserPort = 8080
 
-	// RequestQueueAdminPortName specifies the port name for
-	// health check and lifecyle hooks for queue-proxy.
-	RequestQueueAdminPortName string = "queueadm-port"
+	// QueueAdminPortName specifies the port name for
+	// health check and lifecycle hooks for queue-proxy.
+	QueueAdminPortName string = "queueadm-port"
 
-	// RequestQueueMetricsPortName specifies the port name to use for metrics
-	// emitted by queue-proxy.
-	RequestQueueMetricsPortName = "queue-metrics"
+	// AutoscalingQueueMetricsPortName specifies the port name to use for metrics
+	// emitted by queue-proxy for autoscaler.
+	AutoscalingQueueMetricsPortName = "queue-metrics"
+
+	// UserQueueMetricsPortName specifies the port name to use for metrics
+	// emitted by queue-proxy for end user.
+	UserQueueMetricsPortName = "user-metrics"
 
 	// ServiceQueueMetricsPortName is the name of the port that serves metrics
 	// on the Kubernetes service.
@@ -56,10 +59,7 @@ const (
 var revCondSet = apis.NewLivingConditionSet(
 	RevisionConditionResourcesAvailable,
 	RevisionConditionContainerHealthy,
-	RevisionConditionBuildSucceeded,
 )
-
-var buildCondSet = duckv1alpha1.NewBatchConditionSet()
 
 func (r *Revision) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Revision")
@@ -132,21 +132,6 @@ func (rs *RevisionStatus) InitializeConditions() {
 	revCondSet.Manage(rs).InitializeConditions()
 }
 
-func (rs *RevisionStatus) PropagateBuildStatus(bs duckv1alpha1.Status) {
-	bc := buildCondSet.Manage(&bs).GetCondition(duckv1alpha1.ConditionSucceeded)
-	if bc == nil {
-		return
-	}
-	switch {
-	case bc.Status == corev1.ConditionUnknown:
-		revCondSet.Manage(rs).MarkUnknown(RevisionConditionBuildSucceeded, "Building", bc.Message)
-	case bc.Status == corev1.ConditionTrue:
-		revCondSet.Manage(rs).MarkTrue(RevisionConditionBuildSucceeded)
-	case bc.Status == corev1.ConditionFalse:
-		revCondSet.Manage(rs).MarkFalse(RevisionConditionBuildSucceeded, bc.Reason, bc.Message)
-	}
-}
-
 // MarkResourceNotConvertible adds a Warning-severity condition to the resource noting that
 // it cannot be converted to a higher version.
 func (rs *RevisionStatus) MarkResourceNotConvertible(err *CannotConvertError) {
@@ -191,6 +176,12 @@ func (rs *RevisionStatus) MarkContainerExiting(exitCode int32, message string) {
 
 func (rs *RevisionStatus) MarkResourcesAvailable() {
 	revCondSet.Manage(rs).MarkTrue(RevisionConditionResourcesAvailable)
+}
+
+// MarkResourcesUnavailable changes "ResourcesAvailable" condition to false to reflect that the
+// resources of the given kind and name cannot be created.
+func (rs *RevisionStatus) MarkResourcesUnavailable(reason, message string) {
+	revCondSet.Manage(rs).MarkFalse(RevisionConditionResourcesAvailable, reason, message)
 }
 
 func (rs *RevisionStatus) MarkActive() {
@@ -240,13 +231,6 @@ type LastPinnedParseError AnnotationParseError
 
 func (e LastPinnedParseError) Error() string {
 	return fmt.Sprintf("%v lastPinned value: %q", e.Type, e.Value)
-}
-
-// +k8s:deepcopy-gen=false
-type configurationGenerationParseError AnnotationParseError
-
-func (e configurationGenerationParseError) Error() string {
-	return fmt.Sprintf("%v configurationGeneration value: %q", e.Type, e.Value)
 }
 
 func RevisionLastPinnedString(t time.Time) string {

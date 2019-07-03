@@ -263,7 +263,7 @@
   version = "0.5"
 
 [[projects]]
-  digest = "1:ea2dc9fd11ca484880b97d4b285d2780113a4b5e6db6cbc033e8eec3f5ddf104"
+  digest = "1:9829676718ea9102857e9ca5005fb74a61ef20da1537aee70a4337dcf93d2025"
   name = "github.com/knative/build"
   packages = [
     "pkg/apis/build",
@@ -273,26 +273,29 @@
     "pkg/client/clientset/versioned/typed/build/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "002a41a30693d0a720ba34476336fc81ba299564"
-  version = "v0.6.0"
+  revision = "0ff6554186913895288555b640b6af03173a2495"
+  version = "v0.7.0"
 
 [[projects]]
-  digest = "1:c1268aea893f96790dd9a23dc50feffb01beb8e6d89ae5240e6d2e3b962bd030"
+  digest = "1:7f75e6e9ba0a34413b9437b935d9c8cf4076f138059a6a08b3eab5c850bc6870"
   name = "github.com/knative/eventing"
   packages = [
     "pkg/apis/duck/v1alpha1",
     "pkg/apis/eventing",
     "pkg/apis/eventing/v1alpha1",
+    "pkg/apis/messaging",
+    "pkg/apis/messaging/v1alpha1",
     "pkg/apis/sources",
     "pkg/apis/sources/v1alpha1",
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
+    "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "d123d12f7c6b9c51298719c67cd9745571abade2"
-  version = "v0.6.0"
+  revision = "7df0cc56c28d58223ff25d5ddfb487fa8c29a004"
+  version = "v0.7.1"
 
 [[projects]]
   digest = "1:46767c2b79bd6cb79385eb7d006bed764ca77860f2e0c64c30d53c62e19dff9f"
@@ -308,8 +311,8 @@
   version = "v0.6.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:16307a0032ac0c53125039e182f93ab4e8513bc8ff22caa5934afbf6f290c627"
+  branch = "release-0.7"
+  digest = "1:99eb9f26b2e04aa5cf1c87bc1232c5b1ea73aee4bf88875cb408218253cc2cfc"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -326,10 +329,10 @@
     "webhook",
   ]
   pruneopts = "UT"
-  revision = "5e4512dcb2cafff2779e6b1ba5091c642b4df2e1"
+  revision = "d82505e6c5b4ce46562d6c242be0e706791f35bd"
 
 [[projects]]
-  digest = "1:78de78053e9987f65a3753f5d13c86ab39fb98f96b4839a12d9960e57dbc998b"
+  digest = "1:6cd96d69244f313b06d0102c42da783363b65bb43e0d374a6df7cdbc894430d6"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -345,10 +348,11 @@
     "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
     "pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1",
   ]
   pruneopts = "UT"
-  revision = "0800b94fd42981b439f6a54b0c0cbedd23e58c32"
-  version = "v0.6.0"
+  revision = "ce4ce706afb5d9c323d1c073746d64562a722f8f"
+  version = "v0.7.1"
 
 [[projects]]
   digest = "1:3804a3a02964db8e6db3e5e7960ac1c1a9b12835642dd4f4ac4e56c749ec73eb"
@@ -545,7 +549,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:8ce3200eee9c5dcbe4196350808db41e724cd51e580e5f4aa20b874441dfcc45"
+  digest = "1:2e6f0154cb7fc033cd235f6aaa4fd8bd84b16f11080a4df3bb02434ff05ffef8"
   name = "github.com/tektoncd/pipeline"
   packages = [
     "pkg/apis/pipeline",
@@ -554,12 +558,13 @@
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/pipeline/v1alpha1",
     "pkg/list",
+    "pkg/merge",
     "pkg/names",
     "pkg/templating",
   ]
   pruneopts = "UT"
-  revision = "0dd031eabb3695e26a10624564cc797d6b7a48b9"
-  version = "v0.3.1"
+  revision = "9c52c698022faef09311093b1621b17cf903a8c0"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:2643d81498e38e44bdcf480be199cac55f29e97403b0342d962824bfe9960722"
@@ -862,7 +867,7 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:f7b2b7b711a411db5b1255b80b36f772c0bbafdedd64317e1e75b89e9ee15e5d"
+  digest = "1:e30e3ed67ed4a3e11e834c23e69d5d17e6bb4ec513abb6d2ed0af00ad3ba0a2f"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/equality",
@@ -898,18 +903,21 @@
     "pkg/util/httpstream/spdy",
     "pkg/util/intstr",
     "pkg/util/json",
+    "pkg/util/mergepatch",
     "pkg/util/naming",
     "pkg/util/net",
     "pkg/util/rand",
     "pkg/util/remotecommand",
     "pkg/util/runtime",
     "pkg/util/sets",
+    "pkg/util/strategicpatch",
     "pkg/util/validation",
     "pkg/util/validation/field",
     "pkg/util/wait",
     "pkg/util/yaml",
     "pkg/version",
     "pkg/watch",
+    "third_party/forked/golang/json",
     "third_party/forked/golang/netutil",
     "third_party/forked/golang/reflect",
   ]
@@ -1063,6 +1071,14 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
+  branch = "master"
+  digest = "1:22abb5d4204ab1a0dcc9cda64906a31c43965ff5159e8b9f766c9d2a162dbed5"
+  name = "k8s.io/kube-openapi"
+  packages = ["pkg/util/proto"]
+  pruneopts = "UT"
+  revision = "db7b694dc208eead64d38030265f702db593fcf2"
+
+[[projects]]
   digest = "1:84a8609383bec11b71d52dd813f33f1d16614b91966940bdc2aa79bea864fa25"
   name = "sigs.k8s.io/controller-runtime"
   packages = ["pkg/runtime/scheme"]
@@ -1081,7 +1097,7 @@
     "github.com/knative/eventing-sources/pkg/client/clientset/versioned",
     "github.com/knative/eventing/pkg/apis/eventing/v1alpha1",
     "github.com/knative/eventing/pkg/client/clientset/versioned",
-    "github.com/knative/pkg/apis/duck/v1alpha1",
+    "github.com/knative/pkg/apis",
     "github.com/knative/serving/pkg/apis/serving/v1alpha1",
     "github.com/knative/serving/pkg/apis/serving/v1beta1",
     "github.com/knative/serving/pkg/client/clientset/versioned",

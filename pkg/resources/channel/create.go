@@ -15,6 +15,9 @@
 package channel
 
 import (
+	"fmt"
+
+	"github.com/ghodss/yaml"
 	eventingApi "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +27,14 @@ import (
 // Deploy knative eventing channel
 func (c *Channel) Deploy(clientset *client.ConfigSet) error {
 	channelObject := c.newObject(clientset)
+	if client.Dry {
+		res, err := yaml.Marshal(channelObject)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s\n", res)
+		return nil
+	}
 	return c.createOrUpdate(channelObject, clientset)
 }
 

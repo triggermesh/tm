@@ -145,7 +145,6 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 			if err := c.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("Channel created")
 		},
 	}
 	deployChannelCmd.Flags().StringVarP(&c.Kind, "kind", "k", "InMemoryChannel", "Channel kind")
