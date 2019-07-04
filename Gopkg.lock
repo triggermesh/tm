@@ -1096,6 +1096,7 @@
     "github.com/knative/build/pkg/client/clientset/versioned",
     "github.com/knative/eventing-sources/pkg/client/clientset/versioned",
     "github.com/knative/eventing/pkg/apis/eventing/v1alpha1",
+    "github.com/knative/eventing/pkg/apis/messaging/v1alpha1",
     "github.com/knative/eventing/pkg/client/clientset/versioned",
     "github.com/knative/pkg/apis",
     "github.com/knative/serving/pkg/apis/serving/v1alpha1",
