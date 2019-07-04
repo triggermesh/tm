@@ -69,7 +69,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		Template: &servingv1alpha1.RevisionTemplateSpec{
 			Spec: servingv1alpha1.RevisionSpec{
 				RevisionSpec: servingv1beta1.RevisionSpec{
-					PodSpec: servingv1beta1.PodSpec{
+					PodSpec: corev1.PodSpec{
 						Containers: []corev1.Container{
 							{Image: image},
 						},

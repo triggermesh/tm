@@ -47,18 +47,18 @@ func TestBuild(t *testing.T) {
 	assert.NoError(t, err)
 
 	testCases := []struct {
-		Name        string
-		Provisioner string
-		ErrMSG      error
+		Name   string
+		Kind   string
+		ErrMSG error
 	}{
 		{"foo", "bar", nil},
 	}
 
 	for _, tt := range testCases {
 		channel := &Channel{
-			Name:        tt.Name,
-			Namespace:   namespace,
-			Provisioner: tt.Provisioner,
+			Name:      tt.Name,
+			Namespace: namespace,
+			Kind:      tt.Kind,
 		}
 
 		err = channel.Deploy(&channelClient)

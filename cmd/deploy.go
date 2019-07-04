@@ -138,17 +138,18 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 		Use:     "channel",
 		Aliases: []string{"channels"},
 		Args:    cobra.ExactArgs(1),
-		Short:   "Deploy knative eventing channel",
+		Short:   "Deploy knative eventing in-memory CRD channel",
 		Run: func(cmd *cobra.Command, args []string) {
 			c.Name = args[0]
 			c.Namespace = client.Namespace
 			if err := c.Deploy(clientset); err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println("Channel created")
 		},
 	}
-	deployChannelCmd.Flags().StringVarP(&c.Provisioner, "provisioner", "p", "in-memory-channel", "Channel provisioner")
+
+	// only InMemoryChannel kind of channels available now
+	// deployChannelCmd.Flags().StringVarP(&c.Kind, "kind", "k", "InMemoryChannel", "Channel kind")
 	return deployChannelCmd
 }
 

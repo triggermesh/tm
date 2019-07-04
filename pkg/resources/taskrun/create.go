@@ -262,9 +262,6 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 			Namespace:    tr.Namespace,
 		},
 		Spec: v1alpha1.TaskRunSpec{
-			Trigger: v1alpha1.TaskTrigger{
-				Type: v1alpha1.TaskTriggerTypeManual,
-			},
 			TaskRef: taskref,
 			Inputs:  v1alpha1.TaskRunInputs{},
 		},
