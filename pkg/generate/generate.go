@@ -70,10 +70,14 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 	}
 
 	template := file.Definition{
-		Service:     "demo-service",
+		Service:     p.Name,
 		Description: "Sample knative service",
 		Provider:    provider,
 		Functions:   functions,
+	}
+
+	if template.Service == "" {
+		template.Service = fmt.Sprintf("%s-demo-service", p.Runtime)
 	}
 
 	manifest, err := yaml.Marshal(&template)
@@ -86,24 +90,29 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 		return nil
 	}
 
-	if err := file.MakeDir(p.Runtime); err != nil {
+	path := p.Name
+	if path == "" {
+		path = p.Runtime
+	}
+
+	if err := file.MakeDir(path); err != nil {
 		return err
 	}
 
 	for _, dep := range sample.dependencies {
-		if err := file.Write(fmt.Sprintf("%s/%s", p.Runtime, dep.name), dep.data); err != nil {
+		if err := file.Write(fmt.Sprintf("%s/%s", path, dep.name), dep.data); err != nil {
 			return fmt.Errorf("writing dependencies to file: %s", err)
 		}
 	}
-	if err := file.Write(fmt.Sprintf("%s/%s", p.Runtime, sample.source), sample.function); err != nil {
+	if err := file.Write(fmt.Sprintf("%s/%s", path, sample.source), sample.function); err != nil {
 		return fmt.Errorf("writing function to file: %s", err)
 	}
-	if err := file.Write(fmt.Sprintf("%s/%s", p.Runtime, manifestName), string(manifest)); err != nil {
+	if err := file.Write(fmt.Sprintf("%s/%s", path, manifestName), string(manifest)); err != nil {
 		return fmt.Errorf("writing manifest to file: %s", err)
 	}
 	fmt.Printf("Sample %s project has been created\n", p.Runtime)
-	fmt.Printf("%s/%s\t\t- function code\n%s/%s\t\t- service manifest\n", p.Runtime, sample.source, p.Runtime, manifestName)
-	fmt.Printf("You can deploy this project using \"tm deploy -f %s --wait\" command\n", p.Runtime)
+	fmt.Printf("%s/%s\t\t- function code\n%s/%s\t\t- service manifest\n", path, sample.source, path, manifestName)
+	fmt.Printf("You can deploy this project using \"tm deploy -f %s --wait\" command\n", path)
 	return nil
 }
 
