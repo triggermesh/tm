@@ -98,7 +98,7 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 
 func (t *Task) customStep() corev1.Container {
 	return corev1.Container{
-		Name:    "sources",
+		Name:    "sources-receiver",
 		Image:   "busybox",
 		Command: []string{"sh"},
 		Args: []string{"-c", fmt.Sprintf(`

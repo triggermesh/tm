@@ -75,4 +75,4 @@
 
 [[override]]
   name = "github.com/tektoncd/pipeline"
-  version = "v0.4.0"
+  version = "v0.5.2"
