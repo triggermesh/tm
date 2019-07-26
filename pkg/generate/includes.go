@@ -69,35 +69,14 @@ func main() {
 hash = {date: Time.new}
 { statusCode: 200, body: JSON.generate(hash) }
 end`
-	nodejsFunc = `'use strict';
+	nodejsFunc = `async function justWait() {
+  return new Promise((resolve, reject) => setTimeout(resolve, 100));
+}
 
-module.exports.landingPage = (event, context, callback) => {
-  let dynamicHtml = '<p>Hey Unknown!</p>';
-  // check for GET params and use if available
-  if (event.queryStringParameters && event.queryStringParameters.name) {
-	dynamicHtml = ` + "`<p>Hey ${event.queryStringParameters.name}!</p>`" + `;
-  }
-
-  const html = ` + "`<html><style>h1 { color: #73757d; }</style><body><h1>Landing Page</h1>${dynamicHtml}</body></html>`" + `;
-
-  const response = {
-	statusCode: 200,
-	headers: {
-	  'Content-Type': 'text/html',
-	},
-	body: html,
-  };
-
-  // callback is sending HTML back
-  callback(null, response);
+module.exports.sayHelloAsync = async (event) => {
+  await justWait();
+  return {hello: event && event.name || "Missing a name property in the event's JSON body"};
 };`
-	packageJSON = `{
-	"name": "aws-serve-dynamic-html-via-http-endpoint",
-	"version": "1.0.0",
-	"description": "Hookup an AWS API Gateway endpoint to a Lambda function to render HTML on a GET request",
-	"author": "",
-	"license": "MIT"
-}`
 )
 
 // NewTable returns map with runtime name as key and service structure as value
@@ -123,14 +102,10 @@ func NewTable() *SamplesTable {
 			apiGateway: true,
 		},
 		"node": service{
-			source:     "handler.js",
-			runtime:    "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/node4-runtime.yaml",
-			function:   nodejsFunc,
-			handler:    "handler.landingPage",
-			apiGateway: true,
-			dependencies: []stuff{
-				{name: "package.json", data: packageJSON},
-			},
+			source:   "handler.js",
+			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/node10-runtime.yaml",
+			function: nodejsFunc,
+			handler:  "handler.sayHelloAsync",
 		},
 	}
 }
