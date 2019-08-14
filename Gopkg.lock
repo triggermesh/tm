@@ -549,9 +549,10 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:2e6f0154cb7fc033cd235f6aaa4fd8bd84b16f11080a4df3bb02434ff05ffef8"
+  digest = "1:1a0b50f77aa385d2a921fa640ecc70818c2fbbef199ab8338fa6844eff06192a"
   name = "github.com/tektoncd/pipeline"
   packages = [
+    "pkg/apis/config",
     "pkg/apis/pipeline",
     "pkg/apis/pipeline/v1alpha1",
     "pkg/client/clientset/versioned",
@@ -563,8 +564,8 @@
     "pkg/templating",
   ]
   pruneopts = "UT"
-  revision = "9c52c698022faef09311093b1621b17cf903a8c0"
-  version = "v0.4.0"
+  revision = "ef4611b7cf0c0b0f0b1876a1652f283fc63f181b"
+  version = "v0.5.2"
 
 [[projects]]
   digest = "1:2643d81498e38e44bdcf480be199cac55f29e97403b0342d962824bfe9960722"
@@ -717,6 +718,17 @@
   packages = ["rate"]
   pruneopts = "UT"
   revision = "9d24e82272b4f38b78bc8cff74fa936d31ccd8ef"
+
+[[projects]]
+  branch = "master"
+  digest = "1:7b5ce208ea2ca1f96322e6a5b616839fe49ea798648a013039f300475a1aadfc"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "UT"
+  revision = "a985d3407aa71f30cf86696ee0a2f409709f22e1"
 
 [[projects]]
   digest = "1:ae8b6cd1af38908c84050254b3fe998dcf6926c6e85d8e504a7402ab32da4569"

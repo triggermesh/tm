@@ -417,7 +417,7 @@ func (tr *TaskRun) sourceContainer(clientset *client.ConfigSet, podName string) 
 				continue
 			}
 			for _, v := range pod.Status.ContainerStatuses {
-				if v.Name == "build-step-sources" {
+				if strings.HasSuffix(v.Name, "sources-receiver") {
 					if v.State.Terminated != nil {
 						// Looks like we got watch interface for "previous" service version
 						return "", fmt.Errorf("taskrun container terminated")
