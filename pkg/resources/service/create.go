@@ -164,6 +164,9 @@ func (s *Service) createOrUpdate(serviceObject *servingv1alpha1.Service, clients
 		if err != nil {
 			return nil, err
 		}
+		if creator, exist := service.GetAnnotations()["serving.knative.dev/creator"]; exist {
+			serviceObject.Annotations["serving.knative.dev/creator"] = creator
+		}
 		serviceObject.ObjectMeta.ResourceVersion = service.GetResourceVersion()
 		return clientset.Serving.ServingV1alpha1().Services(s.Namespace).Update(serviceObject)
 	}
