@@ -19,6 +19,8 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
+	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -84,6 +86,71 @@ func Push(clientset *client.ConfigSet) error {
 	if err != nil {
 		return err
 	}
+
+	////////////////////////////////////////////
+	cm := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      project,
+			Namespace: client.Namespace,
+		},
+		Data: map[string]string{
+			"taskrun": string(res),
+		},
+	}
+
+	if _, err := clientset.Core.CoreV1().ConfigMaps(client.Namespace).Create(&cm); err != nil {
+		return err
+	}
+
+	ksvc := servingv1alpha1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "serving.knative.dev/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      project + "-transceiver",
+			Namespace: client.Namespace,
+		},
+		Spec: servingv1alpha1.ServiceSpec{
+			ConfigurationSpec: servingv1alpha1.ConfigurationSpec{
+				Template: &servingv1alpha1.RevisionTemplateSpec{
+					Spec: servingv1alpha1.RevisionSpec{
+						RevisionSpec: servingv1beta1.RevisionSpec{
+							PodSpec: corev1.PodSpec{
+								Containers: []corev1.Container{
+									{
+										Name:  "transceiver",
+										Image: "triggermesh/transceiver",
+										Env: []corev1.EnvVar{
+											{
+												Name:  "TASKRUN_CONFIGMAP",
+												Value: project,
+											}, {
+												Name:  "TASK_NAME",
+												Value: project,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if _, err := clientset.Serving.ServingV1alpha1().Services(client.Namespace).Create(&ksvc); err != nil {
+		return err
+	}
+
+	// Add containersource creation (base image is triggermesh/github-thrid-party-source)
+
+	///////////////////////////////////////////
 	fmt.Printf("%s\n", res)
 	return nil
 }
