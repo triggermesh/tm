@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Tekton Authors.
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,8 +41,9 @@ type ClusterResource struct {
 	URL      string `json:"url"`
 	Revision string `json:"revision"`
 	// Server requires Basic authentication
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Namespace string `json:"namespace"`
 	// Server requires Bearer authentication. This client will not attempt to use
 	// refresh tokens for an OAuth2 flow.
 	// Token overrides userame and password
@@ -74,6 +75,8 @@ func NewClusterResource(r *PipelineResource) (*ClusterResource, error) {
 			clusterResource.Revision = param.Value
 		case strings.EqualFold(param.Name, "Username"):
 			clusterResource.Username = param.Value
+		case strings.EqualFold(param.Name, "Namespace"):
+			clusterResource.Namespace = param.Value
 		case strings.EqualFold(param.Name, "Password"):
 			clusterResource.Password = param.Value
 		case strings.EqualFold(param.Name, "Token"):
@@ -121,15 +124,16 @@ func (s *ClusterResource) GetURL() string {
 // Replacements is used for template replacement on a ClusterResource inside of a Taskrun.
 func (s *ClusterResource) Replacements() map[string]string {
 	return map[string]string{
-		"name":     s.Name,
-		"type":     string(s.Type),
-		"url":      s.URL,
-		"revision": s.Revision,
-		"username": s.Username,
-		"password": s.Password,
-		"token":    s.Token,
-		"insecure": strconv.FormatBool(s.Insecure),
-		"cadata":   string(s.CAData),
+		"name":      s.Name,
+		"type":      string(s.Type),
+		"url":       s.URL,
+		"revision":  s.Revision,
+		"username":  s.Username,
+		"password":  s.Password,
+		"namespace": s.Namespace,
+		"token":     s.Token,
+		"insecure":  strconv.FormatBool(s.Insecure),
+		"cadata":    string(s.CAData),
 	}
 }
 
@@ -138,13 +142,9 @@ func (s ClusterResource) String() string {
 	return string(json)
 }
 
-func (s *ClusterResource) GetUploadContainerSpec() ([]corev1.Container, error) {
-	return nil, nil
-}
+func (s *ClusterResource) GetUploadSteps(string) ([]Step, error) { return nil, nil }
 
-func (s *ClusterResource) SetDestinationDirectory(path string) {
-}
-func (s *ClusterResource) GetDownloadContainerSpec() ([]corev1.Container, error) {
+func (s *ClusterResource) GetDownloadSteps(sourcePath string) ([]Step, error) {
 	var envVars []corev1.EnvVar
 	for _, sec := range s.Secrets {
 		ev := corev1.EnvVar{
@@ -160,8 +160,7 @@ func (s *ClusterResource) GetDownloadContainerSpec() ([]corev1.Container, error)
 		}
 		envVars = append(envVars, ev)
 	}
-
-	clusterContainer := corev1.Container{
+	return []Step{{Container: corev1.Container{
 		Name:    names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("kubeconfig"),
 		Image:   *kubeconfigWriterImage,
 		Command: []string{"/ko-app/kubeconfigwriter"},
@@ -169,7 +168,8 @@ func (s *ClusterResource) GetDownloadContainerSpec() ([]corev1.Container, error)
 			"-clusterConfig", s.String(),
 		},
 		Env: envVars,
-	}
-
-	return []corev1.Container{clusterContainer}, nil
+	}}}, nil
 }
+
+func (s *ClusterResource) GetUploadVolumeSpec(*TaskSpec) ([]corev1.Volume, error)   { return nil, nil }
+func (s *ClusterResource) GetDownloadVolumeSpec(*TaskSpec) ([]corev1.Volume, error) { return nil, nil }

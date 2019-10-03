@@ -112,7 +112,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return string(obj), err
 	}
 
-	fmt.Printf("Creating %q service\n", s.Name)
+	// fmt.Printf("Creating %q service\n", s.Name)
 	if service, err = s.createOrUpdate(service, clientset); err != nil {
 		return "", fmt.Errorf("Creating service: %s", err)
 	}

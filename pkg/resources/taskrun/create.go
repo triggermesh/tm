@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/knative/pkg/apis"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
@@ -34,6 +33,7 @@ import (
 	"github.com/triggermesh/tm/pkg/resources/task"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 const (
@@ -453,13 +453,18 @@ func (tr *TaskRun) injectSources(clientset *client.ConfigSet, pod, container str
 func (tr *TaskRun) getBuildArguments(image string) []v1alpha1.Param {
 	params := []v1alpha1.Param{
 		{
-			Name:  "IMAGE",
-			Value: image,
+			Name: "IMAGE",
+			Value: v1alpha1.ArrayOrString{
+				StringVal: image,
+			},
 		},
 	}
 	for k, v := range mapFromSlice(tr.Params) {
 		params = append(params, v1alpha1.Param{
-			Name: k, Value: v,
+			Name: k,
+			Value: v1alpha1.ArrayOrString{
+				StringVal: v,
+			},
 		})
 	}
 	return params
