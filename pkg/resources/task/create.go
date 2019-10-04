@@ -62,7 +62,7 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	}
 
 	if t.FromLocalSource {
-		task.Spec.Steps = append([]corev1.Container{t.customStep()}, task.Spec.Steps...)
+		task.Spec.Steps = append([]tekton.Step{t.customStep()}, task.Spec.Steps...)
 		if task.Spec.Inputs != nil {
 			task.Spec.Inputs.Resources = []tekton.TaskResource{}
 		}
@@ -85,7 +85,7 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 		t.setupVolume(task)
 	}
 	if t.FromLocalSource {
-		task.Spec.Steps = append([]corev1.Container{t.customStep()}, task.Spec.Steps...)
+		task.Spec.Steps = append([]tekton.Step{t.customStep()}, task.Spec.Steps...)
 		if task.Spec.Inputs != nil {
 			task.Spec.Inputs.Resources = []tekton.TaskResource{}
 		}
@@ -96,24 +96,26 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 	return t.CreateOrUpdate(task, clientset)
 }
 
-func (t *Task) customStep() corev1.Container {
-	return corev1.Container{
-		Name:    "sources-receiver",
-		Image:   "busybox",
-		Command: []string{"sh"},
-		Args: []string{"-c", fmt.Sprintf(`
-			while [ ! -f %s ]; do 
-				sleep 1; 
-			done; 
-			sync;
-			mkdir -p /workspace/workspace;
-			mv /home/*/* /workspace/workspace/;
-			if [[ $? != 0 ]]; then
-				mv /home/* /workspace/workspace/;
-			fi
-			ls -lah /workspace/workspace;
-			sync;`,
-			uploadDoneTrigger)},
+func (t *Task) customStep() tekton.Step {
+	return tekton.Step{
+		Container: corev1.Container{
+			Name:    "sources-receiver",
+			Image:   "busybox",
+			Command: []string{"sh"},
+			Args: []string{"-c", fmt.Sprintf(`
+				while [ ! -f %s ]; do 
+					sleep 1; 
+				done; 
+				sync;
+				mkdir -p /workspace/workspace;
+				mv /home/*/* /workspace/workspace/;
+				if [[ $? != 0 ]]; then
+					mv /home/* /workspace/workspace/;
+				fi
+				ls -lah /workspace/workspace;
+				sync;`,
+				uploadDoneTrigger)},
+		},
 	}
 }
 

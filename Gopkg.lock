@@ -298,7 +298,7 @@
   version = "v0.7.1"
 
 [[projects]]
-  digest = "1:46767c2b79bd6cb79385eb7d006bed764ca77860f2e0c64c30d53c62e19dff9f"
+  digest = "1:16bc07b97751c7ccf3555588d360f6ab189b2904179d9456842e4b80d2e2e397"
   name = "github.com/knative/eventing-sources"
   packages = [
     "pkg/apis/sources/v1alpha1",
@@ -307,8 +307,8 @@
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "b6cdf390669a28bc0d6808476851e2a34aa94305"
-  version = "v0.6.0"
+  revision = "ec6daf8cf75c3f0b911a760f6bed5c215bca979b"
+  version = "v0.4.1"
 
 [[projects]]
   branch = "release-0.7"
@@ -549,7 +549,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:1a0b50f77aa385d2a921fa640ecc70818c2fbbef199ab8338fa6844eff06192a"
+  digest = "1:b5689a1a150912471becdc62a98ea3dc8bb75b89adbbfb43c11e2a5b0c6b7617"
   name = "github.com/tektoncd/pipeline"
   packages = [
     "pkg/apis/config",
@@ -559,13 +559,11 @@
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/pipeline/v1alpha1",
     "pkg/list",
-    "pkg/merge",
     "pkg/names",
-    "pkg/templating",
   ]
   pruneopts = "UT"
-  revision = "ef4611b7cf0c0b0f0b1876a1652f283fc63f181b"
-  version = "v0.5.2"
+  revision = "9ff6aca4b7aa1f573fb9ff2e0d7f868fa9467417"
+  version = "v0.7.0"
 
 [[projects]]
   digest = "1:2643d81498e38e44bdcf480be199cac55f29e97403b0342d962824bfe9960722"
@@ -1091,12 +1089,27 @@
   revision = "db7b694dc208eead64d38030265f702db593fcf2"
 
 [[projects]]
+  branch = "master"
+  digest = "1:83353bfb5fafed2c02c9b38b1ac27e822f299040a567b96223ce2e49cd1f3fb3"
+  name = "knative.dev/pkg"
+  packages = [
+    "apis",
+    "apis/duck",
+    "apis/duck/v1",
+    "apis/duck/v1beta1",
+    "apis/v1alpha1",
+    "configmap",
+    "kmp",
+  ]
+  pruneopts = "UT"
+  revision = "2e27641cb53fec58d8bd47386422a3f3527573bb"
+
+[[projects]]
   digest = "1:84a8609383bec11b71d52dd813f33f1d16614b91966940bdc2aa79bea864fa25"
   name = "sigs.k8s.io/controller-runtime"
   packages = ["pkg/runtime/scheme"]
   pruneopts = "UT"
-  revision = "f6f0bc9611363b43664d08fb097ab13243ef621d"
-  version = "v0.1.9"
+  revision = "0f0740db56812f732d90ff7df3520a291a9f04c9"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -1106,6 +1119,7 @@
     "github.com/gosuri/uitable",
     "github.com/knative/build/pkg/apis/build/v1alpha1",
     "github.com/knative/build/pkg/client/clientset/versioned",
+    "github.com/knative/eventing-sources/pkg/apis/sources/v1alpha1",
     "github.com/knative/eventing-sources/pkg/client/clientset/versioned",
     "github.com/knative/eventing/pkg/apis/eventing/v1alpha1",
     "github.com/knative/eventing/pkg/apis/messaging/v1alpha1",
@@ -1132,6 +1146,7 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/remotecommand",
+    "knative.dev/pkg/apis",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

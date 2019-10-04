@@ -3,6 +3,7 @@ module github.com/triggermesh/tm
 go 1.12
 
 require (
+	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.1 // indirect
 	github.com/Azure/azure-sdk-for-go v30.0.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.2.0 // indirect
@@ -29,10 +30,10 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/knative/build v0.5.0
-	github.com/knative/eventing v0.5.0
+	github.com/knative/eventing v0.9.0
 	github.com/knative/eventing-sources v0.4.1
 	github.com/knative/pkg v0.0.0-20190428145930-105f928666ad
-	github.com/knative/serving v0.5.2
+	github.com/knative/serving v0.9.0
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
@@ -63,6 +64,9 @@ require (
 	k8s.io/client-go v0.0.0-20190226174127-78295b709ec6
 	k8s.io/kube-openapi v0.0.0-20190530181030-b52b5b0f5a7c // indirect
 	k8s.io/kubernetes v1.14.2 // indirect
+	knative.dev/eventing v0.9.0 // indirect
+	knative.dev/pkg v0.0.0-20191003003108-2e27641cb53f
+	knative.dev/serving v0.9.0 // indirect
 	sigs.k8s.io/controller-runtime v0.0.0-20181113214900-0f0740db5681 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )

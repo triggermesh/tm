@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Tekton Authors.
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/knative/pkg/apis"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 var (
@@ -53,6 +53,9 @@ type PipelineRunSpec struct {
 	ServiceAccount string `json:"serviceAccount"`
 	// +optional
 	ServiceAccounts []PipelineRunSpecServiceAccount `json:"serviceAccounts,omitempty"`
+	// Deprecation Notice: The field Results will be removed in v0.8.0
+	// and should not be used. Plan to have this field removed before upgradring
+	// to v0.8.0.
 	// +optional
 	Results *Results `json:"results,omitempty"`
 	// Used for cancelling a pipelinerun (and maybe more later on)
@@ -62,17 +65,9 @@ type PipelineRunSpec struct {
 	// Refer to Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration
 	// +optional
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
-	// NodeSelector is a selector which must be true for the pod to fit on a node.
-	// Selector which must match a node's labels for the pod to be scheduled on that node.
-	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-	// +optional
-	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	// If specified, the pod's tolerations.
-	// +optional
-	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
-	// If specified, the pod's scheduling constraints
-	// +optional
-	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// PodTemplate holds pod specific configuration
+	PodTemplate PodTemplate `json:"podTemplate,omitempty"`
 }
 
 // PipelineRunSpecStatus defines the pipelinerun spec status the user can provide
@@ -107,7 +102,9 @@ type PipelineRef struct {
 type PipelineRunStatus struct {
 	duckv1beta1.Status `json:",inline"`
 
-	// In #107 should be updated to hold the location logs have been uploaded to
+	// Deprecation Notice: The field Results will be removed in v0.8.0
+	// and should not be used. Plan to have this field removed before upgradring
+	// to v0.8.0.
 	// +optional
 	Results *Results `json:"results,omitempty"`
 
@@ -131,6 +128,17 @@ type PipelineRunTaskRunStatus struct {
 	// Status is the TaskRunStatus for the corresponding TaskRun
 	// +optional
 	Status *TaskRunStatus `json:"status,omitempty"`
+	// ConditionChecks maps the name of a condition check to its Status
+	// +optional
+	ConditionChecks map[string]*PipelineRunConditionCheckStatus `json:"conditionChecks,omitempty"`
+}
+
+type PipelineRunConditionCheckStatus struct {
+	// ConditionName is the name of the Condition
+	ConditionName string `json:"conditionName,omitempty"`
+	// Status is the ConditionCheckStatus for the corresponding ConditionCheck
+	// +optional
+	Status *ConditionCheckStatus `json:"status,omitempty"`
 }
 
 var pipelineRunCondSet = apis.NewBatchConditionSet()
@@ -238,5 +246,21 @@ func (pr *PipelineRun) IsCancelled() bool {
 
 // GetRunKey return the pipelinerun key for timeout handler map
 func (pr *PipelineRun) GetRunKey() string {
-	return fmt.Sprintf("%s/%s/%s", pipelineRunControllerName, pr.Namespace, pr.Name)
+	// The address of the pointer is a threadsafe unique identifier for the pipelinerun
+	return fmt.Sprintf("%s/%p", pipelineRunControllerName, pr)
+}
+
+// IsTimedOut returns true if a pipelinerun has exceeded its spec.Timeout based on its status.Timeout
+func (pr *PipelineRun) IsTimedOut() bool {
+	pipelineTimeout := pr.Spec.Timeout
+	startTime := pr.Status.StartTime
+
+	if !startTime.IsZero() && pipelineTimeout != nil {
+		timeout := pipelineTimeout.Duration
+		runtime := time.Since(startTime.Time)
+		if runtime > timeout {
+			return true
+		}
+	}
+	return false
 }
