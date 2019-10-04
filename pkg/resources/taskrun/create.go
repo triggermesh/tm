@@ -455,6 +455,7 @@ func (tr *TaskRun) getBuildArguments(image string) []v1alpha1.Param {
 		{
 			Name: "IMAGE",
 			Value: v1alpha1.ArrayOrString{
+				Type:      v1alpha1.ParamTypeString,
 				StringVal: image,
 			},
 		},
@@ -463,6 +464,7 @@ func (tr *TaskRun) getBuildArguments(image string) []v1alpha1.Param {
 		params = append(params, v1alpha1.Param{
 			Name: k,
 			Value: v1alpha1.ArrayOrString{
+				Type:      v1alpha1.ParamTypeString,
 				StringVal: v,
 			},
 		})

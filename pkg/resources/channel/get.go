@@ -15,11 +15,11 @@
 package channel
 
 import (
-	eventingApi "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
+	messagingApi "github.com/knative/eventing/pkg/apis/messaging/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Channel) Get(clientset *client.ConfigSet) (*eventingApi.Channel, error) {
-	return clientset.Eventing.EventingV1alpha1().Channels(c.Namespace).Get(c.Name, metav1.GetOptions{})
+func (c *Channel) Get(clientset *client.ConfigSet) (*messagingApi.InMemoryChannel, error) {
+	return clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Get(c.Name, metav1.GetOptions{})
 }
