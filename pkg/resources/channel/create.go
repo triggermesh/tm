@@ -54,12 +54,13 @@ func (c *Channel) newObject(clientset *client.ConfigSet) messagingApi.InMemoryCh
 func (c *Channel) createOrUpdate(channelObject messagingApi.InMemoryChannel, clientset *client.ConfigSet) error {
 	_, err := clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Create(&channelObject)
 	if k8sErrors.IsAlreadyExists(err) {
-		channel, err := clientset.Eventing.EventingV1alpha1().Channels(c.Namespace).Get(channelObject.ObjectMeta.Name, metav1.GetOptions{})
+		channel, err := clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Get(channelObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		channelObject.ObjectMeta.ResourceVersion = channel.GetResourceVersion()
-		_, err = clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Create(&channelObject)
+		_, err = clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Update(&channelObject)
+		return err
 	}
 	return err
 }
