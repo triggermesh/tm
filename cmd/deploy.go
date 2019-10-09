@@ -182,6 +182,7 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 			tr.Namespace = client.Namespace
 			tr.Registry = client.Registry
 			tr.Wait = client.Wait
+			tr.Name = args[0]
 			_, err := tr.Deploy(clientset)
 			if err != nil {
 				log.Fatal(err)
@@ -189,8 +190,10 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		},
 	}
 	deployTaskRunCmd.Flags().StringVarP(&tr.Task.Name, "task", "t", "", "Name of task to run")
+	deployTaskRunCmd.Flags().StringVarP(&tr.Function.Path, "file", "f", "", "Function source")
 	deployTaskRunCmd.Flags().StringVarP(&tr.PipelineResource.Name, "resources", "r", "", "Name of pipelineresource to pass into task")
 	deployTaskRunCmd.Flags().StringVarP(&tr.RegistrySecret, "secret", "s", "", "Secret name with registry credentials")
+	deployTaskRunCmd.Flags().StringArrayVar(&tr.Params, "args", []string{}, "Image build arguments")
 	return deployTaskRunCmd
 }
 
