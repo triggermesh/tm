@@ -84,26 +84,26 @@ func NewTable() *SamplesTable {
 	return &SamplesTable{
 		"python": service{
 			source:     "handler.py",
-			runtime:    "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
+			runtime:    "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python-3.7/runtime.yaml",
 			function:   pythonFunc,
 			handler:    "handler.endpoint",
 			apiGateway: true,
 		},
 		"go": service{
 			source:   "main.go",
-			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/go-runtime.yaml",
+			runtime:  "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/go-1.x/runtime.yaml",
 			function: golangFunc,
 		},
 		"ruby": service{
 			source:     "handler.rb",
-			runtime:    "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/ruby25-runtime.yaml",
+			runtime:    "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/ruby-2.5/runtime.yaml",
 			function:   rubyFunc,
 			handler:    "handler.endpoint",
 			apiGateway: true,
 		},
 		"node": service{
 			source:   "handler.js",
-			runtime:  "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/node10-runtime.yaml",
+			runtime:  "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/node-10.x/runtime.yaml",
 			function: nodejsFunc,
 			handler:  "handler.sayHelloAsync",
 		},
