@@ -48,6 +48,16 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 		return nil, err
 	}
 
+	// sometimes, if input param type is not set, string value causing the error
+	// so we're explicitly setting "string" param type
+	if inputs := task.TaskSpec().Inputs; inputs != nil {
+		for k, v := range inputs.Params {
+			if v.Type == "" {
+				inputs.Params[k].Type = tekton.ParamTypeString
+			}
+		}
+	}
+
 	task.SetNamespace(t.Namespace)
 	if t.GenerateName != "" {
 		task.SetName("")
@@ -125,8 +135,7 @@ func (t *Task) readYAML() (*tekton.Task, error) {
 	if err != nil {
 		return &res, err
 	}
-	err = yaml.Unmarshal(yamlFile, &res)
-	return &res, err
+	return &res, yaml.Unmarshal(yamlFile, &res)
 }
 
 // CreateOrUpdate creates new tekton Task object or updates existing one
