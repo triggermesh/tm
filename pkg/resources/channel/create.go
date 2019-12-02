@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/ghodss/yaml"
-	messagingApi "github.com/knative/eventing/pkg/apis/messaging/v1alpha1"
+	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

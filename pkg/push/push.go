@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	eventingv1alpha1 "github.com/knative/eventing-sources/pkg/apis/sources/v1alpha1"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
@@ -30,6 +29,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/sources/v1alpha1"
+	pkg "knative.dev/pkg/apis/v1alpha1"
 )
 
 // Push tries to read git configuration in current directory and if it succeeds
@@ -147,25 +148,35 @@ func getContainerSource(project, owner string) *eventingv1alpha1.ContainerSource
 			Namespace: client.Namespace,
 		},
 		Spec: eventingv1alpha1.ContainerSourceSpec{
-			Sink: &corev1.ObjectReference{
-				Kind:       "Service",
-				APIVersion: "serving.knative.dev/v1beta1",
-				Name:       project + "-transceiver",
+			Sink: &pkg.Destination{
+				Ref: &corev1.ObjectReference{
+					Kind:       "Service",
+					APIVersion: "serving.knative.dev/v1beta1",
+					Name:       project + "-transceiver",
+				},
 			},
-			Image: "triggermesh/github-third-party-source",
-			Env: []corev1.EnvVar{
-				{
-					Name:  "OWNER",
-					Value: owner,
-				}, {
-					Name:  "REPOSITORY",
-					Value: project,
-				}, {
-					Name:  "TOKEN",
-					Value: "",
-				}, {
-					Name:  "EVENT_TYPE",
-					Value: "commit",
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Image: "triggermesh/github-third-party-source",
+							Env: []corev1.EnvVar{
+								{
+									Name:  "OWNER",
+									Value: owner,
+								}, {
+									Name:  "REPOSITORY",
+									Value: project,
+								}, {
+									Name:  "TOKEN",
+									Value: "",
+								}, {
+									Name:  "EVENT_TYPEtekt",
+									Value: "commit",
+								},
+							},
+						},
+					},
 				},
 			},
 		},

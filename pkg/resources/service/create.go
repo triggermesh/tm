@@ -22,13 +22,13 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/knative/pkg/apis"
-	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
-	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
+	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
 )
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster

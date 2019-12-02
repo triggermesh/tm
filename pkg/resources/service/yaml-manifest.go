@@ -292,8 +292,7 @@ func (s *Service) serviceObject(function file.Function) Service {
 
 func (s *Service) removeOrphans(created []Service, clientset *client.ConfigSet) error {
 	list, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{
-		IncludeUninitialized: true,
-		LabelSelector:        "service=" + s.Name,
+		LabelSelector: "service=" + s.Name,
 	})
 	if err != nil {
 		return err
