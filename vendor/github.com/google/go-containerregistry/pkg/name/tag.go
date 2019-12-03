@@ -28,8 +28,7 @@ const (
 // Tag stores a docker tag name in a structured form.
 type Tag struct {
 	Repository
-	tag      string
-	original string
+	tag string
 }
 
 // Ensure Tag implements Reference
@@ -58,9 +57,8 @@ func (t Tag) Name() string {
 	return t.Repository.Name() + tagDelim + t.TagStr()
 }
 
-// String returns the original input string.
 func (t Tag) String() string {
-	return t.original
+	return t.Name()
 }
 
 // Scope returns the scope required to perform the given action on the tag.
@@ -73,8 +71,7 @@ func checkTag(name string) error {
 }
 
 // NewTag returns a new Tag representing the given name, according to the given strictness.
-func NewTag(name string, opts ...Option) (Tag, error) {
-	opt := makeOptions(opts...)
+func NewTag(name string, strict Strictness) (Tag, error) {
 	base := name
 	tag := ""
 
@@ -90,19 +87,15 @@ func NewTag(name string, opts ...Option) (Tag, error) {
 	// even when not being strict.
 	// If we are being strict, we want to validate the tag regardless in case
 	// it's empty.
-	if tag != "" || opt.strict {
+	if tag != "" || strict == StrictValidation {
 		if err := checkTag(tag); err != nil {
 			return Tag{}, err
 		}
 	}
 
-	repo, err := NewRepository(base, opts...)
+	repo, err := NewRepository(base, strict)
 	if err != nil {
 		return Tag{}, err
 	}
-	return Tag{
-		Repository: repo,
-		tag:        tag,
-		original:   name,
-	}, nil
+	return Tag{repo, tag}, nil
 }

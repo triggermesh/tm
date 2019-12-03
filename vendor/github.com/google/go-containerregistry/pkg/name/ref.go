@@ -15,6 +15,7 @@
 package name
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -37,13 +38,13 @@ type Reference interface {
 }
 
 // ParseReference parses the string as a reference, either by tag or digest.
-func ParseReference(s string, opts ...Option) (Reference, error) {
-	if t, err := NewTag(s, opts...); err == nil {
+func ParseReference(s string, strict Strictness) (Reference, error) {
+	if t, err := NewTag(s, strict); err == nil {
 		return t, nil
 	}
-	if d, err := NewDigest(s, opts...); err == nil {
+	if d, err := NewDigest(s, strict); err == nil {
 		return d, nil
 	}
-	return nil, NewErrBadName("could not parse reference: " + s)
-
+	// TODO: Combine above errors into something more useful?
+	return nil, errors.New("could not parse reference")
 }

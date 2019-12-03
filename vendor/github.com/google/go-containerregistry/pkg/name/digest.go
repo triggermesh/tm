@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package name defines structured types for representing image references.
 package name
 
 import (
@@ -28,8 +29,7 @@ const (
 // Digest stores a digest name in a structured form.
 type Digest struct {
 	Repository
-	digest   string
-	original string
+	digest string
 }
 
 // Ensure Digest implements Reference
@@ -55,17 +55,16 @@ func (d Digest) Name() string {
 	return d.Repository.Name() + digestDelim + d.DigestStr()
 }
 
-// String returns the original input string.
 func (d Digest) String() string {
-	return d.original
+	return d.Name()
 }
 
 func checkDigest(name string) error {
 	return checkElement("digest", name, digestChars, 7+64, 7+64)
 }
 
-// NewDigest returns a new Digest representing the given name.
-func NewDigest(name string, opts ...Option) (Digest, error) {
+// NewDigest returns a new Digest representing the given name, according to the given strictness.
+func NewDigest(name string, strict Strictness) (Digest, error) {
 	// Split on "@"
 	parts := strings.Split(name, digestDelim)
 	if len(parts) != 2 {
@@ -79,18 +78,14 @@ func NewDigest(name string, opts ...Option) (Digest, error) {
 		return Digest{}, err
 	}
 
-	tag, err := NewTag(base, opts...)
+	tag, err := NewTag(base, strict)
 	if err == nil {
 		base = tag.Repository.Name()
 	}
 
-	repo, err := NewRepository(base, opts...)
+	repo, err := NewRepository(base, strict)
 	if err != nil {
 		return Digest{}, err
 	}
-	return Digest{
-		Repository: repo,
-		digest:     digest,
-		original:   name,
-	}, nil
+	return Digest{repo, digest}, nil
 }
