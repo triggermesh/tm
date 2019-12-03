@@ -15,9 +15,9 @@
 package service
 
 import (
-	servingv1alpha1 "github.com/knative/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 )
 
 func (s *Service) Get(clientset *client.ConfigSet) (*servingv1alpha1.Service, error) {

@@ -15,9 +15,9 @@
 package channel
 
 import (
-	messagingApi "github.com/knative/eventing/pkg/apis/messaging/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 )
 
 func (c *Channel) Get(clientset *client.ConfigSet) (*messagingApi.InMemoryChannel, error) {
