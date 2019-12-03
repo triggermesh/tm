@@ -19,7 +19,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/go-containerregistry v0.0.0-20191115225042-f8574ec722f4 // indirect
-	github.com/google/uuid v1.1.1 // indirect
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gosuri/uitable v0.0.4
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
@@ -41,7 +40,6 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.4.0
 	github.com/tektoncd/pipeline v0.7.0
-	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	go.opencensus.io v0.22.2 // indirect
 	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/multierr v1.4.0 // indirect
@@ -64,7 +62,6 @@ require (
 	k8s.io/client-go v0.0.0-20190819141724-e14f31a72a77
 	k8s.io/utils v0.0.0-20191114200735-6ca3b61696b6 // indirect
 	knative.dev/eventing v0.10.1
-	knative.dev/eventing-contrib v0.8.0 // indirect
 	knative.dev/pkg v0.0.0-20191107185656-884d50f09454
 	knative.dev/serving v0.8.0
 )
