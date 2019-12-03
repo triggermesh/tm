@@ -25,9 +25,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/knative/build v0.7.0
-	github.com/knative/eventing v0.10.1 // indirect
-	github.com/knative/pkg v0.0.0-20191107185656-884d50f09454 // indirect
-	github.com/knative/serving v0.10.0 // indirect
+	github.com/knative/pkg v0.0.0-20190624141606-d82505e6c5b4 // indirect
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
@@ -65,7 +63,6 @@ require (
 	k8s.io/apimachinery v0.0.0-20190817020851-f2f3a405f61d
 	k8s.io/client-go v0.0.0-20190819141724-e14f31a72a77
 	k8s.io/utils v0.0.0-20191114200735-6ca3b61696b6 // indirect
-	knative.dev/build v0.7.0 // indirect
 	knative.dev/eventing v0.10.1
 	knative.dev/eventing-contrib v0.8.0 // indirect
 	knative.dev/pkg v0.0.0-20191107185656-884d50f09454

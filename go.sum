@@ -246,6 +246,8 @@ github.com/knative/pkg v0.0.0-20191107185656-884d50f09454 h1:GJiLYWEiN+eUAY9Ih8T
 github.com/knative/pkg v0.0.0-20191107185656-884d50f09454/go.mod h1:7Ijfhw7rfB+H9VtosIsDYvZQ+qYTz7auK3fHW/5z4ww=
 github.com/knative/pkg v0.0.0-20191128214922-944655d6cc17 h1:53gzpjl76l5jESyavJjSa3xEXGMN2fnWItYIZfHxJLM=
 github.com/knative/pkg v0.0.0-20191128214922-944655d6cc17/go.mod h1:7Ijfhw7rfB+H9VtosIsDYvZQ+qYTz7auK3fHW/5z4ww=
+github.com/knative/pkg v0.0.0-20191202235035-c259ed6f2e75 h1:w98RWQ3db7a9LNzistn60zyUDxAmdnCo9Dpghu4VE5Q=
+github.com/knative/pkg v0.0.0-20191202235035-c259ed6f2e75/go.mod h1:7Ijfhw7rfB+H9VtosIsDYvZQ+qYTz7auK3fHW/5z4ww=
 github.com/knative/serving v0.10.0 h1:rxD+wywOReTjc1GSxsHjxEUJhqVDunEjqnXOu1ZmPPE=
 github.com/knative/serving v0.10.0/go.mod h1:ljvMfwQy2qanaM/8xnBSK4Mz3Vv2NawC2fo5kFRJS1A=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
@@ -666,10 +668,14 @@ knative.dev/eventing-contrib v0.7.1/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8
 knative.dev/eventing-contrib v0.8.0/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8OmHflNx3g=
 knative.dev/eventing-contrib v0.10.2 h1:+UNqa4+Aaqe/LQ4LitJPymZzNyGFCIJKiCqePb8uAmE=
 knative.dev/eventing-contrib v0.10.2/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8OmHflNx3g=
+knative.dev/pkg v0.0.0-20190624141606-d82505e6c5b4 h1:SFVGP/Hsq+UTVcV+/+FpeggwTddSVm0ERlvz+9dFOOg=
+knative.dev/pkg v0.0.0-20190624141606-d82505e6c5b4/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
 knative.dev/pkg v0.0.0-20191107185656-884d50f09454 h1:nkslWFyRWaJp3nPDm+GSQOSvN8NpZg8qIYTR+XssNNg=
 knative.dev/pkg v0.0.0-20191107185656-884d50f09454/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
 knative.dev/pkg v0.0.0-20191128214922-944655d6cc17 h1:mQ4t9AmWoyk8pTnGiKhlfecHCcq0/MJk+W6WnveFxng=
 knative.dev/pkg v0.0.0-20191128214922-944655d6cc17/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
+knative.dev/pkg v0.0.0-20191202235035-c259ed6f2e75 h1:6ZhoB7uhyX+bRPzgZvul2pVOuhSvawEBEL4vR6bsnnk=
+knative.dev/pkg v0.0.0-20191202235035-c259ed6f2e75/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
 knative.dev/serving v0.6.1 h1:2FPKuGQH5Ge8mk+ggNLlOFTTO9Vb9Sn7GS8MMsOH400=
 knative.dev/serving v0.6.1/go.mod h1:x2n255JS2XBI39tmjZ8CwTxIf9EKNMCrkVuiOttLRm0=
 knative.dev/serving v0.7.1 h1:QKq0q+iu8eiE7DPgIrVVwpQBwHMAZ8KRH/Tznf/wh4I=
