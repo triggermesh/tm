@@ -25,10 +25,10 @@ import (
 	"github.com/ghodss/yaml"
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
 
+	tektonApi "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	eventSourcesApi "knative.dev/eventing/pkg/client/clientset/versioned"
 	eventingApi "knative.dev/eventing/pkg/client/clientset/versioned"
 	servingApi "knative.dev/serving/pkg/client/clientset/versioned"
-	tektonApi "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
