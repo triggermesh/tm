@@ -92,7 +92,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return string(taskObj), err
 	}
 
-	taskRunObject, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
+	taskRunObject, err = clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
 	if err != nil {
 		return "", fmt.Errorf("creating taskrun: %s", err)
 	}
@@ -269,10 +269,12 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 	if tr.PipelineResource.Name != "" {
 		taskrun.Spec.Inputs.Resources = []v1alpha1.TaskResourceBinding{
 			{
-				Name: "sources",
-				ResourceRef: v1alpha1.PipelineResourceRef{
-					Name:       tr.PipelineResource.Name,
-					APIVersion: "tekton.dev/v1alpha1",
+				PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
+					Name: "sources",
+					ResourceRef: &v1alpha1.PipelineResourceRef{
+						Name:       tr.PipelineResource.Name,
+						APIVersion: "tekton.dev/v1alpha1",
+					},
 				},
 			},
 		}
@@ -312,7 +314,7 @@ func gitlabEnv() (string, bool) {
 }
 
 func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
-	res, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+	res, err := clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", tr.Name),
 	})
 	if err != nil || res == nil {
@@ -342,17 +344,17 @@ func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
 
 // SetOwner updates TaskRun object with provided owner reference
 func (tr *TaskRun) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
-	taskrun, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
+	taskrun, err := clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	taskrun.SetOwnerReferences([]metav1.OwnerReference{owner})
-	_, err = clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Update(taskrun)
+	_, err = clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Update(taskrun)
 	return err
 }
 
 func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
-	watch, err := clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+	watch, err := clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: "metadata.name=" + tr.Name,
 	})
 	if err != nil || watch == nil {

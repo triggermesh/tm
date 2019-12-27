@@ -22,5 +22,5 @@ import (
 
 // List return tekton ClusterTaskList object
 func (ct *ClusterTask) List(clientset *client.ConfigSet) (*v1alpha1.ClusterTaskList, error) {
-	return clientset.Tekton.TektonV1alpha1().ClusterTasks().List(metav1.ListOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().ClusterTasks().List(metav1.ListOptions{})
 }

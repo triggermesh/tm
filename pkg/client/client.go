@@ -24,9 +24,9 @@ import (
 
 	"github.com/ghodss/yaml"
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
-
-	tektonApi "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	eventSourcesApi "knative.dev/eventing/pkg/client/clientset/versioned"
+	pipelineApi "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	triggersApi "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
+	githubSource "knative.dev/eventing-contrib/github/pkg/client/clientset/versioned"
 	eventingApi "knative.dev/eventing/pkg/client/clientset/versioned"
 	servingApi "knative.dev/serving/pkg/client/clientset/versioned"
 
@@ -53,13 +53,14 @@ var (
 
 // ConfigSet contains different information that may be needed by underlying functions
 type ConfigSet struct {
-	Core         *kubernetes.Clientset
-	Build        *buildApi.Clientset
-	Serving      *servingApi.Clientset
-	Eventing     *eventingApi.Clientset
-	EventSources *eventSourcesApi.Clientset
-	Tekton       *tektonApi.Clientset
-	Config       *rest.Config
+	Core            *kubernetes.Clientset
+	Build           *buildApi.Clientset
+	Serving         *servingApi.Clientset
+	Eventing        *eventingApi.Clientset
+	GithubSource    *githubSource.Clientset
+	TektonPipelines *pipelineApi.Clientset
+	TektonTriggers  *triggersApi.Clientset
+	Config          *rest.Config
 }
 
 type config struct {
@@ -157,10 +158,13 @@ func NewClient(cfgFile string) (ConfigSet, error) {
 	if c.Core, err = kubernetes.NewForConfig(config); err != nil {
 		return c, err
 	}
-	if c.Tekton, err = tektonApi.NewForConfig(config); err != nil {
+	if c.TektonPipelines, err = pipelineApi.NewForConfig(config); err != nil {
 		return c, err
 	}
-	if c.EventSources, err = eventSourcesApi.NewForConfig(config); err != nil {
+	if c.TektonTriggers, err = triggersApi.NewForConfig(config); err != nil {
+		return c, err
+	}
+	if c.GithubSource, err = githubSource.NewForConfig(config); err != nil {
 		return c, err
 	}
 	return c, nil

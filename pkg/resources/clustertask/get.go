@@ -22,7 +22,7 @@ import (
 
 // Get returns tekton ClusterTask object by its name
 func (ct *ClusterTask) Get(clientset *client.ConfigSet) (*v1alpha1.ClusterTask, error) {
-	return clientset.Tekton.TektonV1alpha1().ClusterTasks().Get(ct.Name, metav1.GetOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().ClusterTasks().Get(ct.Name, metav1.GetOptions{})
 }
 
 // Exist returns true if ClusterTask with provided name is available

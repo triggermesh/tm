@@ -19,7 +19,7 @@ package service
 // 	"regexp"
 // 	"strings"
 
-// 	eventingv1alpha1 "knative.dev/eventing/pkg/apis/sources/v1alpha1"
+// 	eventingv1alpha1 "github.com/knative/eventing-sources/pkg/apis/sources/v1alpha1"
 // 	"github.com/triggermesh/tm/pkg/client"
 // 	corev1 "k8s.io/api/core/v1"
 // 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
