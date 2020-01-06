@@ -45,6 +45,6 @@ func TestDryRunDeployment(t *testing.T) {
 
 	output := buffer.String()
 	assert.Contains(t, output, "\"kind\": \"Service\"")
-	assert.Contains(t, output, "\"apiVersion\": \"serving.knative.dev/v1alpha1\"")
+	assert.Contains(t, output, "\"apiVersion\": \"serving.knative.dev/v1\"")
 	assert.Contains(t, output, "\"image\": \"docker.io/hello-world\"")
 }
