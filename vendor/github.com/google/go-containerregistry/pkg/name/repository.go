@@ -50,6 +50,7 @@ func (r Repository) Name() string {
 	if regName != "" {
 		return regName + regRepoDelimiter + r.RepositoryStr()
 	}
+	// TODO: As far as I can tell, this is unreachable.
 	return r.RepositoryStr()
 }
 
@@ -68,7 +69,8 @@ func checkRepository(repository string) error {
 }
 
 // NewRepository returns a new Repository representing the given name, according to the given strictness.
-func NewRepository(name string, strict Strictness) (Repository, error) {
+func NewRepository(name string, opts ...Option) (Repository, error) {
+	opt := makeOptions(opts...)
 	if len(name) == 0 {
 		return Repository{}, NewErrBadName("a repository name must be specified")
 	}
@@ -88,11 +90,11 @@ func NewRepository(name string, strict Strictness) (Repository, error) {
 		return Repository{}, err
 	}
 
-	reg, err := NewRegistry(registry, strict)
+	reg, err := NewRegistry(registry, opts...)
 	if err != nil {
 		return Repository{}, err
 	}
-	if hasImplicitNamespace(repo, reg) && strict == StrictValidation {
+	if hasImplicitNamespace(repo, reg) && opt.strict {
 		return Repository{}, NewErrBadName("strict validation requires the full repository path (missing 'library')")
 	}
 	return Repository{reg, repo}, nil

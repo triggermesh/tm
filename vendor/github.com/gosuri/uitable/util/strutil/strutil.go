@@ -71,12 +71,8 @@ func Resize(s string, length uint, rightAlign bool) string {
 	return s
 }
 
-// Join joins the list of the string with the delim provided.
-// Returns an empty string for empty list
+// Join joins the list of the string with the delim provided
 func Join(list []string, delim string) string {
-	if len(list) == 0 {
-		return ""
-	}
 	var buf bytes.Buffer
 	for i := 0; i < len(list)-1; i++ {
 		buf.WriteString(list[i] + delim)

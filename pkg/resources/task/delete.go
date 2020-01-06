@@ -20,5 +20,5 @@ import (
 )
 
 func (t *Task) Delete(clientset *client.ConfigSet) error {
-	return clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Delete(t.Name, &metav1.DeleteOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Delete(t.Name, &metav1.DeleteOptions{})
 }

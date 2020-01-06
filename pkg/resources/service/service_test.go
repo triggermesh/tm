@@ -51,7 +51,7 @@ func TestDeployAndDelete(t *testing.T) {
 		Registry:  "knative.registry.svc.cluster.local",
 		Namespace: namespace,
 		Source:    "https://github.com/serverless/examples",
-		Runtime:   "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python-3.7/runtime.yaml",
+		Runtime:   "https://raw.githubusercontent.com/triggermesh/runtime-build-tasks/master/aws-lambda/python37-runtime.yaml",
 		BuildArgs: []string{"DIRECTORY=aws-python-simple-http-endpoint", "HANDLER=handler.endpoint"},
 	}
 

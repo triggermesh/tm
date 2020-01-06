@@ -52,25 +52,25 @@ func (plr *PipelineResource) newObject(clientset *client.ConfigSet) v1alpha1.Pip
 
 func (plr *PipelineResource) createOrUpdate(pipelineResourceObject v1alpha1.PipelineResource, clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
 	var pipeline *v1alpha1.PipelineResource
-	res, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Create(&pipelineResourceObject)
+	res, err := clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Create(&pipelineResourceObject)
 	if k8sErrors.IsAlreadyExists(err) {
-		pipeline, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Get(pipelineResourceObject.ObjectMeta.Name, metav1.GetOptions{})
+		pipeline, err = clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Get(pipelineResourceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return res, err
 		}
 		pipelineResourceObject.ObjectMeta.ResourceVersion = pipeline.GetResourceVersion()
-		res, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Update(&pipelineResourceObject)
+		res, err = clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Update(&pipelineResourceObject)
 	}
 	return res, err
 }
 
 // SetOwner updates PipelineResource object with provided owner reference
 func (plr *PipelineResource) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
-	pplresource, err := clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Get(plr.Name, metav1.GetOptions{})
+	pplresource, err := clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Get(plr.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	pplresource.SetOwnerReferences([]metav1.OwnerReference{owner})
-	_, err = clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Update(pplresource)
+	_, err = clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Update(pplresource)
 	return err
 }

@@ -1,6 +1,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/triggermesh/tm)](https://goreportcard.com/report/github.com/triggermesh/tm) [![CircleCI](https://circleci.com/gh/triggermesh/tm/tree/master.svg?style=shield)](https://circleci.com/gh/triggermesh/tm/tree/master)
 
-A CLI for [knative](https://knative.dev)
+A CLI for [knative](https://github.com/knative)
 
 ## Installation
 
@@ -34,7 +34,7 @@ tm deploy service foo -f gcr.io/google-samples/hello-app:1.0 --wait
 If you have Dockerfile for your service, you can use kaniko buildtemplate to deploy it
 ```
 tm deploy service foobar \
-    -f https://knative.dev/docs \
+    -f https://github.com/knative/docs \
     --build-template https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml \
     --build-argument DIRECTORY=docs/serving/samples/hello-world/helloworld-go \
     --wait

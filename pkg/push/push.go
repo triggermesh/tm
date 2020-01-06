@@ -15,22 +15,21 @@
 package push
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/ghodss/yaml"
-	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelines "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	triggers "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
-	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
-	"github.com/triggermesh/tm/pkg/resources/service"
-	"github.com/triggermesh/tm/pkg/resources/task"
 	"gopkg.in/src-d/go-git.v4"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingv1alpha1 "knative.dev/eventing/pkg/apis/sources/v1alpha1"
-	pkg "knative.dev/pkg/apis/v1alpha1"
+	githubSource "knative.dev/eventing-contrib/github/pkg/apis/sources/v1alpha1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // Push tries to read git configuration in current directory and if it succeeds
@@ -64,72 +63,44 @@ func Push(clientset *client.ConfigSet) error {
 	project := parts[len(parts)-1]
 	owner := parts[len(parts)-2]
 
-	pplr := pipelineresource.PipelineResource{
-		Name:      project,
-		Namespace: client.Namespace,
-		Source: pipelineresource.Git{
-			URL: url,
-		},
-	}
-	if _, err := pplr.Deploy(clientset); err != nil {
-		return err
-	}
-
-	t := task.Task{
-		Name:      project,
-		Namespace: client.Namespace,
-	}
-
-	if _, err := t.CreateOrUpdate(getTask(project, client.Namespace), clientset); err != nil {
-		return err
-	}
-
-	tr := getTaskRun(project, client.Namespace)
-	res, err := yaml.Marshal(tr)
+	pipelineresource, err := json.Marshal(getPipelineResource(owner, project, url))
 	if err != nil {
-		return err
+		return fmt.Errorf("pipelineresource marshaling: %s", err)
 	}
 
-	cm := &corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      project,
-			Namespace: client.Namespace,
-		},
-		Data: map[string]string{
-			"taskrun": string(res),
-		},
+	tr := getTaskRun(owner, project)
+	taskrun, err := json.Marshal(tr)
+	if err != nil {
+		return fmt.Errorf("taskrun marshaling: %s", err)
 	}
 
-	if err := createOrUpdateCM(clientset, cm); err != nil {
-		return err
+	triggertemplate := getTriggerTemplate(owner, project)
+	triggerbinding := getTriggerBinding(owner, project)
+	eventlistener := getEventListener(owner, project)
+	githubsource := getGithubSource(owner, project)
+
+	triggertemplate.Spec.ResourceTemplates = []triggers.TriggerResourceTemplate{
+		{pipelineresource},
+		{taskrun},
 	}
 
-	kservice := service.Service{
-		Name:      project + "-transceiver",
-		Namespace: client.Namespace,
-		Source:    "docker.io/triggermesh/transceiver",
-		Env: []string{
-			"TASKRUN_CONFIGMAP=" + project,
-			"NAMESPACE=" + client.Namespace,
-		},
+	if err := createOrUpdateTriggerTemplate(triggertemplate, clientset); err != nil {
+		return fmt.Errorf("creating triggertemplate: %s", err)
+	}
+	if err := createOrUpdateTriggerBinding(triggerbinding, clientset); err != nil {
+		return fmt.Errorf("creating triggerbinding: %s", err)
+	}
+	if err := createOrUpdateEventListener(eventlistener, clientset); err != nil {
+		return fmt.Errorf("creating eventlistener: %s", err)
+	}
+	if err := createOrUpdateGithubSource(githubsource, clientset); err != nil {
+		return fmt.Errorf("creating githubsource: %s", err)
 	}
 
-	if _, err := kservice.Deploy(clientset); err != nil {
-		return err
-	}
-
-	cs := getContainerSource(project, owner)
-	if err := createOrUpdateCS(clientset, cs); err != nil {
-		return err
-	}
-
+	tr.Status = pipelines.TaskRunStatus{}
 	tr.SetGenerateName("")
-	tr.SetName(fmt.Sprintf("%s-%s", project, file.RandStringDNS(6)))
-	res, err = yaml.Marshal(tr)
+	tr.SetName(fmt.Sprintf("%s-%s-%s", owner, project, file.RandStringDNS(6)))
+	res, err := yaml.Marshal(tr)
 	if err != nil {
 		return err
 	}
@@ -137,45 +108,64 @@ func Push(clientset *client.ConfigSet) error {
 	return nil
 }
 
-func getContainerSource(project, owner string) *eventingv1alpha1.ContainerSource {
-	return &eventingv1alpha1.ContainerSource{
+func getGithubSource(owner, project string) githubSource.GitHubSource {
+	return githubSource.GitHubSource{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "ContainerSource",
+			Kind:       "GitHubSource",
 			APIVersion: "sources.eventing.knative.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      project,
+			Name:      fmt.Sprintf("%s-%s-source", owner, project),
 			Namespace: client.Namespace,
 		},
-		Spec: eventingv1alpha1.ContainerSourceSpec{
-			Sink: &pkg.Destination{
-				Ref: &corev1.ObjectReference{
-					Kind:       "Service",
-					APIVersion: "serving.knative.dev/v1beta1",
-					Name:       project + "-transceiver",
+		Spec: githubSource.GitHubSourceSpec{
+			OwnerAndRepository: fmt.Sprintf("%s/%s", owner, project),
+			EventTypes:         []string{"push"},
+			AccessToken: githubSource.SecretValueFromSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "githubsecret",
+					},
+					Key: "accessToken",
 				},
 			},
-			Template: &corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Image: "triggermesh/github-third-party-source",
-							Env: []corev1.EnvVar{
-								{
-									Name:  "OWNER",
-									Value: owner,
-								}, {
-									Name:  "REPOSITORY",
-									Value: project,
-								}, {
-									Name:  "TOKEN",
-									Value: "",
-								}, {
-									Name:  "EVENT_TYPEtekt",
-									Value: "commit",
-								},
-							},
-						},
+			SecretToken: githubSource.SecretValueFromSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "githubsecret",
+					},
+					Key: "secretToken",
+				},
+			},
+			Sink: &duckv1beta1.Destination{
+				Ref: &corev1.ObjectReference{
+					Kind:       "EventListener",
+					Name:       fmt.Sprintf("%s-%s-listener", owner, project),
+					APIVersion: "tekton.dev/v1alpha1",
+				},
+			},
+		},
+	}
+}
+
+func getEventListener(owner, project string) triggers.EventListener {
+	return triggers.EventListener{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "EventListener",
+			APIVersion: "tekton.dev/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s-listener", owner, project),
+			Namespace: client.Namespace,
+		},
+		Spec: triggers.EventListenerSpec{
+			Triggers: []triggers.EventListenerTrigger{
+				{
+					Binding: &triggers.EventListenerBinding{
+						Name: fmt.Sprintf("%s-%s-binding", owner, project),
+					},
+					Template: triggers.EventListenerTemplate{
+						Name: fmt.Sprintf("%s-%s-template", owner, project),
 					},
 				},
 			},
@@ -183,30 +173,102 @@ func getContainerSource(project, owner string) *eventingv1alpha1.ContainerSource
 	}
 }
 
-func getTaskRun(taskName, namespace string) *tekton.TaskRun {
-	return &tekton.TaskRun{
+func getTriggerBinding(owner, project string) triggers.TriggerBinding {
+	return triggers.TriggerBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "TriggerBinding",
+			APIVersion: "tekton.dev/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s-binding", owner, project),
+			Namespace: client.Namespace,
+		},
+		Spec: triggers.TriggerBindingSpec{
+			Params: []pipelines.Param{
+				{
+					Name: "gitrevision",
+					Value: pipelines.ArrayOrString{
+						StringVal: "$(body.head_commit.id)",
+						Type:      "string",
+					},
+				},
+			},
+		},
+	}
+}
+
+func getTriggerTemplate(owner, project string) triggers.TriggerTemplate {
+	return triggers.TriggerTemplate{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "TriggerTemplate",
+			APIVersion: "tekton.dev/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s-template", owner, project),
+			Namespace: client.Namespace,
+		},
+		Spec: triggers.TriggerTemplateSpec{
+			Params: []pipelines.ParamSpec{
+				{
+					Name:        "gitrevision",
+					Description: "The git revision",
+					Default: &pipelines.ArrayOrString{
+						StringVal: "master",
+						Type:      "string",
+					},
+				},
+			},
+			ResourceTemplates: []triggers.TriggerResourceTemplate{},
+		},
+	}
+}
+
+func getPipelineResource(owner, project, url string) pipelines.PipelineResource {
+	return pipelines.PipelineResource{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PipelineResource",
+			APIVersion: "tekton.dev/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s-resource", owner, project),
+			Namespace: client.Namespace,
+		},
+		Spec: pipelines.PipelineResourceSpec{
+			Type: pipelines.PipelineResourceTypeGit,
+			Params: []pipelines.ResourceParam{
+				{Name: "url", Value: url},
+				{Name: "revision", Value: "$(params.gitrevision)"},
+			},
+		},
+	}
+}
+
+func getTaskRun(owner, project string) *pipelines.TaskRun {
+	return &pipelines.TaskRun{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "tekton.dev/v1alpha1",
 			Kind:       "TaskRun",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: taskName + "-",
-			Namespace:    namespace,
+			GenerateName: fmt.Sprintf("%s-%s-", owner, project),
+			Namespace:    client.Namespace,
 		},
-		Spec: tekton.TaskRunSpec{
-			Inputs: tekton.TaskRunInputs{
-				Resources: []tekton.TaskResourceBinding{
+		Spec: pipelines.TaskRunSpec{
+			Inputs: pipelines.TaskRunInputs{
+				Resources: []pipelines.TaskResourceBinding{
 					{
-						Name: "sources",
-						ResourceRef: tekton.PipelineResourceRef{
-							Name:       taskName,
-							APIVersion: "tekton.dev/v1alpha1",
+						PipelineResourceBinding: pipelines.PipelineResourceBinding{
+							Name: "sources",
+							ResourceRef: &pipelines.PipelineResourceRef{
+								Name:       fmt.Sprintf("%s-%s-resource", owner, project),
+								APIVersion: "tekton.dev/v1alpha1",
+							},
 						},
 					},
 				},
 			},
-			TaskRef: &tekton.TaskRef{
-				Name:       taskName,
+			TaskRef: &pipelines.TaskRef{
+				Name:       fmt.Sprintf("%s-%s-task", owner, project),
 				Kind:       "Task",
 				APIVersion: "tekton.dev/v1alpha1",
 			},
@@ -214,33 +276,33 @@ func getTaskRun(taskName, namespace string) *tekton.TaskRun {
 	}
 }
 
-func getTask(name, namespace string) *tekton.Task {
-	return &tekton.Task{
+func getTask(owner, project string) *pipelines.Task {
+	return &pipelines.Task{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "tekton.dev/v1alpha1",
 			Kind:       "Task",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:      fmt.Sprintf("%s-%s-task", owner, project),
+			Namespace: client.Namespace,
 		},
-		Spec: tekton.TaskSpec{
-			Inputs: &tekton.Inputs{
-				Resources: []tekton.TaskResource{
+		Spec: pipelines.TaskSpec{
+			Inputs: &pipelines.Inputs{
+				Resources: []pipelines.TaskResource{
 					{
-						ResourceDeclaration: tekton.ResourceDeclaration{
+						ResourceDeclaration: pipelines.ResourceDeclaration{
 							Name: "sources",
-							Type: tekton.PipelineResourceTypeGit,
+							Type: pipelines.PipelineResourceTypeGit,
 						},
-						OutputImageDir: "",
 					},
 				},
 			},
-			Steps: []tekton.Step{
-				{
-					corev1.Container{
+			Steps: []pipelines.Step{
+				pipelines.Step{
+					Container: corev1.Container{
 						Name:    "deploy",
 						Image:   "gcr.io/triggermesh/tm",
+						Ports:   []corev1.ContainerPort{},
 						Command: []string{"tm"},
 						Args:    []string{"deploy", "-f", "/workspace/sources/"},
 					},
@@ -250,34 +312,58 @@ func getTask(name, namespace string) *tekton.Task {
 	}
 }
 
-func createOrUpdateCM(clientset *client.ConfigSet, cm *corev1.ConfigMap) error {
-	if _, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Create(cm); k8sErrors.IsAlreadyExists(err) {
-		cmObj, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Get(cm.Name, metav1.GetOptions{})
+func createOrUpdateTriggerTemplate(object triggers.TriggerTemplate, clientset *client.ConfigSet) error {
+	_, err := clientset.TektonTriggers.TektonV1alpha1().TriggerTemplates(client.Namespace).Create(&object)
+	if k8sErrors.IsAlreadyExists(err) {
+		tt, err := clientset.TektonTriggers.TektonV1alpha1().TriggerTemplates(client.Namespace).Get(object.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		cm.ObjectMeta.ResourceVersion = cmObj.GetResourceVersion()
-		if _, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Update(cm); err != nil {
-			return err
-		}
-	} else if err != nil {
+		object.ObjectMeta.ResourceVersion = tt.GetResourceVersion()
+		_, err = clientset.TektonTriggers.TektonV1alpha1().TriggerTemplates(client.Namespace).Update(&object)
 		return err
 	}
-	return nil
+	return err
 }
 
-func createOrUpdateCS(clientset *client.ConfigSet, cs *eventingv1alpha1.ContainerSource) error {
-	if _, err := clientset.EventSources.SourcesV1alpha1().ContainerSources(cs.Namespace).Create(cs); k8sErrors.IsAlreadyExists(err) {
-		csObj, err := clientset.EventSources.SourcesV1alpha1().ContainerSources(cs.Namespace).Get(cs.Name, metav1.GetOptions{})
+func createOrUpdateTriggerBinding(object triggers.TriggerBinding, clientset *client.ConfigSet) error {
+	_, err := clientset.TektonTriggers.TektonV1alpha1().TriggerBindings(client.Namespace).Create(&object)
+	if k8sErrors.IsAlreadyExists(err) {
+		tb, err := clientset.TektonTriggers.TektonV1alpha1().TriggerBindings(client.Namespace).Get(object.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		cs.ObjectMeta.ResourceVersion = csObj.GetResourceVersion()
-		if _, err := clientset.EventSources.SourcesV1alpha1().ContainerSources(cs.Namespace).Update(cs); err != nil {
-			return err
-		}
-	} else if err != nil {
+		object.ObjectMeta.ResourceVersion = tb.GetResourceVersion()
+		_, err = clientset.TektonTriggers.TektonV1alpha1().TriggerBindings(client.Namespace).Update(&object)
 		return err
 	}
-	return nil
+	return err
+}
+
+func createOrUpdateEventListener(object triggers.EventListener, clientset *client.ConfigSet) error {
+	_, err := clientset.TektonTriggers.TektonV1alpha1().EventListeners(client.Namespace).Create(&object)
+	if k8sErrors.IsAlreadyExists(err) {
+		el, err := clientset.TektonTriggers.TektonV1alpha1().EventListeners(client.Namespace).Get(object.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		object.ObjectMeta.ResourceVersion = el.GetResourceVersion()
+		_, err = clientset.TektonTriggers.TektonV1alpha1().EventListeners(client.Namespace).Update(&object)
+		return err
+	}
+	return err
+}
+
+func createOrUpdateGithubSource(object githubSource.GitHubSource, clientset *client.ConfigSet) error {
+	_, err := clientset.GithubSource.SourcesV1alpha1().GitHubSources(client.Namespace).Create(&object)
+	if k8sErrors.IsAlreadyExists(err) {
+		gh, err := clientset.GithubSource.SourcesV1alpha1().GitHubSources(client.Namespace).Get(object.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		object.ObjectMeta.ResourceVersion = gh.GetResourceVersion()
+		_, err = clientset.GithubSource.SourcesV1alpha1().GitHubSources(client.Namespace).Update(&object)
+		return err
+	}
+	return err
 }

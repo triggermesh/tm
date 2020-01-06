@@ -22,7 +22,7 @@ import (
 
 // Get return tekton Task object
 func (t *Task) Get(clientset *client.ConfigSet) (*v1alpha1.Task, error) {
-	return clientset.Tekton.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
 }
 
 // Exist returns true if Task with provided name is available in current namespace

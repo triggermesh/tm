@@ -87,7 +87,7 @@ func (s *Service) taskRun() *taskrun.TaskRun {
 func (s *Service) build() *build.Build {
 	fmt.Println("*******")
 	fmt.Println("Warning! You're using deprecated knative/build component. Please use tekton/pipelines instead")
-	fmt.Println("https://github.com/triggermesh/runtime-build-tasks")
+	fmt.Println("https://github.com/triggermesh/knative-lambda-runtime")
 	fmt.Println("*******")
 	return &build.Build{
 		Args:           s.BuildArgs,

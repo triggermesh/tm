@@ -27,17 +27,16 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
-	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	var err error
-	service := &servingv1alpha1.Service{
+	service := &servingv1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
-			APIVersion: "serving.knative.dev/v1alpha1",
+			APIVersion: "serving.knative.dev/v1",
 		},
 	}
 
@@ -47,7 +46,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	if builder != nil && !client.Dry {
 		defer func() {
 			owner := metav1.OwnerReference{
-				APIVersion: "serving.knative.dev/v1alpha1",
+				APIVersion: "serving.knative.dev/v1",
 				Kind:       "Configuration",
 				Name:       service.GetName(),
 				UID:        service.GetUID(),
@@ -65,14 +64,14 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		}
 	}
 
-	configuration := servingv1alpha1.ConfigurationSpec{
-		Template: &servingv1alpha1.RevisionTemplateSpec{
-			Spec: servingv1alpha1.RevisionSpec{
-				RevisionSpec: servingv1beta1.RevisionSpec{
-					PodSpec: corev1.PodSpec{
-						Containers: []corev1.Container{
-							{Image: image},
-						},
+	concurrency := int64(s.Concurrency)
+	configuration := servingv1.ConfigurationSpec{
+		Template: servingv1.RevisionTemplateSpec{
+			Spec: servingv1.RevisionSpec{
+				ContainerConcurrency: &concurrency,
+				PodSpec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Image: image},
 					},
 				},
 			},
@@ -87,10 +86,9 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 
 	configuration.Template.ObjectMeta.GenerateName = s.Name + "-"
 	configuration.Template.ObjectMeta.Namespace = s.Namespace
-	configuration.Template.Spec.ContainerConcurrency = servingv1beta1.RevisionContainerConcurrencyType(s.Concurrency)
-	configuration.Template.Spec.RevisionSpec.PodSpec.Containers[0].Env = s.setupEnv()
-	configuration.Template.Spec.RevisionSpec.PodSpec.Containers[0].EnvFrom = s.setupEnvSecrets()
-	configuration.Template.Spec.RevisionSpec.PodSpec.Containers[0].ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
+	configuration.Template.Spec.PodSpec.Containers[0].Env = s.setupEnv()
+	configuration.Template.Spec.PodSpec.Containers[0].EnvFrom = s.setupEnvSecrets()
+	configuration.Template.Spec.PodSpec.Containers[0].ImagePullPolicy = corev1.PullPolicy(s.PullPolicy)
 
 	service.ObjectMeta = metav1.ObjectMeta{
 		Name:              s.Name,
@@ -98,7 +96,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		Labels:            configuration.Template.ObjectMeta.Labels,
 		CreationTimestamp: metav1.Time{Time: time.Now()},
 	}
-	service.Spec = servingv1alpha1.ServiceSpec{
+	service.Spec = servingv1.ServiceSpec{
 		ConfigurationSpec: configuration,
 	}
 
@@ -157,10 +155,10 @@ func (s *Service) setupEnvSecrets() []corev1.EnvFromSource {
 	return env
 }
 
-func (s *Service) createOrUpdate(serviceObject *servingv1alpha1.Service, clientset *client.ConfigSet) (*servingv1alpha1.Service, error) {
-	newService, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Create(serviceObject)
+func (s *Service) createOrUpdate(serviceObject *servingv1.Service, clientset *client.ConfigSet) (*servingv1.Service, error) {
+	newService, err := clientset.Serving.ServingV1().Services(s.Namespace).Create(serviceObject)
 	if k8sErrors.IsAlreadyExists(err) {
-		service, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
+		service, err := clientset.Serving.ServingV1().Services(s.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +172,7 @@ func (s *Service) createOrUpdate(serviceObject *servingv1alpha1.Service, clients
 			}
 		}
 		serviceObject.ObjectMeta.ResourceVersion = service.GetResourceVersion()
-		return clientset.Serving.ServingV1alpha1().Services(s.Namespace).Update(serviceObject)
+		return clientset.Serving.ServingV1().Services(s.Namespace).Update(serviceObject)
 	}
 	return newService, err
 }
@@ -193,7 +191,7 @@ func mapFromSlice(slice []string) map[string]string {
 }
 
 func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
-	res, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
+	res, err := clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 	})
 	if err != nil {
@@ -209,7 +207,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 		event := <-res.ResultChan()
 		if event.Object == nil {
 			res.Stop()
-			if res, err = clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
+			if res, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
 				FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 			}); err != nil {
 				return "", err
@@ -219,7 +217,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 			}
 			continue
 		}
-		serviceEvent, ok := event.Object.(*servingv1alpha1.Service)
+		serviceEvent, ok := event.Object.(*servingv1.Service)
 		if !ok {
 			continue
 		}
@@ -231,7 +229,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 				if v.Reason == "RevisionFailed" && firstError {
 					time.Sleep(time.Second * 3)
 					res.Stop()
-					if res, err = clientset.Serving.ServingV1alpha1().Services(s.Namespace).Watch(metav1.ListOptions{
+					if res, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
 						FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 					}); err != nil {
 						return "", err

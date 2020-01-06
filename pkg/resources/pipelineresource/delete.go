@@ -20,5 +20,5 @@ import (
 )
 
 func (plr *PipelineResource) Delete(clientset *client.ConfigSet) error {
-	return clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).Delete(plr.Name, &metav1.DeleteOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Delete(plr.Name, &metav1.DeleteOptions{})
 }

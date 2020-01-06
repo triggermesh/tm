@@ -21,5 +21,5 @@ import (
 )
 
 func (tr *TaskRun) Get(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error) {
-	return clientset.Tekton.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 }

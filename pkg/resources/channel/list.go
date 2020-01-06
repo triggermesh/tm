@@ -17,9 +17,9 @@ package channel
 import (
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	eventingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 )
 
-func (c *Channel) List(clientset *client.ConfigSet) (*messagingApi.InMemoryChannelList, error) {
-	return clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).List(metav1.ListOptions{})
+func (c *Channel) List(clientset *client.ConfigSet) (*eventingApi.ChannelList, error) {
+	return clientset.Eventing.MessagingV1alpha1().Channels(c.Namespace).List(metav1.ListOptions{})
 }

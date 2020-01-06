@@ -54,18 +54,9 @@ func TestBuild(t *testing.T) {
 		ImageName     string
 		ErrMSG        error
 	}{
-		{
-			"kaniko-build",
-			"https://github.com/knative/docs",
-			"master",
+		{"kaniko-build", "https://github.com/knative/docs", "master",
 			"https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml",
-			[]string{
-				"DIRECTORY=docs/serving/samples/hello-world/helloworld-go",
-				"FOO:BAR",
-			},
-			"",
-			nil,
-		},
+			[]string{"DIRECTORY=docs/serving/samples/hello-world/helloworld-go", "FOO:BAR"}, "", nil},
 	}
 
 	for _, tt := range testCases {

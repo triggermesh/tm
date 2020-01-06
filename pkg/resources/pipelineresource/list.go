@@ -22,5 +22,5 @@ import (
 )
 
 func (plr *PipelineResource) List(clientset *client.ConfigSet) (*v1alpha1.PipelineResourceList, error) {
-	return clientset.Tekton.TektonV1alpha1().PipelineResources(plr.Namespace).List(metav1.ListOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).List(metav1.ListOptions{})
 }
