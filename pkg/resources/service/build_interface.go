@@ -15,10 +15,9 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
+	logwrapper "github.com/triggermesh/tm/pkg/log"
 	"github.com/triggermesh/tm/pkg/resources/build"
 	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
@@ -48,19 +47,19 @@ func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 		return s.taskRun()
 	} else if buildtemplate.Exist(clientset, s.Runtime) ||
 		clusterbuildtemplate.Exist(clientset, s.Runtime) {
-		return s.build()
+		return s.build(clientset.Log)
 	}
 
 	if file.IsRemote(s.Runtime) {
 		if localFile, err := file.Download(s.Runtime); err != nil {
-			fmt.Printf("Warning! Cannot fetch runtime: %s\n", err)
+			clientset.Log.Warnf("Warning! Cannot fetch runtime: %s\n", err)
 		} else {
 			s.Runtime = localFile
 		}
 	}
 
 	if file.IsBuildTemplate(s.Runtime) {
-		return s.build()
+		return s.build(clientset.Log)
 	}
 	return s.taskRun()
 }
@@ -84,11 +83,11 @@ func (s *Service) taskRun() *taskrun.TaskRun {
 	}
 }
 
-func (s *Service) build() *build.Build {
-	fmt.Println("*******")
-	fmt.Println("Warning! You're using deprecated knative/build component. Please use tekton/pipelines instead")
-	fmt.Println("https://github.com/triggermesh/knative-lambda-runtime")
-	fmt.Println("*******")
+func (s *Service) build(logger *logwrapper.StandardLogger) *build.Build {
+	logger.Warnf("*******")
+	logger.Warnf("Warning! You're using deprecated knative/build component. Please use tekton/pipelines instead")
+	logger.Warnf("https://github.com/triggermesh/knative-lambda-runtime")
+	logger.Warnf("*******")
 	return &build.Build{
 		Args:           s.BuildArgs,
 		Buildtemplate:  s.Runtime,

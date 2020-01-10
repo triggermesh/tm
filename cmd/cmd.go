@@ -45,6 +45,7 @@ var (
 	clientset   client.ConfigSet
 	yaml        string
 	concurrency int
+	debug       bool
 
 	b   build.Build
 	c   channel.Channel
@@ -80,7 +81,9 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	tmCmd.PersistentFlags().StringVar(&kubeConf, "config", "", "k8s config file")
 	tmCmd.PersistentFlags().StringVarP(&client.Namespace, "namespace", "n", "", "User namespace")
+	tmCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
 	tmCmd.PersistentFlags().StringVar(&client.Registry, "registry-host", "knative.registry.svc.cluster.local", "Docker registry host address")
+	// TODO Get rid of "output" package
 	tmCmd.PersistentFlags().StringVarP(&client.Output, "output", "o", "", "Output format")
 	tmCmd.PersistentFlags().BoolVar(&client.Wait, "wait", false, "Wait for the operation to complete")
 	tmCmd.PersistentFlags().BoolVar(&client.Dry, "dry", false, "Do not create k8s objects, just print its structure")
@@ -108,5 +111,8 @@ func initConfig() {
 	confPath := client.ConfigPath(kubeConf)
 	if clientset, err = client.NewClient(confPath); err != nil {
 		log.Fatalln(err)
+	}
+	if debug {
+		clientset.Log.SetDebugLevel()
 	}
 }

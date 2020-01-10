@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -45,7 +44,7 @@ func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
 			if err := rc.CreateRegistryCreds(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Registry credentials set")
+			clientset.Log.Infoln("Registry credentials set")
 		},
 	}
 
@@ -66,7 +65,7 @@ func cmdSetGitCreds(clientset *client.ConfigSet) *cobra.Command {
 			if err := gc.CreateGitCreds(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Git credentials created")
+			clientset.Log.Infoln("Git credentials created")
 		},
 	}
 

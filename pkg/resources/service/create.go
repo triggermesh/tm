@@ -126,7 +126,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
 	}
 
-	fmt.Printf("Waiting for service %q ready state\n", s.Name)
+	clientset.Log.Infof("Waiting for service %q ready state\n", s.Name)
 	domain, err := s.wait(clientset)
 	return fmt.Sprintf("Service %s URL: %s", s.Name, domain), err
 }

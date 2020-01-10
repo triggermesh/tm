@@ -114,13 +114,13 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("waiting for source container: %s", err)
 		}
-		fmt.Printf("Uploading %q to %s\n", tr.Function.Path, pod)
+		clientset.Log.Infof("Uploading %q to %s\n", tr.Function.Path, pod)
 		if err := tr.injectSources(clientset, pod, sourceContainer); err != nil {
 			return "", fmt.Errorf("injecting sources: %s", err)
 		}
 	}
 	if tr.Wait {
-		fmt.Printf("Waiting for taskrun %q ready state\n", taskRunObject.Name)
+		clientset.Log.Infof("Waiting for taskrun %q ready state\n", taskRunObject.Name)
 		if err = tr.wait(clientset); err != nil {
 			return image, fmt.Errorf("taskrun %q deployment failed: %s", tr.Name, err)
 		}
@@ -201,7 +201,7 @@ func (tr *TaskRun) setTaskOwner(clientset *client.ConfigSet, ownerRef metav1.Own
 	}
 	if err := task.SetOwner(clientset, ownerRef); err != nil {
 		if err = task.Delete(clientset); err != nil {
-			fmt.Printf("Can't cleanup task: %s\n", err)
+			clientset.Log.Errorf("Can't cleanup task: %s\n", err)
 		}
 	}
 }
@@ -213,7 +213,7 @@ func (tr *TaskRun) setPipelineResourceOwner(clientset *client.ConfigSet, ownerRe
 	}
 	if err := plr.SetOwner(clientset, ownerRef); err != nil {
 		if err = plr.Delete(clientset); err != nil {
-			fmt.Printf("Can't remove pipelineresource: %s\n", err)
+			clientset.Log.Errorf("Can't remove pipelineresource: %s\n", err)
 		}
 	}
 }

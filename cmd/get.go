@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
@@ -63,21 +62,21 @@ func cmdListBuild(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := b.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				b.Name = args[0]
 				build, err := b.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(build, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -95,21 +94,21 @@ func cmdListBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := bt.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				bt.Name = args[0]
 				buildtemplate, err := bt.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(buildtemplate, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -126,21 +125,21 @@ func cmdListClusterBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := cbt.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				cbt.Name = args[0]
 				cbuildtemplate, err := cbt.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(cbuildtemplate, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -158,21 +157,21 @@ func cmdListChannels(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := c.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				c.Name = args[0]
 				channel, err := c.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(channel, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -190,21 +189,21 @@ func cmdListService(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := s.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				s.Name = args[0]
 				service, err := s.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(service, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -222,21 +221,21 @@ func cmdListConfigurations(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := cf.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				cf.Name = args[0]
 				configuration, err := cf.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(configuration, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -254,21 +253,21 @@ func cmdListRevision(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := r.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				r.Name = args[0]
 				revision, err := r.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(revision, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -286,21 +285,21 @@ func cmdListRoute(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := rt.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				rt.Name = args[0]
 				route, err := rt.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(route, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -318,21 +317,21 @@ func cmdListTasks(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := t.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				t.Name = args[0]
 				task, err := t.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(task, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -350,21 +349,21 @@ func cmdListTaskRuns(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := tr.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				tr.Name = args[0]
 				taskrun, err := tr.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(taskrun, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)
@@ -382,21 +381,21 @@ func cmdListPipelineResources(clientset *client.ConfigSet) *cobra.Command {
 			if len(args) == 0 {
 				list, err := plr.List(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.List(list.Items)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			} else {
 				plr.Name = args[0]
 				pipelineResource, err := plr.Get(clientset)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 				data, err = output.Describe(pipelineResource, client.Output)
 				if err != nil {
-					log.Fatalln(err)
+					clientset.Log.Fatalln(err)
 				}
 			}
 			fmt.Println(data)

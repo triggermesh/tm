@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -31,7 +30,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 			s.Namespace = client.Namespace
 			s.Registry = client.Registry
 			if err := s.DeployYAML(yaml, args, concurrency, clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
 		},
 	}
@@ -62,9 +61,9 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 			s.Registry = client.Registry
 			output, err := s.Deploy(clientset)
 			if err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
-			fmt.Println(output)
+			clientset.Log.Infoln(output)
 		},
 	}
 	// kept for back compatibility
@@ -100,9 +99,9 @@ func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 			b.Name = args[0]
 			b.Namespace = client.Namespace
 			if _, err := b.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
-			fmt.Println("Build created")
+			clientset.Log.Infoln("Build created")
 		},
 	}
 
@@ -143,7 +142,7 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 			c.Name = args[0]
 			c.Namespace = client.Namespace
 			if err := c.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
 		},
 	}
@@ -164,9 +163,9 @@ func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
 			}
 			t.Namespace = client.Namespace
 			if _, err := t.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
-			fmt.Println("Task installed")
+			clientset.Log.Infoln("Task installed")
 		},
 	}
 	deployTaskCmd.Flags().StringVarP(&t.File, "file", "f", "", "Task yaml manifest path")
@@ -207,9 +206,9 @@ func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
 			plr.Name = args[0]
 			plr.Namespace = client.Namespace
 			if _, err := plr.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
-			fmt.Println("PipelineResource created")
+			clientset.Log.Infoln("PipelineResource created")
 		},
 	}
 	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.URL, "url", "", "Git URL to get sources from")
