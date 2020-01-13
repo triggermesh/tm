@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -29,6 +30,12 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
 			s.Registry = client.Registry
+			if clientset.Log.IsDebug() && concurrency > 1 {
+				clientset.Log.Warnf(`You are about to run %d deployments in parallel with verbose output.
+				It's better to either add "--concurrency=1" argument or remove debug flag.
+				Press Ctr+C to abort or Enter to continue anyway...`, concurrency)
+				fmt.Scanln()
+			}
 			if err := s.DeployYAML(yaml, args, concurrency, clientset); err != nil {
 				clientset.Log.Fatal(err)
 			}
