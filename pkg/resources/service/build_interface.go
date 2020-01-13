@@ -39,18 +39,22 @@ type Builder interface {
 // and returns corresponding builder interface
 func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 	if !file.IsLocal(s.Source) && !file.IsGit(s.Source) {
+		clientset.Log.Debugf("source %q is not local file nor git URL\n", s.Source)
 		return nil
 	}
 
 	if task.Exist(clientset, s.Runtime) ||
 		clustertask.Exist(clientset, s.Runtime) {
+		clientset.Log.Debugf("%q is a task\n", s.Runtime)
 		return s.taskRun()
 	} else if buildtemplate.Exist(clientset, s.Runtime) ||
 		clusterbuildtemplate.Exist(clientset, s.Runtime) {
+		clientset.Log.Debugf("%q is a buildtemplate\n", s.Runtime)
 		return s.build(clientset.Log)
 	}
 
 	if file.IsRemote(s.Runtime) {
+		clientset.Log.Debugf("runtime %q is seemed to be a remote file, downloading", s.Runtime)
 		if localFile, err := file.Download(s.Runtime); err != nil {
 			clientset.Log.Warnf("Warning! Cannot fetch runtime: %s\n", err)
 		} else {
@@ -59,8 +63,10 @@ func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 	}
 
 	if file.IsBuildTemplate(s.Runtime) {
+		clientset.Log.Debugf("%q is a buildtemplate\n", s.Runtime)
 		return s.build(clientset.Log)
 	}
+	clientset.Log.Debugf("%q is a task\n", s.Runtime)
 	return s.taskRun()
 }
 

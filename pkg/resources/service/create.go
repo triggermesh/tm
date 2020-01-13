@@ -63,6 +63,7 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 			return "", fmt.Errorf("Deploying builder: %s", err)
 		}
 	}
+	clientset.Log.Debugf("image is ready, creating service\n")
 
 	concurrency := int64(s.Concurrency)
 	configuration := servingv1.ConfigurationSpec{
@@ -110,7 +111,6 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return string(obj), err
 	}
 
-	// fmt.Printf("Creating %q service\n", s.Name)
 	if service, err = s.createOrUpdate(service, clientset); err != nil {
 		return "", fmt.Errorf("Creating service: %s", err)
 	}
@@ -156,8 +156,10 @@ func (s *Service) setupEnvSecrets() []corev1.EnvFromSource {
 }
 
 func (s *Service) createOrUpdate(serviceObject *servingv1.Service, clientset *client.ConfigSet) (*servingv1.Service, error) {
+	clientset.Log.Debugf("creating \"%s/%s\" service\n", s.Namespace, s.Name)
 	newService, err := clientset.Serving.ServingV1().Services(s.Namespace).Create(serviceObject)
 	if k8sErrors.IsAlreadyExists(err) {
+		clientset.Log.Debugf("service \"%s/%s\" already exist, updating\n", serviceObject.GetNamespace(), serviceObject.GetName())
 		service, err := clientset.Serving.ServingV1().Services(s.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
@@ -191,28 +193,28 @@ func mapFromSlice(slice []string) map[string]string {
 }
 
 func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
-	res, err := clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
+	svcWatchInterface, err := clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 	})
 	if err != nil {
 		return "", err
 	}
-	if res == nil {
+	if svcWatchInterface == nil {
 		return "", errors.New("can't get watch interface, please check service status")
 	}
-	defer res.Stop()
+	defer svcWatchInterface.Stop()
 
 	firstError := true
 	for {
-		event := <-res.ResultChan()
+		event := <-svcWatchInterface.ResultChan()
 		if event.Object == nil {
-			res.Stop()
-			if res, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
+			svcWatchInterface.Stop()
+			if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
 				FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 			}); err != nil {
 				return "", err
 			}
-			if res == nil {
+			if svcWatchInterface == nil {
 				return "", errors.New("can't get watch interface, please check service status")
 			}
 			continue
@@ -221,6 +223,12 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 		if !ok {
 			continue
 		}
+		if clientset.Log.IsDebug() {
+			clientset.Log.Debugf("got new event:\n")
+			for _, v := range serviceEvent.Status.Conditions {
+				clientset.Log.Debugf(" condition: %q, status: %q, message: %q\n", v.Type, v.Status, v.Message)
+			}
+		}
 		if serviceEvent.Status.IsReady() {
 			return serviceEvent.Status.URL.String(), nil
 		}
@@ -228,13 +236,13 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 			if v.IsFalse() && v.Severity == apis.ConditionSeverityError {
 				if v.Reason == "RevisionFailed" && firstError {
 					time.Sleep(time.Second * 3)
-					res.Stop()
-					if res, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
+					svcWatchInterface.Stop()
+					if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
 						FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 					}); err != nil {
 						return "", err
 					}
-					if res == nil {
+					if svcWatchInterface == nil {
 						return "", errors.New("can't get watch interface, please check service status")
 					}
 					firstError = false

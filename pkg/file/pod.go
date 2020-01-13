@@ -50,14 +50,18 @@ func (c *Copy) Upload(clientset *client.ConfigSet) error {
 	if err := archiver.Tar.Make(tar, []string{c.Source}); err != nil {
 		return err
 	}
+	clientset.Log.Debugf("sources are packed into %q archive, opening reader\n", tar)
 
 	fileReader, err := os.Open(tar)
 	if err != nil {
 		return err
 	}
 
+	clientset.Log.Debugf("starting remote untar proccess\n")
 	command := fmt.Sprintf("tar -xvf - -C /home")
-	_, _, err = c.RemoteExec(clientset, command, fileReader)
+	stdout, stderr, err := c.RemoteExec(clientset, command, fileReader)
+	clientset.Log.Debugf("stdout:\n%s", stdout)
+	clientset.Log.Debugf("stderr:\n%s", stderr)
 	return err
 }
 
@@ -80,6 +84,7 @@ func (c *Copy) RemoteExec(clientset *client.ConfigSet, command string, file io.R
 	if len(urlAndParams) == 2 {
 		url = fmt.Sprintf("%s&%s", url, urlAndParams[1])
 	}
+	clientset.Log.Debugf("remote exec request URL: %q\n", url)
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return "", "", err

@@ -53,3 +53,7 @@ func (l *StandardLogger) SetDebugLevel() {
 	}
 	l.SetLevel(logrus.DebugLevel)
 }
+
+func (l *StandardLogger) IsDebug() bool {
+	return l.IsLevelEnabled(logrus.DebugLevel)
+}
