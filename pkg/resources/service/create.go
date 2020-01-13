@@ -204,52 +204,64 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 	}
 	defer svcWatchInterface.Stop()
 
+	duration, err := time.ParseDuration(s.BuildTimeout)
+	if err != nil {
+		duration = 10 * time.Minute
+	}
+
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+
 	firstError := true
 	for {
-		event := <-svcWatchInterface.ResultChan()
-		if event.Object == nil {
-			svcWatchInterface.Stop()
-			if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
-				FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
-			}); err != nil {
-				return "", err
-			}
-			if svcWatchInterface == nil {
-				return "", errors.New("can't get watch interface, please check service status")
-			}
-			continue
-		}
-		serviceEvent, ok := event.Object.(*servingv1.Service)
-		if !ok {
-			continue
-		}
-		if clientset.Log.IsDebug() {
-			clientset.Log.Debugf("got new event:\n")
-			for _, v := range serviceEvent.Status.Conditions {
-				clientset.Log.Debugf(" condition: %q, status: %q, message: %q\n", v.Type, v.Status, v.Message)
-			}
-		}
-		if serviceEvent.Status.IsReady() {
-			return serviceEvent.Status.URL.String(), nil
-		}
-		for _, v := range serviceEvent.Status.Conditions {
-			if v.IsFalse() && v.Severity == apis.ConditionSeverityError {
-				if v.Reason == "RevisionFailed" && firstError {
-					time.Sleep(time.Second * 3)
-					svcWatchInterface.Stop()
-					if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
-						FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
-					}); err != nil {
-						return "", err
-					}
-					if svcWatchInterface == nil {
-						return "", errors.New("can't get watch interface, please check service status")
-					}
-					firstError = false
-					break
+		select {
+		case event := <-svcWatchInterface.ResultChan():
+			if event.Object == nil {
+				svcWatchInterface.Stop()
+				if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
+					FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
+				}); err != nil {
+					return "", err
 				}
-				return "", errors.New(v.Message)
+				if svcWatchInterface == nil {
+					return "", errors.New("can't get watch interface, please check service status")
+				}
+				continue
 			}
+			serviceEvent, ok := event.Object.(*servingv1.Service)
+			if !ok {
+				continue
+			}
+			if clientset.Log.IsDebug() {
+				clientset.Log.Debugf("got new event:\n")
+				for _, v := range serviceEvent.Status.Conditions {
+					clientset.Log.Debugf(" condition: %q, status: %q, message: %q\n", v.Type, v.Status, v.Message)
+				}
+			}
+			if serviceEvent.Status.IsReady() {
+				return serviceEvent.Status.URL.String(), nil
+			}
+			for _, v := range serviceEvent.Status.Conditions {
+				if v.IsFalse() && v.Severity == apis.ConditionSeverityError {
+					if v.Reason == "RevisionFailed" && firstError {
+						time.Sleep(time.Second * 3)
+						svcWatchInterface.Stop()
+						if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
+							FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
+						}); err != nil {
+							return "", err
+						}
+						if svcWatchInterface == nil {
+							return "", errors.New("can't get watch interface, please check service status")
+						}
+						firstError = false
+						break
+					}
+					return "", errors.New(v.Message)
+				}
+			}
+		case <-ticker.C:
+			return "", fmt.Errorf("watch service timeout")
 		}
 	}
 }
