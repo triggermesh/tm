@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
@@ -89,6 +88,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().IntVar(&s.Concurrency, "concurrency", 0, "Number of concurrent events per container: 0 - multiple events, 1 - single event, N - particular number of events")
 	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
 	deployServiceCmd.Flags().StringSliceVar(&s.EnvSecrets, "env-secret", []string{}, "Name of k8s secrets to populate pod environment variables")
+	deployServiceCmd.Flags().BoolVar(&s.BuildOnly, "build-only", false, "Build image and exit")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringToStringVarP(&s.Annotations, "annotation", "a", map[string]string{}, "Revision template annotations")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
@@ -129,7 +129,7 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			bt.Namespace = client.Namespace
 			if _, err := bt.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
 		},
 	}
@@ -191,7 +191,7 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 			tr.Name = args[0]
 			_, err := tr.Deploy(clientset)
 			if err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
 		},
 	}

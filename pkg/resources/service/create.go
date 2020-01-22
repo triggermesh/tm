@@ -65,6 +65,10 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 	clientset.Log.Debugf("image is ready, creating service\n")
 
+	if s.BuildOnly {
+		return fmt.Sprintf("Build-only flag set, service image is %s\n", image), nil
+	}
+
 	concurrency := int64(s.Concurrency)
 	configuration := servingv1.ConfigurationSpec{
 		Template: servingv1.RevisionTemplateSpec{
