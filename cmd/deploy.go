@@ -30,8 +30,14 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
 			s.Registry = client.Registry
+			if clientset.Log.IsDebug() && concurrency > 1 {
+				clientset.Log.Warnf(`You are about to run %d deployments in parallel with verbose output.
+				It's better to either add "--concurrency=1" argument or remove debug flag.
+				Press Ctr+C to abort or Enter to continue anyway...`, concurrency)
+				fmt.Scanln()
+			}
 			if err := s.DeployYAML(yaml, args, concurrency, clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
 		},
 	}
@@ -62,9 +68,9 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 			s.Registry = client.Registry
 			output, err := s.Deploy(clientset)
 			if err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
-			fmt.Println(output)
+			clientset.Log.Infoln(output)
 		},
 	}
 	// kept for back compatibility
@@ -100,9 +106,9 @@ func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
 			b.Name = args[0]
 			b.Namespace = client.Namespace
 			if _, err := b.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
-			fmt.Println("Build created")
+			clientset.Log.Infoln("Build created")
 		},
 	}
 
@@ -143,7 +149,7 @@ func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
 			c.Name = args[0]
 			c.Namespace = client.Namespace
 			if err := c.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
 		},
 	}
@@ -164,9 +170,9 @@ func cmdDeployTask(clientset *client.ConfigSet) *cobra.Command {
 			}
 			t.Namespace = client.Namespace
 			if _, err := t.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
-			fmt.Println("Task installed")
+			clientset.Log.Infoln("Task installed")
 		},
 	}
 	deployTaskCmd.Flags().StringVarP(&t.File, "file", "f", "", "Task yaml manifest path")
@@ -207,9 +213,9 @@ func cmdDeployPipelineResource(clientset *client.ConfigSet) *cobra.Command {
 			plr.Name = args[0]
 			plr.Namespace = client.Namespace
 			if _, err := plr.Deploy(clientset); err != nil {
-				log.Fatal(err)
+				clientset.Log.Fatal(err)
 			}
-			fmt.Println("PipelineResource created")
+			clientset.Log.Infoln("PipelineResource created")
 		},
 	}
 	deployPipelineResourceCmd.Flags().StringVar(&plr.Source.URL, "url", "", "Git URL to get sources from")

@@ -118,7 +118,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 		if !s.inList(function.Name, functionsToDelete) {
 			continue
 		}
-		fmt.Println("Deleting", function.Name)
+		clientset.Log.Infof("Deleting %s\n", function.Name)
 		jobs <- function
 		inProgress++
 	}

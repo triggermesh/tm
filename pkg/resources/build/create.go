@@ -60,7 +60,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 			return "", fmt.Errorf("buildtemplate installation: %s", err)
 		}
 		b.Buildtemplate = buildtemplateName
-		fmt.Printf("Buildtemplate %q installed\n", b.Buildtemplate)
+		clientset.Log.Infof("Buildtemplate %q installed\n", b.Buildtemplate)
 
 		defer func() {
 			owner := metav1.OwnerReference{
@@ -70,13 +70,13 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 				UID:        build.UID,
 			}
 			if err := b.setBuildtemplateOwner(clientset, owner); err != nil {
-				fmt.Printf("Can't set buildtemplate owner, cleaning up\n")
+				clientset.Log.Warnf("Can't set buildtemplate owner, cleaning up\n")
 				bt := buildtemplate.Buildtemplate{
 					Name:      b.Buildtemplate,
 					Namespace: b.Namespace,
 				}
 				if err = bt.Delete(clientset); err != nil {
-					fmt.Printf("Can't remove buildtemplate %q: %s\n", build.Name, err)
+					clientset.Log.Errorf("Can't remove buildtemplate %q: %s\n", build.Name, err)
 				}
 			}
 		}()
@@ -143,7 +143,7 @@ func (b *Build) Deploy(clientset *client.ConfigSet) (string, error) {
 	}
 
 	if b.Wait {
-		fmt.Printf("Waiting for the build %q completion\n", b.Name)
+		clientset.Log.Infof("Waiting for the build %q completion\n", b.Name)
 		if err := b.wait(build, clientset); err != nil {
 			return "", fmt.Errorf("Build %q error: %s", b.Name, err)
 		}
@@ -174,7 +174,7 @@ func (b *Build) injectSources(clientset *client.ConfigSet) error {
 		}
 		time.Sleep(time.Second)
 	}
-	fmt.Printf("Uploading sources to %q\n", buildPod)
+	clientset.Log.Infof("Uploading sources to %q\n", buildPod)
 	res, err := clientset.Core.CoreV1().Pods(b.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod})
 	if err != nil {
 		return err
@@ -216,7 +216,7 @@ func (b *Build) injectSources(clientset *client.ConfigSet) error {
 						return fmt.Errorf("Can't get build pod name, please check service status")
 					}
 					res.Stop()
-					fmt.Printf("Updating build pod name to %s\n", buildPod)
+					clientset.Log.Infof("Updating build pod name to %s\n", buildPod)
 					if res, err = clientset.Core.CoreV1().Pods(b.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + buildPod}); err != nil {
 						return err
 					}

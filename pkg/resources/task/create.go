@@ -36,6 +36,7 @@ const (
 // Deploy accepts path (local or URL) to tekton Task manifest and installs it
 func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	if !file.IsLocal(t.File) {
+		clientset.Log.Debugf("cannot find %q locally, downloading\n", t.File)
 		path, err := file.Download(t.File)
 		if err != nil {
 			return nil, fmt.Errorf("task not found: %s", err)
@@ -67,11 +68,13 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	}
 
 	if t.RegistrySecret != "" {
+		clientset.Log.Debugf("setting registry secret %q for task \"%s/%s\"\n", t.RegistrySecret, task.GetNamespace(), task.GetName())
 		t.setupEnv(task)
 		t.setupVolume(task)
 	}
 
 	if t.FromLocalSource {
+		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\"\n", task.GetNamespace(), task.GetGenerateName())
 		task.Spec.Steps = append([]tekton.Step{t.customStep()}, task.Spec.Steps...)
 		if task.Spec.Inputs != nil {
 			task.Spec.Inputs.Resources = []tekton.TaskResource{}
@@ -95,6 +98,7 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 		t.setupVolume(task)
 	}
 	if t.FromLocalSource {
+		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\" clone\n", task.GetNamespace(), task.GetGenerateName())
 		task.Spec.Steps = append([]tekton.Step{t.customStep()}, task.Spec.Steps...)
 		if task.Spec.Inputs != nil {
 			task.Spec.Inputs.Resources = []tekton.TaskResource{}
@@ -153,6 +157,7 @@ func (t *Task) CreateOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*
 
 	taskObj, err := clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Create(task)
 	if k8sErrors.IsAlreadyExists(err) {
+		clientset.Log.Debugf("task %q is already exist, updating\n", task.GetName())
 		if taskObj, err = clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Get(task.ObjectMeta.Name, metav1.GetOptions{}); err != nil {
 			return nil, err
 		}
@@ -168,6 +173,7 @@ func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference
 	if err != nil {
 		return err
 	}
+	clientset.Log.Debugf("setting task \"%s/%s\" owner to %s/%s\n", task.GetNamespace(), task.GetName(), owner.Kind, owner.Name)
 	task.SetOwnerReferences([]metav1.OwnerReference{owner})
 	_, err = clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Update(task)
 	return err

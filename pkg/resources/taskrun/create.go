@@ -70,6 +70,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("composing image name: %s", err)
 	}
 	image = fmt.Sprintf("%s:%s", image, file.RandString(6))
+	clientset.Log.Debugf("taskrun \"%s/%s\" output image will be %q\n", tr.Namespace, tr.Name, image)
 	taskRunObject := tr.newTaskRun()
 	taskRunObject.Spec.Inputs.Params = tr.getBuildArguments(image)
 
@@ -80,6 +81,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 			tr.Params = append(tr.Params, "HANDLER="+path.Base(tr.Function.Path))
 			tr.Function.Path = path.Clean(path.Dir(tr.Function.Path))
 		}
+		clientset.Log.Debugf("function path is %q\n", tr.Function.Path)
 	}
 
 	if client.Dry {
@@ -97,12 +99,14 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("creating taskrun: %s", err)
 	}
 	tr.Name = taskRunObject.GetName()
+	clientset.Log.Debugf("taskrun \"%s/%s\" created\n", tr.Namespace, tr.Name)
 
 	ownerRef := owner(taskRunObject)
 	if tr.Task.Owned {
 		tr.setTaskOwner(clientset, ownerRef)
 	}
 	if tr.PipelineResource.Owned {
+		clientset.Log.Debugf("setting pipelineresource owner\n")
 		tr.setPipelineResourceOwner(clientset, ownerRef)
 	}
 	if file.IsLocal(tr.Function.Path) {
@@ -114,13 +118,13 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("waiting for source container: %s", err)
 		}
-		fmt.Printf("Uploading %q to %s\n", tr.Function.Path, pod)
+		clientset.Log.Infof("Uploading %q to %s\n", tr.Function.Path, pod)
 		if err := tr.injectSources(clientset, pod, sourceContainer); err != nil {
 			return "", fmt.Errorf("injecting sources: %s", err)
 		}
 	}
 	if tr.Wait {
-		fmt.Printf("Waiting for taskrun %q ready state\n", taskRunObject.Name)
+		clientset.Log.Infof("Waiting for taskrun %q ready state\n", taskRunObject.Name)
 		if err = tr.wait(clientset); err != nil {
 			return image, fmt.Errorf("taskrun %q deployment failed: %s", tr.Name, err)
 		}
@@ -189,6 +193,7 @@ func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error
 	}
 	if tr.RegistrySecret != "" || task.FromLocalSource {
 		tr.Task.ClusterScope = false
+		clientset.Log.Debugf("cloning task to a new object \"%s/%s\"\n", task.Namespace, task.Name)
 		return task.Clone(clientset, taskObj)
 	}
 	return nil, nil
@@ -201,7 +206,7 @@ func (tr *TaskRun) setTaskOwner(clientset *client.ConfigSet, ownerRef metav1.Own
 	}
 	if err := task.SetOwner(clientset, ownerRef); err != nil {
 		if err = task.Delete(clientset); err != nil {
-			fmt.Printf("Can't cleanup task: %s\n", err)
+			clientset.Log.Errorf("Can't cleanup task: %s\n", err)
 		}
 	}
 }
@@ -213,7 +218,7 @@ func (tr *TaskRun) setPipelineResourceOwner(clientset *client.ConfigSet, ownerRe
 	}
 	if err := plr.SetOwner(clientset, ownerRef); err != nil {
 		if err = plr.Delete(clientset); err != nil {
-			fmt.Printf("Can't remove pipelineresource: %s\n", err)
+			clientset.Log.Errorf("Can't remove pipelineresource: %s\n", err)
 		}
 	}
 }
@@ -314,22 +319,28 @@ func gitlabEnv() (string, bool) {
 }
 
 func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
-	res, err := clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+	trWatchInterface, err := clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", tr.Name),
 	})
-	if err != nil || res == nil {
+	if err != nil || trWatchInterface == nil {
 		return fmt.Errorf("can't get watch interface: %s", err)
 	}
-	defer res.Stop()
+	defer trWatchInterface.Stop()
 
 	for {
-		event := <-res.ResultChan()
+		event := <-trWatchInterface.ResultChan()
 		if event.Object == nil {
 			return tr.wait(clientset)
 		}
 		taskrun, ok := event.Object.(*v1alpha1.TaskRun)
 		if !ok || taskrun == nil {
 			continue
+		}
+		if clientset.Log.IsDebug() {
+			clientset.Log.Debugf("got new event:\n")
+			for _, v := range taskrun.Status.Conditions {
+				clientset.Log.Debugf(" condition: %q, status: %q, message: %q\n", v.Type, v.Status, v.Message)
+			}
 		}
 		for _, v := range taskrun.Status.Conditions {
 			if v.IsFalse() && v.Severity == apis.ConditionSeverityError {
@@ -348,6 +359,7 @@ func (tr *TaskRun) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerRefer
 	if err != nil {
 		return err
 	}
+	clientset.Log.Debugf("setting taskrun \"%s/%s\" owner to %s/%s\n", taskrun.GetNamespace(), taskrun.GetName(), owner.Kind, owner.Name)
 	taskrun.SetOwnerReferences([]metav1.OwnerReference{owner})
 	_, err = clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Update(taskrun)
 	return err
@@ -446,6 +458,7 @@ func (tr *TaskRun) injectSources(clientset *client.ConfigSet, pod, container str
 	if err := c.Upload(clientset); err != nil {
 		return err
 	}
+	clientset.Log.Debugf("creating upload completion flag\n")
 	if _, _, err := c.RemoteExec(clientset, "touch "+uploadDoneTrigger, nil); err != nil {
 		return err
 	}

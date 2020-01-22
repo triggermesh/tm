@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -64,7 +63,7 @@ func cmdDeleteBuild(clientset *client.ConfigSet) *cobra.Command {
 			if err := b.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Build is being deleted")
+			clientset.Log.Infoln("Build is being deleted")
 		},
 	}
 }
@@ -81,7 +80,7 @@ func cmdDeleteBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 			if err := bt.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("BuildTemplate is being deleted")
+			clientset.Log.Infoln("BuildTemplate is being deleted")
 		},
 	}
 }
@@ -98,7 +97,7 @@ func cmdDeleteChannel(clientset *client.ConfigSet) *cobra.Command {
 			if err := c.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Channel is being deleted")
+			clientset.Log.Infoln("Channel is being deleted")
 		},
 	}
 }
@@ -115,7 +114,7 @@ func cmdDeleteService(clientset *client.ConfigSet) *cobra.Command {
 			if err := s.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Service is being deleted")
+			clientset.Log.Infoln("Service is being deleted")
 		},
 	}
 }
@@ -132,7 +131,7 @@ func cmdDeleteConfiguration(clientset *client.ConfigSet) *cobra.Command {
 			if err := cf.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Configuration is being deleted")
+			clientset.Log.Infoln("Configuration is being deleted")
 		},
 	}
 }
@@ -149,7 +148,7 @@ func cmdDeleteRevision(clientset *client.ConfigSet) *cobra.Command {
 			if err := r.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Revision is being deleted")
+			clientset.Log.Infoln("Revision is being deleted")
 		},
 	}
 }
@@ -166,7 +165,7 @@ func cmdDeleteRoute(clientset *client.ConfigSet) *cobra.Command {
 			if err := rt.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Route is being deleted")
+			clientset.Log.Infoln("Route is being deleted")
 		},
 	}
 }
@@ -183,7 +182,7 @@ func cmdDeleteTask(clientset *client.ConfigSet) *cobra.Command {
 			if err := t.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("Task is being deleted")
+			clientset.Log.Infoln("Task is being deleted")
 		},
 	}
 }
@@ -200,7 +199,7 @@ func cmdDeleteTaskRun(clientset *client.ConfigSet) *cobra.Command {
 			if err := tr.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("TaskRun is being deleted")
+			clientset.Log.Infoln("TaskRun is being deleted")
 		},
 	}
 }
@@ -217,7 +216,7 @@ func cmdDeletePipelineResource(clientset *client.ConfigSet) *cobra.Command {
 			if err := plr.Delete(clientset); err != nil {
 				log.Fatalln(err)
 			}
-			fmt.Println("PipelineResource is being deleted")
+			clientset.Log.Infoln("PipelineResource is being deleted")
 		},
 	}
 }

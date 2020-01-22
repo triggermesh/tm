@@ -15,8 +15,6 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/build"
@@ -40,28 +38,34 @@ type Builder interface {
 // and returns corresponding builder interface
 func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 	if !file.IsLocal(s.Source) && !file.IsGit(s.Source) {
+		clientset.Log.Debugf("source %q is not local file nor git URL\n", s.Source)
 		return nil
 	}
 
 	if task.Exist(clientset, s.Runtime) ||
 		clustertask.Exist(clientset, s.Runtime) {
+		clientset.Log.Debugf("%q is a task\n", s.Runtime)
 		return s.taskRun()
 	} else if buildtemplate.Exist(clientset, s.Runtime) ||
 		clusterbuildtemplate.Exist(clientset, s.Runtime) {
-		return s.build()
+		clientset.Log.Debugf("%q is a buildtemplate\n", s.Runtime)
+		return s.build(clientset)
 	}
 
 	if file.IsRemote(s.Runtime) {
+		clientset.Log.Debugf("runtime %q is seemed to be a remote file, downloading", s.Runtime)
 		if localFile, err := file.Download(s.Runtime); err != nil {
-			fmt.Printf("Warning! Cannot fetch runtime: %s\n", err)
+			clientset.Log.Warnf("Warning! Cannot fetch runtime: %s\n", err)
 		} else {
 			s.Runtime = localFile
 		}
 	}
 
 	if file.IsBuildTemplate(s.Runtime) {
-		return s.build()
+		clientset.Log.Debugf("%q is a buildtemplate\n", s.Runtime)
+		return s.build(clientset)
 	}
+	clientset.Log.Debugf("%q is a task\n", s.Runtime)
 	return s.taskRun()
 }
 
@@ -84,11 +88,11 @@ func (s *Service) taskRun() *taskrun.TaskRun {
 	}
 }
 
-func (s *Service) build() *build.Build {
-	fmt.Println("*******")
-	fmt.Println("Warning! You're using deprecated knative/build component. Please use tekton/pipelines instead")
-	fmt.Println("https://github.com/triggermesh/knative-lambda-runtime")
-	fmt.Println("*******")
+func (s *Service) build(clientset *client.ConfigSet) *build.Build {
+	clientset.Log.Warnf("*******")
+	clientset.Log.Warnf("Warning! You're using deprecated knative/build component. Please use tekton/pipelines instead")
+	clientset.Log.Warnf("https://github.com/triggermesh/knative-lambda-runtime")
+	clientset.Log.Warnf("*******")
 	return &build.Build{
 		Args:           s.BuildArgs,
 		Buildtemplate:  s.Runtime,

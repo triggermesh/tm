@@ -26,6 +26,7 @@ import (
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
 	pipelineApi "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	triggersApi "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
+	logwrapper "github.com/triggermesh/tm/pkg/log"
 	githubSource "knative.dev/eventing-contrib/github/pkg/client/clientset/versioned"
 	eventingApi "knative.dev/eventing/pkg/client/clientset/versioned"
 	servingApi "knative.dev/serving/pkg/client/clientset/versioned"
@@ -60,6 +61,7 @@ type ConfigSet struct {
 	GithubSource    *githubSource.Clientset
 	TektonPipelines *pipelineApi.Clientset
 	TektonTriggers  *triggersApi.Clientset
+	Log             *logwrapper.StandardLogger
 	Config          *rest.Config
 }
 
@@ -132,6 +134,7 @@ func ConfigPath(cfgFile string) string {
 // NewClient returns ConfigSet created from available configuration file or from in-cluster environment
 func NewClient(cfgFile string) (ConfigSet, error) {
 	var c ConfigSet
+
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
 	if err != nil {
 		log.Printf("%s, falling back to in-cluster configuration\n", err)
@@ -145,6 +148,7 @@ func NewClient(cfgFile string) (ConfigSet, error) {
 		Namespace = getNamespace(cfgFile)
 	}
 	c.Config = config
+	c.Log = logwrapper.NewLogger()
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
 		return c, err
