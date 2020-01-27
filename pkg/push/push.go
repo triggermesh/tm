@@ -19,11 +19,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ghodss/yaml"
 	pipelines "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggers "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
-	"github.com/triggermesh/tm/pkg/file"
 	"gopkg.in/src-d/go-git.v4"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
@@ -68,6 +66,8 @@ func Push(clientset *client.ConfigSet) error {
 		return fmt.Errorf("pipelineresource marshaling: %s", err)
 	}
 
+	task := getTask(owner, project)
+
 	tr := getTaskRun(owner, project)
 	taskrun, err := json.Marshal(tr)
 	if err != nil {
@@ -84,6 +84,9 @@ func Push(clientset *client.ConfigSet) error {
 		{taskrun},
 	}
 
+	if err := createOrUpdateTask(task, clientset); err != nil {
+		return fmt.Errorf("creating task: %s", err)
+	}
 	if err := createOrUpdateTriggerTemplate(triggertemplate, clientset); err != nil {
 		return fmt.Errorf("creating triggertemplate: %s", err)
 	}
@@ -97,14 +100,7 @@ func Push(clientset *client.ConfigSet) error {
 		return fmt.Errorf("creating githubsource: %s", err)
 	}
 
-	tr.Status = pipelines.TaskRunStatus{}
-	tr.SetGenerateName("")
-	tr.SetName(fmt.Sprintf("%s-%s-%s", owner, project, file.RandStringDNS(6)))
-	res, err := yaml.Marshal(tr)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(res))
+	fmt.Printf("Next push event in %s will trigger function deployment from serverless.yaml (if there is one)\n", url)
 	return nil
 }
 
@@ -161,8 +157,10 @@ func getEventListener(owner, project string) triggers.EventListener {
 		Spec: triggers.EventListenerSpec{
 			Triggers: []triggers.EventListenerTrigger{
 				{
-					Binding: &triggers.EventListenerBinding{
-						Name: fmt.Sprintf("%s-%s-binding", owner, project),
+					Bindings: []*triggers.EventListenerBinding{
+						{
+							Name: fmt.Sprintf("%s-%s-binding", owner, project),
+						},
 					},
 					Template: triggers.EventListenerTemplate{
 						Name: fmt.Sprintf("%s-%s-template", owner, project),
@@ -310,6 +308,20 @@ func getTask(owner, project string) *pipelines.Task {
 			},
 		},
 	}
+}
+
+func createOrUpdateTask(object *pipelines.Task, clientset *client.ConfigSet) error {
+	_, err := clientset.TektonPipelines.TektonV1alpha1().Tasks(client.Namespace).Create(object)
+	if k8sErrors.IsAlreadyExists(err) {
+		tt, err := clientset.TektonPipelines.TektonV1alpha1().Tasks(client.Namespace).Get(object.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		object.ObjectMeta.ResourceVersion = tt.GetResourceVersion()
+		_, err = clientset.TektonPipelines.TektonV1alpha1().Tasks(client.Namespace).Update(object)
+		return err
+	}
+	return err
 }
 
 func createOrUpdateTriggerTemplate(object triggers.TriggerTemplate, clientset *client.ConfigSet) error {

@@ -118,9 +118,33 @@ curl http://go-lambda.default.dev.triggermesh.io --data '{"Name": "Foo"}'
 
 _This feature is only available for Github.com repositories at the moment_
 
-With Triggermesh CLI you can create fully functional deployment pipeline of existing git repository with a single command. In example below we're assuming that you have an access to k8s cluster with knative and tekton pipelines installed. If you use Triggermesh cloud you should not worry about requirements; platform is ready to go.
+With Triggermesh CLI you can create fully functional deployment pipeline of existing git repository. In example below we're assuming that you have an access to k8s cluster with knative, tekton pipelines and triggers installed. If you use Triggermesh cloud you should not worry about requirements; platform is ready to go.
 
-As a first step, you should create new public repository in Github.com which we will use in our example. After the empty repository has been created, we need to push sample AWS Lambda project to it:
+Prerequisites: 
+
+1. create github personal access token with "repo" and "admin:repo_hook" permissions
+2. create k8s `githubsecret` secret in your namespace:
+```
+kubectl create secret generic githubsecret --from-literal=secretToken=<RANDOM STRING> --from-literal=accessToken=<PERSONAL ACCESS TOKEN>
+```
+3. update githubsource clusterrole: 
+```
+kubectl edit clusterrole eventing-sources-github-controller
+```
+and append a following section to existing rules:
+
+```
+- apiGroups:
+  - tekton.dev
+  resources:
+  - eventlisteners
+  verbs:
+  - get
+  - list
+  - watch
+```
+
+Next, you should create new repository in Github.com which we will use in our example. After the empty repository has been created, we need to push sample AWS Lambda project to it:
 
 ```
 tm generate python foo
@@ -135,14 +159,8 @@ git push -u origin master
 Now that we have repository with Python project, let's create build pipeline:
 
 ```
-tm push | kubectl apply -f -
+tm push
 ```
--this command creates several knative and tekton components:
-
-1. Tekton task with `tm` image to build AWS Lambda project using [KLR](https://github.com/triggermesh/knative-lambda-runtime)
-1. Tekton taskrun to initiate project build and corresponding pipelineresource with source URL
-1. Triggermesh Github custom "third-party" containersource that allows to track events on Github repositories
-1. Triggermesh Aktion [transceiver](https://github.com/triggermesh/aktion/tree/master/cmd/transceiver) and its configmap to create new taskruns on incoming events from Github containersource
 
 After few minutes you should be able to see new Knative service deployed in cluster. Any commits will trigger new build and deploy so that new function will reflect all code changes.   
 

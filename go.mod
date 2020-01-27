@@ -19,6 +19,7 @@ require (
 	github.com/json-iterator/go v1.1.8 // indirect
 	github.com/knative/build v0.7.0
 	github.com/knative/pkg v0.0.0-20190624141606-d82505e6c5b4 // indirect
+	github.com/kubernetes-sigs/application v0.8.1 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
@@ -37,7 +38,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/tektoncd/pipeline v0.9.2
-	github.com/tektoncd/triggers v0.1.0
+	github.com/tektoncd/triggers v0.2.0
 	github.com/tidwall/gjson v1.3.2 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/zap v1.10.0 // indirect

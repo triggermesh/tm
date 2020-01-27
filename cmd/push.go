@@ -24,7 +24,8 @@ import (
 
 func newPushCmd(clientset *client.ConfigSet) *cobra.Command {
 	pushCmd := &cobra.Command{
-		Use: "push",
+		Use:   "push",
+		Short: "Read git repository in current directory and deploy triggermesh serverless.yaml using tekton pipelines and triggers",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := push.Push(clientset); err != nil {
 				log.Fatal(err)

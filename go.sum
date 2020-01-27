@@ -246,6 +246,8 @@ github.com/kr/pty v1.1.5/go.mod h1:9r2w37qlBe7rQ6e1fg1S/9xpWHSnaqNdHD3WcMdbPDA=
 github.com/kr/pty v1.1.8/go.mod h1:O1sed60cT9XZ5uDucP5qwvh+TE3NnUj51EiZO/lmSfw=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
+github.com/kubernetes-sigs/application v0.8.1 h1:tnIN+iijr0kDJxvOhnqjoXV+3hWydRNy8OHisMyO71U=
+github.com/kubernetes-sigs/application v0.8.1/go.mod h1:KqAScqo78PXUrmoFOH8z6P4xQDBdzyJH1FMqrhgJJLE=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/mailru/easyjson v0.0.0-20160728113105-d5b7844b561a/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
 github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
@@ -359,6 +361,8 @@ github.com/tektoncd/pipeline v0.9.2 h1:eJ9x1KY/XpUGmTjNdowRHF7G9FozKGptHnEGwKO4W
 github.com/tektoncd/pipeline v0.9.2/go.mod h1:IZzJdiX9EqEMuUcgdnElozdYYRh0/ZRC+NKMLj1K3Yw=
 github.com/tektoncd/triggers v0.1.0 h1:h72f/B0tpRVeCMKrUokfFWrhfwYD9iCpfND0ecMDogI=
 github.com/tektoncd/triggers v0.1.0/go.mod h1:sf5zayuDu6gUI4JsCYDunukfrb1ng/Lz0FoWcJ0cFt4=
+github.com/tektoncd/triggers v0.2.0 h1:Zt/7yBKa+WMJrl7znJ3yp9x/yJz1yxUq0MC2JSpSj4I=
+github.com/tektoncd/triggers v0.2.0/go.mod h1:sf5zayuDu6gUI4JsCYDunukfrb1ng/Lz0FoWcJ0cFt4=
 github.com/tidwall/gjson v1.3.2 h1:+7p3qQFaH3fOMXAJSrdZwGKcOO/lYdGS0HqGhPqDdTI=
 github.com/tidwall/gjson v1.3.2/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
 github.com/tidwall/match v1.0.1 h1:PnKP62LPNxHKTwvHHZZzdOAOCtsJTjo6dZLCwpKm5xc=
