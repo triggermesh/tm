@@ -603,6 +603,7 @@ knative.dev/eventing-contrib v0.11.1 h1:utw0zv3fE+nn1jSFwl634U48BktjIst9ti5ZjJkx
 knative.dev/eventing-contrib v0.11.1/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8OmHflNx3g=
 knative.dev/pkg v0.0.0-20191217184203-cf220a867b3d h1:DBOu7eXsA2yfO7XoipXsIpJnTAt5hDLOckO9dZRLvCg=
 knative.dev/pkg v0.0.0-20191217184203-cf220a867b3d/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
+knative.dev/pkg v0.0.0-20200124152324-5ff923b836ab h1:k+Y9Z4p5i5VoSftpTtMMxPRjTZt7uOKi04JDYVo8ghI=
 knative.dev/serving v0.11.1 h1:rGKnZtIs6kllEn7SvvFcwG8xSGls/SGpnWYJ76qOgHM=
 knative.dev/serving v0.11.1/go.mod h1:x2n255JS2XBI39tmjZ8CwTxIf9EKNMCrkVuiOttLRm0=
 modernc.org/cc v1.0.0/go.mod h1:1Sk4//wdnYJiUIxnW8ddKpaOJCF37yAdqYnkxUpaYxw=
