@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
-	"github.com/triggermesh/tm/pkg/output"
 )
 
 var (
@@ -64,22 +63,19 @@ func cmdListBuild(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
+				if len(list.Items) == 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "No builds found\n")
+					return
 				}
-			} else {
-				b.Name = args[0]
-				build, err := b.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(build, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(b.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			b.Name = args[0]
+			build, err := b.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(b.GetObject(build))
 		},
 	}
 }
@@ -96,22 +92,19 @@ func cmdListBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
+				if len(list.Items) == 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "No builds found\n")
+					return
 				}
-			} else {
-				bt.Name = args[0]
-				buildtemplate, err := bt.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(buildtemplate, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(bt.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			bt.Name = args[0]
+			buildtemplate, err := bt.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(bt.GetObject(buildtemplate))
 		},
 	}
 }
@@ -127,22 +120,19 @@ func cmdListClusterBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
+				if len(list.Items) == 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "No clusterbuildtemplates found\n")
+					return
 				}
-			} else {
-				cbt.Name = args[0]
-				cbuildtemplate, err := cbt.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(cbuildtemplate, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(cbt.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			cbt.Name = args[0]
+			cbuildtemplate, err := cbt.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(cbt.GetObject(cbuildtemplate))
 		},
 	}
 }
@@ -159,22 +149,19 @@ func cmdListChannels(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
+				if len(list.Items) == 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "No channels found\n")
+					return
 				}
-			} else {
-				c.Name = args[0]
-				channel, err := c.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(channel, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(c.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			c.Name = args[0]
+			channel, err := c.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(c.GetObject(channel))
 		},
 	}
 }
@@ -184,6 +171,7 @@ func cmdListService(clientset *client.ConfigSet) *cobra.Command {
 		Use:     "service",
 		Aliases: []string{"services"},
 		Short:   "List of knative service resources",
+		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
 			if len(args) == 0 {
@@ -191,22 +179,19 @@ func cmdListService(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
+				if len(list.Items) == 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "No services found\n")
+					return
 				}
-			} else {
-				s.Name = args[0]
-				service, err := s.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(service, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(s.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			s.Name = args[0]
+			service, err := s.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(s.GetObject(service))
 		},
 	}
 }
@@ -223,22 +208,19 @@ func cmdListConfigurations(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
+				if len(list.Items) == 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "No configurations found\n")
+					return
 				}
-			} else {
-				cf.Name = args[0]
-				configuration, err := cf.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(configuration, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(cf.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			cf.Name = args[0]
+			configuration, err := cf.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(cf.GetObject(configuration))
 		},
 	}
 }
@@ -255,22 +237,19 @@ func cmdListRevision(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
+				if len(list.Items) == 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "No revisions found\n")
+					return
 				}
-			} else {
-				r.Name = args[0]
-				revision, err := r.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(revision, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(r.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			r.Name = args[0]
+			revision, err := r.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(r.GetObject(revision))
 		},
 	}
 }
@@ -287,22 +266,15 @@ func cmdListRoute(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-			} else {
-				rt.Name = args[0]
-				route, err := rt.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(route, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(rt.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			rt.Name = args[0]
+			route, err := rt.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(rt.GetObject(route))
 		},
 	}
 }
@@ -319,22 +291,15 @@ func cmdListTasks(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-			} else {
-				t.Name = args[0]
-				task, err := t.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(task, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(t.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			t.Name = args[0]
+			task, err := t.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(t.GetObject(task))
 		},
 	}
 }
@@ -351,22 +316,15 @@ func cmdListTaskRuns(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-			} else {
-				tr.Name = args[0]
-				taskrun, err := tr.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(taskrun, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(tr.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			tr.Name = args[0]
+			taskrun, err := tr.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(tr.GetObject(taskrun))
 		},
 	}
 }
@@ -383,22 +341,15 @@ func cmdListPipelineResources(clientset *client.ConfigSet) *cobra.Command {
 				if err != nil {
 					clientset.Log.Fatalln(err)
 				}
-				data, err = output.List(list.Items)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-			} else {
-				plr.Name = args[0]
-				pipelineResource, err := plr.Get(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				data, err = output.Describe(pipelineResource, client.Output)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
+				clientset.Printer.PrintTable(plr.GetTable(list))
+				return
 			}
-			fmt.Println(data)
+			plr.Name = args[0]
+			pipelineResource, err := plr.Get(clientset)
+			if err != nil {
+				clientset.Log.Fatalln(err)
+			}
+			clientset.Printer.PrintObject(plr.GetObject(pipelineResource))
 		},
 	}
 }

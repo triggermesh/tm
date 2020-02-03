@@ -15,11 +15,51 @@
 package route
 
 import (
-	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
+	"fmt"
+
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
-func (r *Route) List(clientset *client.ConfigSet) (*servingv1alpha1.RouteList, error) {
-	return clientset.Serving.ServingV1alpha1().Routes(client.Namespace).List(metav1.ListOptions{})
+func (rt *Route) GetTable(list *servingv1.RouteList) printer.Table {
+	table := printer.Table{
+		Headers: []string{
+			"Namespace",
+			"Name",
+			"Url",
+			"Age",
+			"Ready",
+			"Reason",
+		},
+		Rows: make([][]string, 0, len(list.Items)),
+	}
+
+	for _, item := range list.Items {
+		table.Rows = append(table.Rows, rt.Row(&item))
+	}
+	return table
+}
+
+func (rt *Route) Row(item *servingv1.Route) []string {
+	name := item.Name
+	namespace := item.Namespace
+	url := item.Status.URL.String()
+	ready := fmt.Sprintf("%v", item.Status.IsReady())
+	reason := item.Status.GetCondition(servingv1.ServiceConditionReady).Message
+
+	row := []string{
+		namespace,
+		name,
+		url,
+		ready,
+		reason,
+	}
+
+	return row
+}
+
+func (r *Route) List(clientset *client.ConfigSet) (*servingv1.RouteList, error) {
+	return clientset.Serving.ServingV1().Routes(client.Namespace).List(metav1.ListOptions{})
 }

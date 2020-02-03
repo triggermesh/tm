@@ -17,8 +17,21 @@ package clusterbuildtemplate
 import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func (cbt *ClusterBuildtemplate) GetObject(clusterBuildtemplateObject *buildv1alpha1.ClusterBuildTemplate) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":       metav1.TypeMeta{}.Kind,
+			"APIVersion": metav1.TypeMeta{}.APIVersion,
+			"Name":       metav1.ObjectMeta{}.Name,
+			"Spec":       buildv1alpha1.BuildTemplateSpec{},
+		},
+		K8sObject: clusterBuildtemplateObject,
+	}
+}
 
 // Get returns knative ClusterBuildTemplate object by its name
 func (cbt *ClusterBuildtemplate) Get(clientset *client.ConfigSet) (*buildv1alpha1.ClusterBuildTemplate, error) {

@@ -15,11 +15,57 @@
 package service
 
 import (
-	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
+	"fmt"
+	"time"
+
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/duration"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
-func (s *Service) List(clientset *client.ConfigSet) (*servingv1alpha1.ServiceList, error) {
-	return clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{})
+func (s *Service) GetTable(list *servingv1.ServiceList) printer.Table {
+	table := printer.Table{
+		Headers: []string{
+			"Namespace",
+			"Name",
+			"Url",
+			"Age",
+			"Ready",
+			"Reason",
+		},
+		Rows: make([][]string, 0, len(list.Items)),
+	}
+
+	for _, item := range list.Items {
+		table.Rows = append(table.Rows, s.Row(&item))
+	}
+	return table
+}
+
+func (s *Service) Row(item *servingv1.Service) []string {
+	name := item.Name
+	namespace := item.Namespace
+	url := item.Status.URL.String()
+	// lastestRevision := item.Status.ConfigurationStatusFields.LatestReadyRevisionName
+	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
+	ready := fmt.Sprintf("%v", item.Status.IsReady())
+	reason := item.Status.GetCondition(servingv1.ServiceConditionReady).Message
+
+	row := []string{
+		namespace,
+		name,
+		url,
+		// lastestRevision,
+		age,
+		ready,
+		reason,
+	}
+
+	return row
+}
+
+func (s *Service) List(clientset *client.ConfigSet) (*servingv1.ServiceList, error) {
+	return clientset.Serving.ServingV1().Services(s.Namespace).List(metav1.ListOptions{})
 }

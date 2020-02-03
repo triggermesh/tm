@@ -95,8 +95,6 @@ func init() {
 	tmCmd.AddCommand(newPushCmd(&clientset))
 	tmCmd.AddCommand(newSetCmd(&clientset))
 	tmCmd.AddCommand(newGetCmd(&clientset))
-	// Describe is an alias for "get" command
-	// tmCmd.AddCommand(newDescribeCmd(&clientset))
 }
 
 var versionCmd = &cobra.Command{
