@@ -135,7 +135,7 @@ func ConfigPath(cfgFile string) string {
 }
 
 // NewClient returns ConfigSet created from available configuration file or from in-cluster environment
-func NewClient(cfgFile string, output io.Writer) (ConfigSet, error) {
+func NewClient(cfgFile string, output ...io.Writer) (ConfigSet, error) {
 	var c ConfigSet
 
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
@@ -152,7 +152,9 @@ func NewClient(cfgFile string, output io.Writer) (ConfigSet, error) {
 	}
 	c.Config = config
 	c.Log = logwrapper.NewLogger()
-	c.Printer = printerwrapper.NewTablePrinter(output)
+	if len(output) == 1 {
+		c.Printer = printerwrapper.NewPrinter(output[0])
+	}
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
 		return c, err

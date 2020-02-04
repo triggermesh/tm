@@ -15,6 +15,7 @@
 package printer
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"reflect"
@@ -38,11 +39,12 @@ type Object struct {
 }
 
 type Printer struct {
+	Format string
 	Output io.Writer
 	Table  *tablewriter.Table
 }
 
-func NewTablePrinter(out io.Writer) *Printer {
+func NewPrinter(out io.Writer) *Printer {
 	table := tablewriter.NewWriter(out)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.SetBorder(false)
@@ -57,19 +59,39 @@ func NewTablePrinter(out io.Writer) *Printer {
 	}
 }
 
-func (t *Printer) setTableHeaders(heads headers) {
-	t.Table.SetHeader(heads)
-	t.Table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	t.Table.SetHeaderLine(false)
+func (p *Printer) setTableHeaders(heads headers) {
+	p.Table.SetHeader(heads)
+	p.Table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	p.Table.SetHeaderLine(false)
 }
 
-func (t *Printer) PrintTable(table Table) {
-	t.setTableHeaders(table.Headers)
-	t.Table.AppendBulk(table.Rows)
-	t.Table.Render()
+func (p *Printer) PrintTable(table Table) {
+	p.setTableHeaders(table.Headers)
+	p.Table.AppendBulk(table.Rows)
+	p.Table.Render()
 }
 
-func (t *Printer) PrintObject(object Object) {
+func (p *Printer) PrintObject(object Object) error {
+	switch p.Format {
+	case "yaml":
+		data, err := yaml.Marshal(object.K8sObject)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(p.Output, "%s", data)
+	case "json":
+		data, err := json.MarshalIndent(object.K8sObject, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(p.Output, "%s", data)
+	default:
+		p.printShort(object)
+	}
+	return nil
+}
+
+func (p *Printer) printShort(object Object) {
 	val := reflect.ValueOf(object.K8sObject)
 	val = reflect.Indirect(val)
 	if val.Kind().String() != "struct" {
@@ -88,7 +110,7 @@ func (t *Printer) PrintObject(object Object) {
 					if err != nil {
 						continue
 					}
-					fmt.Fprintf(t.Output, "%s:\n%s\n", key, output)
+					fmt.Fprintf(p.Output, "%s:\n%s\n", key, output)
 					// Empty TypeMeta fields due to https://github.com/kubernetes/client-go/issues/308
 					// Print only first occurrance of a requested object
 					delete(object.Fields, key)
@@ -99,13 +121,13 @@ func (t *Printer) PrintObject(object Object) {
 
 		switch fieldType.Kind().String() {
 		case "struct":
-			t.PrintObject(Object{
+			p.printShort(Object{
 				K8sObject: val.Field(i).Interface(),
 				Fields:    object.Fields,
 			})
 		case "slice":
 			for j := 0; j < val.Field(i).Len(); j++ {
-				t.PrintObject(Object{
+				p.printShort(Object{
 					K8sObject: val.Field(i).Index(j).Interface(),
 					Fields:    object.Fields,
 				})

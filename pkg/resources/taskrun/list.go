@@ -32,7 +32,7 @@ func (tr *TaskRun) GetTable(list *v1alpha1.TaskRunList) printer.Table {
 			"Namespace",
 			"Name",
 			"Age",
-			"Ready",
+			"Succeeded",
 			"Reason",
 		},
 		Rows: make([][]string, 0, len(list.Items)),

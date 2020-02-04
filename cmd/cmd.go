@@ -83,7 +83,6 @@ func init() {
 	tmCmd.PersistentFlags().StringVarP(&client.Namespace, "namespace", "n", "", "User namespace")
 	tmCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
 	tmCmd.PersistentFlags().StringVar(&client.Registry, "registry-host", "knative.registry.svc.cluster.local", "Docker registry host address")
-	// TODO Get rid of "output" package
 	tmCmd.PersistentFlags().StringVarP(&client.Output, "output", "o", "", "Output format")
 	tmCmd.PersistentFlags().BoolVar(&client.Wait, "wait", false, "Wait for the operation to complete")
 	tmCmd.PersistentFlags().BoolVar(&client.Dry, "dry", false, "Do not create k8s objects, just print its structure")
@@ -110,6 +109,7 @@ func initConfig() {
 	if clientset, err = client.NewClient(confPath, tmCmd.OutOrStdout()); err != nil {
 		log.Fatalln(err)
 	}
+	clientset.Printer.Format = client.Output
 	if debug {
 		clientset.Log.SetDebugLevel()
 	}
