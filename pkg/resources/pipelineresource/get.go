@@ -17,8 +17,22 @@ package pipelineresource
 import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func (plr *PipelineResource) GetObject(service *v1alpha1.PipelineResource) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":       metav1.TypeMeta{}.Kind,
+			"APIVersion": metav1.TypeMeta{}.APIVersion,
+			"Namespace":  metav1.ObjectMeta{}.Namespace,
+			"Name":       metav1.ObjectMeta{}.Name,
+			"Spec":       v1alpha1.PipelineResourceSpec{},
+		},
+		K8sObject: service,
+	}
+}
 
 func (plr *PipelineResource) Get(clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Get(plr.Name, metav1.GetOptions{})

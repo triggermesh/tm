@@ -17,6 +17,7 @@ limitations under the License.
 package client
 
 import (
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -27,6 +28,7 @@ import (
 	pipelineApi "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	triggersApi "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
 	logwrapper "github.com/triggermesh/tm/pkg/log"
+	printerwrapper "github.com/triggermesh/tm/pkg/printer"
 	githubSource "knative.dev/eventing-contrib/github/pkg/client/clientset/versioned"
 	eventingApi "knative.dev/eventing/pkg/client/clientset/versioned"
 	servingApi "knative.dev/serving/pkg/client/clientset/versioned"
@@ -62,6 +64,7 @@ type ConfigSet struct {
 	TektonPipelines *pipelineApi.Clientset
 	TektonTriggers  *triggersApi.Clientset
 	Log             *logwrapper.StandardLogger
+	Printer         *printerwrapper.Printer
 	Config          *rest.Config
 }
 
@@ -132,7 +135,7 @@ func ConfigPath(cfgFile string) string {
 }
 
 // NewClient returns ConfigSet created from available configuration file or from in-cluster environment
-func NewClient(cfgFile string) (ConfigSet, error) {
+func NewClient(cfgFile string, output ...io.Writer) (ConfigSet, error) {
 	var c ConfigSet
 
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
@@ -149,6 +152,9 @@ func NewClient(cfgFile string) (ConfigSet, error) {
 	}
 	c.Config = config
 	c.Log = logwrapper.NewLogger()
+	if len(output) == 1 {
+		c.Printer = printerwrapper.NewPrinter(output[0])
+	}
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
 		return c, err

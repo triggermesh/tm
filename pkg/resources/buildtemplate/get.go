@@ -17,8 +17,22 @@ package buildtemplate
 import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func (bt *Buildtemplate) GetObject(buildtemplate *buildv1alpha1.BuildTemplate) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":       metav1.TypeMeta{}.Kind,
+			"APIVersion": metav1.TypeMeta{}.APIVersion,
+			"Namespace":  metav1.ObjectMeta{}.Namespace,
+			"Name":       metav1.ObjectMeta{}.Name,
+			"Spec":       buildv1alpha1.BuildTemplateSpec{},
+		},
+		K8sObject: buildtemplate,
+	}
+}
 
 // Get returns knative BuildTemplate object by its name and namespace
 func (bt *Buildtemplate) Get(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
