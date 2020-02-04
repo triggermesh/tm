@@ -38,7 +38,8 @@ type Object struct {
 }
 
 type Printer struct {
-	Table *tablewriter.Table
+	Output io.Writer
+	Table  *tablewriter.Table
 }
 
 func NewTablePrinter(out io.Writer) *Printer {
@@ -51,7 +52,8 @@ func NewTablePrinter(out io.Writer) *Printer {
 	table.SetNoWhiteSpace(true)
 	table.SetTablePadding("\t")
 	return &Printer{
-		Table: table,
+		Output: out,
+		Table:  table,
 	}
 }
 
@@ -86,7 +88,7 @@ func (t *Printer) PrintObject(object Object) {
 					if err != nil {
 						continue
 					}
-					fmt.Printf("%s:\n%s\n", key, output)
+					fmt.Fprintf(t.Output, "%s:\n%s\n", key, output)
 					// Empty TypeMeta fields due to https://github.com/kubernetes/client-go/issues/308
 					// Print only first occurrance of a requested object
 					delete(object.Fields, key)

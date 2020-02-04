@@ -29,7 +29,6 @@ func (rt *Route) GetTable(list *servingv1.RouteList) printer.Table {
 			"Namespace",
 			"Name",
 			"Url",
-			"Age",
 			"Ready",
 			"Reason",
 		},

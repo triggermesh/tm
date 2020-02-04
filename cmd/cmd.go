@@ -107,7 +107,7 @@ var versionCmd = &cobra.Command{
 
 func initConfig() {
 	confPath := client.ConfigPath(kubeConf)
-	if clientset, err = client.NewClient(confPath); err != nil {
+	if clientset, err = client.NewClient(confPath, tmCmd.OutOrStdout()); err != nil {
 		log.Fatalln(err)
 	}
 	if debug {
