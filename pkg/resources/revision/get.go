@@ -15,11 +15,28 @@
 package revision
 
 import (
-	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
-func (r *Revision) Get(clientset *client.ConfigSet) (*servingv1alpha1.Revision, error) {
-	return clientset.Serving.ServingV1alpha1().Revisions(r.Namespace).Get(r.Name, metav1.GetOptions{})
+func (r *Revision) GetObject(revision *servingv1.Revision) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":       metav1.TypeMeta{}.Kind,
+			"APIVersion": metav1.TypeMeta{}.APIVersion,
+			"Namespace":  metav1.ObjectMeta{}.Namespace,
+			"Name":       metav1.ObjectMeta{}.Name,
+			"Containers": []corev1.Container{},
+			"Conditions": duckv1.Conditions{},
+		},
+		K8sObject: revision,
+	}
+}
+
+func (r *Revision) Get(clientset *client.ConfigSet) (*servingv1.Revision, error) {
+	return clientset.Serving.ServingV1().Revisions(r.Namespace).Get(r.Name, metav1.GetOptions{})
 }
