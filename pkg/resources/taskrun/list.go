@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+// GetTable converts k8s list instance into printable object
 func (tr *TaskRun) GetTable(list *v1alpha1.TaskRunList) printer.Table {
 	table := printer.Table{
 		Headers: []string{
@@ -39,12 +40,12 @@ func (tr *TaskRun) GetTable(list *v1alpha1.TaskRunList) printer.Table {
 	}
 
 	for _, item := range list.Items {
-		table.Rows = append(table.Rows, tr.Row(&item))
+		table.Rows = append(table.Rows, tr.row(&item))
 	}
 	return table
 }
 
-func (tr *TaskRun) Row(item *v1alpha1.TaskRun) []string {
+func (tr *TaskRun) row(item *v1alpha1.TaskRun) []string {
 	name := item.Name
 	namespace := item.Namespace
 	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
@@ -65,6 +66,7 @@ func (tr *TaskRun) Row(item *v1alpha1.TaskRun) []string {
 	return row
 }
 
+// List returns k8s list object
 func (tr *TaskRun) List(clientset *client.ConfigSet) (*v1alpha1.TaskRunList, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).List(metav1.ListOptions{})
 }

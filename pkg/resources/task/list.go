@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/duration"
 )
 
+// GetTable converts k8s list instance into printable object
 func (t *Task) GetTable(list *v1alpha1.TaskList) printer.Table {
 	table := printer.Table{
 		Headers: []string{
@@ -35,12 +36,12 @@ func (t *Task) GetTable(list *v1alpha1.TaskList) printer.Table {
 	}
 
 	for _, item := range list.Items {
-		table.Rows = append(table.Rows, t.Row(&item))
+		table.Rows = append(table.Rows, t.row(&item))
 	}
 	return table
 }
 
-func (t *Task) Row(item *v1alpha1.Task) []string {
+func (t *Task) row(item *v1alpha1.Task) []string {
 	name := item.Name
 	namespace := item.Namespace
 	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
@@ -54,6 +55,7 @@ func (t *Task) Row(item *v1alpha1.Task) []string {
 	return row
 }
 
+// List returns k8s list object
 func (t *Task) List(clientset *client.ConfigSet) (*v1alpha1.TaskList, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).List(metav1.ListOptions{})
 }

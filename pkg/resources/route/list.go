@@ -23,6 +23,7 @@ import (
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
+// GetTable converts k8s list instance into printable object
 func (rt *Route) GetTable(list *servingv1.RouteList) printer.Table {
 	table := printer.Table{
 		Headers: []string{
@@ -36,12 +37,12 @@ func (rt *Route) GetTable(list *servingv1.RouteList) printer.Table {
 	}
 
 	for _, item := range list.Items {
-		table.Rows = append(table.Rows, rt.Row(&item))
+		table.Rows = append(table.Rows, rt.row(&item))
 	}
 	return table
 }
 
-func (rt *Route) Row(item *servingv1.Route) []string {
+func (rt *Route) row(item *servingv1.Route) []string {
 	name := item.Name
 	namespace := item.Namespace
 	url := item.Status.URL.String()
@@ -59,6 +60,7 @@ func (rt *Route) Row(item *servingv1.Route) []string {
 	return row
 }
 
-func (r *Route) List(clientset *client.ConfigSet) (*servingv1.RouteList, error) {
-	return clientset.Serving.ServingV1().Routes(client.Namespace).List(metav1.ListOptions{})
+// List returns k8s list object
+func (rt *Route) List(clientset *client.ConfigSet) (*servingv1.RouteList, error) {
+	return clientset.Serving.ServingV1().Routes(rt.Namespace).List(metav1.ListOptions{})
 }

@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetObject converts k8s object into printable structure
 func (plr *PipelineResource) GetObject(service *v1alpha1.PipelineResource) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{
@@ -34,6 +35,7 @@ func (plr *PipelineResource) GetObject(service *v1alpha1.PipelineResource) print
 	}
 }
 
+// Get returns k8s object
 func (plr *PipelineResource) Get(clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Get(plr.Name, metav1.GetOptions{})
 }

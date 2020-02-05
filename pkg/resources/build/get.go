@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetObject converts k8s object into printable structure
 func (b *Build) GetObject(build *buildv1alpha1.Build) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{
@@ -38,7 +39,7 @@ func (b *Build) GetObject(build *buildv1alpha1.Build) printer.Object {
 	}
 }
 
-// Describe describes knative build object
+// Get returns k8s object
 func (b *Build) Get(clientset *client.ConfigSet) (*buildv1alpha1.Build, error) {
 	return clientset.Build.BuildV1alpha1().Builds(b.Namespace).Get(b.Name, metav1.GetOptions{})
 }

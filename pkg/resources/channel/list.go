@@ -25,6 +25,7 @@ import (
 	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 )
 
+// GetTable converts k8s list instance into printable object
 func (c *Channel) GetTable(list *messagingApi.InMemoryChannelList) printer.Table {
 	table := printer.Table{
 		Headers: []string{
@@ -39,12 +40,12 @@ func (c *Channel) GetTable(list *messagingApi.InMemoryChannelList) printer.Table
 	}
 
 	for _, item := range list.Items {
-		table.Rows = append(table.Rows, c.Row(&item))
+		table.Rows = append(table.Rows, c.row(&item))
 	}
 	return table
 }
 
-func (c *Channel) Row(item *messagingApi.InMemoryChannel) []string {
+func (c *Channel) row(item *messagingApi.InMemoryChannel) []string {
 	name := item.Name
 	namespace := item.Namespace
 	url := item.Status.Address.URL.String()
@@ -64,6 +65,7 @@ func (c *Channel) Row(item *messagingApi.InMemoryChannel) []string {
 	return row
 }
 
+// List returns list of knative build objects
 func (c *Channel) List(clientset *client.ConfigSet) (*messagingApi.InMemoryChannelList, error) {
 	return clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).List(metav1.ListOptions{})
 }

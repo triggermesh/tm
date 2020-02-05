@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetTable converts k8s list instance into printable object
 func (cbt *ClusterBuildtemplate) GetTable(list *buildv1alpha1.ClusterBuildTemplateList) printer.Table {
 	table := printer.Table{
 		Headers: []string{
@@ -30,12 +31,12 @@ func (cbt *ClusterBuildtemplate) GetTable(list *buildv1alpha1.ClusterBuildTempla
 	}
 
 	for _, item := range list.Items {
-		table.Rows = append(table.Rows, cbt.Row(&item))
+		table.Rows = append(table.Rows, cbt.row(&item))
 	}
 	return table
 }
 
-func (cbt *ClusterBuildtemplate) Row(item *buildv1alpha1.ClusterBuildTemplate) []string {
+func (cbt *ClusterBuildtemplate) row(item *buildv1alpha1.ClusterBuildTemplate) []string {
 	name := item.Name
 
 	row := []string{
@@ -45,6 +46,7 @@ func (cbt *ClusterBuildtemplate) Row(item *buildv1alpha1.ClusterBuildTemplate) [
 	return row
 }
 
+// List returns k8s list object
 func (cbt *ClusterBuildtemplate) List(clientset *client.ConfigSet) (*buildv1alpha1.ClusterBuildTemplateList, error) {
 	return clientset.Build.BuildV1alpha1().ClusterBuildTemplates().List(metav1.ListOptions{})
 }

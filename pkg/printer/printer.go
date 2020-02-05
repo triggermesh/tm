@@ -28,22 +28,26 @@ import (
 type headers []string
 type rows [][]string
 
+// Table is a structure with list headers and data rows that can be printed in PrintTable method
 type Table struct {
 	Headers headers
 	Rows    rows
 }
 
+// Object is a structure that contain k8s object and field descriptions that should be printed
 type Object struct {
 	Fields    map[string]interface{}
 	K8sObject interface{}
 }
 
+// Printer structure contains information needed to print objects in "tm get" command
 type Printer struct {
 	Format string
 	Output io.Writer
 	Table  *tablewriter.Table
 }
 
+// NewPrinter returns new Printer instance
 func NewPrinter(out io.Writer) *Printer {
 	table := tablewriter.NewWriter(out)
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
@@ -65,12 +69,14 @@ func (p *Printer) setTableHeaders(heads headers) {
 	p.Table.SetHeaderLine(false)
 }
 
+// PrintTable accepts Table instance and prints it using olekukonko/tablewriter package
 func (p *Printer) PrintTable(table Table) {
 	p.setTableHeaders(table.Headers)
 	p.Table.AppendBulk(table.Rows)
 	p.Table.Render()
 }
 
+// PrintObject accepts Object instance and depending on output format encodes object and writes to Object output
 func (p *Printer) PrintObject(object Object) error {
 	switch p.Format {
 	case "yaml":

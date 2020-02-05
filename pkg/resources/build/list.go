@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/duration"
 )
 
+// GetTable converts k8s list instance into printable object
 func (b *Build) GetTable(list *buildv1alpha1.BuildList) printer.Table {
 	table := printer.Table{
 		Headers: []string{
@@ -40,12 +41,12 @@ func (b *Build) GetTable(list *buildv1alpha1.BuildList) printer.Table {
 	}
 
 	for _, item := range list.Items {
-		table.Rows = append(table.Rows, b.Row(&item))
+		table.Rows = append(table.Rows, b.row(&item))
 	}
 	return table
 }
 
-func (b *Build) Row(item *buildv1alpha1.Build) []string {
+func (b *Build) row(item *buildv1alpha1.Build) []string {
 	name := item.Name
 	namespace := item.Namespace
 	source := ""

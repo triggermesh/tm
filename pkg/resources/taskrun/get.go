@@ -22,6 +22,7 @@ import (
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
+// GetObject converts k8s object into printable structure
 func (tr *TaskRun) GetObject(taskrun *v1alpha1.TaskRun) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{
@@ -37,6 +38,7 @@ func (tr *TaskRun) GetObject(taskrun *v1alpha1.TaskRun) printer.Object {
 	}
 }
 
+// Get returns k8s object
 func (tr *TaskRun) Get(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 }

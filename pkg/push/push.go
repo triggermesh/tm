@@ -197,7 +197,7 @@ func getTaskRun(taskName, namespace string) *tekton.TaskRun {
 		Spec: tekton.TaskRunSpec{
 			Inputs: tekton.TaskRunInputs{
 				Resources: []tekton.TaskResourceBinding{
-					tekton.TaskResourceBinding{
+					{
 						PipelineResourceBinding: tekton.PipelineResourceBinding{
 							Name: "url",
 							ResourceRef: &tekton.PipelineResourceRef{

@@ -23,7 +23,8 @@ import (
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
-func (s *Configuration) GetObject(confObject *servingv1.Configuration) printer.Object {
+// GetObject converts k8s object into printable structure
+func (cf *Configuration) GetObject(confObject *servingv1.Configuration) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{
 			"Kind":              metav1.TypeMeta{}.Kind,
@@ -39,6 +40,7 @@ func (s *Configuration) GetObject(confObject *servingv1.Configuration) printer.O
 	}
 }
 
-func (c *Configuration) Get(clientset *client.ConfigSet) (*servingv1.Configuration, error) {
-	return clientset.Serving.ServingV1().Configurations(c.Namespace).Get(c.Name, metav1.GetOptions{})
+// Get returns k8s object
+func (cf *Configuration) Get(clientset *client.ConfigSet) (*servingv1.Configuration, error) {
+	return clientset.Serving.ServingV1().Configurations(cf.Namespace).Get(cf.Name, metav1.GetOptions{})
 }

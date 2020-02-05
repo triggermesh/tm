@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetObject converts k8s object into printable structure
 func (cbt *ClusterBuildtemplate) GetObject(clusterBuildtemplateObject *buildv1alpha1.ClusterBuildTemplate) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{

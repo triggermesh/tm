@@ -25,6 +25,7 @@ import (
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
+// GetTable converts k8s list instance into printable object
 func (s *Service) GetTable(list *servingv1.ServiceList) printer.Table {
 	table := printer.Table{
 		Headers: []string{
@@ -39,12 +40,12 @@ func (s *Service) GetTable(list *servingv1.ServiceList) printer.Table {
 	}
 
 	for _, item := range list.Items {
-		table.Rows = append(table.Rows, s.Row(&item))
+		table.Rows = append(table.Rows, s.row(&item))
 	}
 	return table
 }
 
-func (s *Service) Row(item *servingv1.Service) []string {
+func (s *Service) row(item *servingv1.Service) []string {
 	name := item.Name
 	namespace := item.Namespace
 	url := item.Status.URL.String()
@@ -66,6 +67,7 @@ func (s *Service) Row(item *servingv1.Service) []string {
 	return row
 }
 
+// List returns k8s list object
 func (s *Service) List(clientset *client.ConfigSet) (*servingv1.ServiceList, error) {
 	return clientset.Serving.ServingV1().Services(s.Namespace).List(metav1.ListOptions{})
 }

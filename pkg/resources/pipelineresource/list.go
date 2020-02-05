@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetTable converts k8s list instance into printable object
 func (plr *PipelineResource) GetTable(list *v1alpha1.PipelineResourceList) printer.Table {
 	table := printer.Table{
 		Headers: []string{
@@ -31,12 +32,12 @@ func (plr *PipelineResource) GetTable(list *v1alpha1.PipelineResourceList) print
 	}
 
 	for _, item := range list.Items {
-		table.Rows = append(table.Rows, plr.Row(&item))
+		table.Rows = append(table.Rows, plr.row(&item))
 	}
 	return table
 }
 
-func (plr *PipelineResource) Row(item *v1alpha1.PipelineResource) []string {
+func (plr *PipelineResource) row(item *v1alpha1.PipelineResource) []string {
 	name := item.Name
 	namespace := item.Namespace
 
@@ -48,6 +49,7 @@ func (plr *PipelineResource) Row(item *v1alpha1.PipelineResource) []string {
 	return row
 }
 
+// List returns k8s list object
 func (plr *PipelineResource) List(clientset *client.ConfigSet) (*v1alpha1.PipelineResourceList, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).List(metav1.ListOptions{})
 }

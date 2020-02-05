@@ -46,13 +46,21 @@ const (
 	confPath = "/.tm/config.json"
 )
 
+// CLI global flags
 var (
+	// Namespace to work in passed with "-n" argument or defined in kube configs
 	Namespace string
-	Registry  string
-	Output    string
-	Debug     bool
-	Dry       bool
-	Wait      bool
+	// Registry to store docker images for user services
+	// Default value for tm cloud is knative.registry.svc.cluster.local
+	Registry string
+	// Output format for k8s objects in "tm get" result. Can be either "yaml" (default) or "json"
+	Output string
+	// Debug enables verbose output for CLI commands
+	Debug bool
+	// Dry run of some commands
+	Dry bool
+	// Wait till deployment operation finishes
+	Wait bool
 )
 
 // ConfigSet contains different information that may be needed by underlying functions
@@ -111,6 +119,7 @@ func getInClusterNamespace() string {
 	return string(data)
 }
 
+// ConfigPath calculates local path to get tm config from
 func ConfigPath(cfgFile string) string {
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {

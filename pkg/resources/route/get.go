@@ -21,6 +21,7 @@ import (
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
+// GetObject converts k8s object into printable structure
 func (r *Route) GetObject(route *servingv1.Route) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{
@@ -36,6 +37,7 @@ func (r *Route) GetObject(route *servingv1.Route) printer.Object {
 	}
 }
 
+// Get returns k8s object
 func (r *Route) Get(clientset *client.ConfigSet) (*servingv1.Route, error) {
 	return clientset.Serving.ServingV1().Routes(r.Namespace).Get(r.Name, metav1.GetOptions{})
 }
