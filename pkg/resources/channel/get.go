@@ -15,11 +15,28 @@
 package channel
 
 import (
-	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 )
 
+// GetObject converts k8s object into printable structure
+func (c *Channel) GetObject(service *messagingApi.InMemoryChannel) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":              metav1.TypeMeta{}.Kind,
+			"APIVersion":        metav1.TypeMeta{}.APIVersion,
+			"Namespace":         metav1.ObjectMeta{}.Namespace,
+			"Name":              metav1.ObjectMeta{}.Name,
+			"CreationTimestamp": metav1.Time{},
+			"Status":            messagingApi.InMemoryChannelStatus{},
+		},
+		K8sObject: service,
+	}
+}
+
+// Get returns k8s object
 func (c *Channel) Get(clientset *client.ConfigSet) (*messagingApi.InMemoryChannel, error) {
 	return clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Get(c.Name, metav1.GetOptions{})
 }

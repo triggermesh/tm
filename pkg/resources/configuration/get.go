@@ -15,11 +15,32 @@
 package configuration
 
 import (
-	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
-func (c *Configuration) Get(clientset *client.ConfigSet) (*servingv1alpha1.Configuration, error) {
-	return clientset.Serving.ServingV1alpha1().Configurations(c.Namespace).Get(c.Name, metav1.GetOptions{})
+// GetObject converts k8s object into printable structure
+func (cf *Configuration) GetObject(confObject *servingv1.Configuration) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":              metav1.TypeMeta{}.Kind,
+			"APIVersion":        metav1.TypeMeta{}.APIVersion,
+			"Namespace":         metav1.ObjectMeta{}.Namespace,
+			"Name":              metav1.ObjectMeta{}.Name,
+			"CreationTimestamp": metav1.Time{},
+			"Containers":        []corev1.Container{},
+			"RouteStatusFields": servingv1.RouteStatusFields{},
+			"Conditions":        duckv1.Conditions{},
+		},
+		K8sObject: confObject,
+	}
+}
+
+// Get returns k8s object
+func (cf *Configuration) Get(clientset *client.ConfigSet) (*servingv1.Configuration, error) {
+	return clientset.Serving.ServingV1().Configurations(cf.Namespace).Get(cf.Name, metav1.GetOptions{})
 }

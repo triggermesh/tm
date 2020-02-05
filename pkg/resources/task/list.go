@@ -15,11 +15,47 @@
 package task
 
 import (
+	"time"
+
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/duration"
 )
 
+// GetTable converts k8s list instance into printable object
+func (t *Task) GetTable(list *v1alpha1.TaskList) printer.Table {
+	table := printer.Table{
+		Headers: []string{
+			"Namespace",
+			"Name",
+			"Age",
+		},
+		Rows: make([][]string, 0, len(list.Items)),
+	}
+
+	for _, item := range list.Items {
+		table.Rows = append(table.Rows, t.row(&item))
+	}
+	return table
+}
+
+func (t *Task) row(item *v1alpha1.Task) []string {
+	name := item.Name
+	namespace := item.Namespace
+	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
+
+	row := []string{
+		namespace,
+		name,
+		age,
+	}
+
+	return row
+}
+
+// List returns k8s list object
 func (t *Task) List(clientset *client.ConfigSet) (*v1alpha1.TaskList, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).List(metav1.ListOptions{})
 }

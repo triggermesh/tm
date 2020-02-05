@@ -15,12 +15,58 @@
 package taskrun
 
 import (
-	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"fmt"
+	"time"
 
+	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/duration"
+	"knative.dev/pkg/apis"
 )
 
+// GetTable converts k8s list instance into printable object
+func (tr *TaskRun) GetTable(list *v1alpha1.TaskRunList) printer.Table {
+	table := printer.Table{
+		Headers: []string{
+			"Namespace",
+			"Name",
+			"Age",
+			"Succeeded",
+			"Reason",
+		},
+		Rows: make([][]string, 0, len(list.Items)),
+	}
+
+	for _, item := range list.Items {
+		table.Rows = append(table.Rows, tr.row(&item))
+	}
+	return table
+}
+
+func (tr *TaskRun) row(item *v1alpha1.TaskRun) []string {
+	name := item.Name
+	namespace := item.Namespace
+	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
+	ready := fmt.Sprintf("%v", item.Status.GetCondition(apis.ConditionSucceeded).IsTrue())
+	reason := ""
+	if !item.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
+		reason = item.Status.GetCondition(apis.ConditionSucceeded).Message
+	}
+
+	row := []string{
+		namespace,
+		name,
+		age,
+		ready,
+		reason,
+	}
+
+	return row
+}
+
+// List returns k8s list object
 func (tr *TaskRun) List(clientset *client.ConfigSet) (*v1alpha1.TaskRunList, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).List(metav1.ListOptions{})
 }

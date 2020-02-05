@@ -23,13 +23,17 @@ import (
 )
 
 func newPushCmd(clientset *client.ConfigSet) *cobra.Command {
+	var token string
 	pushCmd := &cobra.Command{
-		Use: "push",
+		Use:   "push",
+		Short: "Read git repository in current directory and deploy triggermesh serverless.yaml using triggermesh and tekton components",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := push.Push(clientset); err != nil {
+			if err := push.Push(clientset, token); err != nil {
 				log.Fatal(err)
 			}
 		},
 	}
+	pushCmd.Flags().StringVarP(&token, "token", "t", "", "Optional github access token to work with private repositories and bypass API requests limitation")
+
 	return pushCmd
 }

@@ -19,6 +19,7 @@ type Service struct {
 	Annotations    map[string]string
 	BuildArgs      []string
 	BuildTimeout   string
+	BuildOnly      bool
 	Concurrency    int
 	Env            []string
 	EnvSecrets     []string

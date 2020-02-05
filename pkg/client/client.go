@@ -17,6 +17,7 @@ limitations under the License.
 package client
 
 import (
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -27,8 +28,10 @@ import (
 	pipelineApi "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	triggersApi "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
 	logwrapper "github.com/triggermesh/tm/pkg/log"
+	printerwrapper "github.com/triggermesh/tm/pkg/printer"
 	githubSource "knative.dev/eventing-contrib/github/pkg/client/clientset/versioned"
 	eventingApi "knative.dev/eventing/pkg/client/clientset/versioned"
+	legacyEventingApi "knative.dev/eventing/pkg/legacyclient/clientset/versioned"
 	servingApi "knative.dev/serving/pkg/client/clientset/versioned"
 
 	"k8s.io/client-go/kubernetes"
@@ -43,13 +46,21 @@ const (
 	confPath = "/.tm/config.json"
 )
 
+// CLI global flags
 var (
+	// Namespace to work in passed with "-n" argument or defined in kube configs
 	Namespace string
-	Registry  string
-	Output    string
-	Debug     bool
-	Dry       bool
-	Wait      bool
+	// Registry to store docker images for user services
+	// Default value for tm cloud is knative.registry.svc.cluster.local
+	Registry string
+	// Output format for k8s objects in "tm get" result. Can be either "yaml" (default) or "json"
+	Output string
+	// Debug enables verbose output for CLI commands
+	Debug bool
+	// Dry run of some commands
+	Dry bool
+	// Wait till deployment operation finishes
+	Wait bool
 )
 
 // ConfigSet contains different information that may be needed by underlying functions
@@ -57,11 +68,13 @@ type ConfigSet struct {
 	Core            *kubernetes.Clientset
 	Build           *buildApi.Clientset
 	Serving         *servingApi.Clientset
+	LegacyEventing  *legacyEventingApi.Clientset
 	Eventing        *eventingApi.Clientset
 	GithubSource    *githubSource.Clientset
 	TektonPipelines *pipelineApi.Clientset
 	TektonTriggers  *triggersApi.Clientset
 	Log             *logwrapper.StandardLogger
+	Printer         *printerwrapper.Printer
 	Config          *rest.Config
 }
 
@@ -106,6 +119,7 @@ func getInClusterNamespace() string {
 	return string(data)
 }
 
+// ConfigPath calculates local path to get tm config from
 func ConfigPath(cfgFile string) string {
 	homeDir := "."
 	if dir := os.Getenv("HOME"); dir != "" {
@@ -132,7 +146,7 @@ func ConfigPath(cfgFile string) string {
 }
 
 // NewClient returns ConfigSet created from available configuration file or from in-cluster environment
-func NewClient(cfgFile string) (ConfigSet, error) {
+func NewClient(cfgFile string, output ...io.Writer) (ConfigSet, error) {
 	var c ConfigSet
 
 	config, err := clientcmd.BuildConfigFromFlags("", cfgFile)
@@ -149,8 +163,14 @@ func NewClient(cfgFile string) (ConfigSet, error) {
 	}
 	c.Config = config
 	c.Log = logwrapper.NewLogger()
+	if len(output) == 1 {
+		c.Printer = printerwrapper.NewPrinter(output[0])
+	}
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
+		return c, err
+	}
+	if c.LegacyEventing, err = legacyEventingApi.NewForConfig(config); err != nil {
 		return c, err
 	}
 	if c.Build, err = buildApi.NewForConfig(config); err != nil {

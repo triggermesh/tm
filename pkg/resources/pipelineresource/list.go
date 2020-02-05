@@ -16,11 +16,40 @@ package pipelineresource
 
 import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetTable converts k8s list instance into printable object
+func (plr *PipelineResource) GetTable(list *v1alpha1.PipelineResourceList) printer.Table {
+	table := printer.Table{
+		Headers: []string{
+			"Namespace",
+			"Name",
+		},
+		Rows: make([][]string, 0, len(list.Items)),
+	}
+
+	for _, item := range list.Items {
+		table.Rows = append(table.Rows, plr.row(&item))
+	}
+	return table
+}
+
+func (plr *PipelineResource) row(item *v1alpha1.PipelineResource) []string {
+	name := item.Name
+	namespace := item.Namespace
+
+	row := []string{
+		namespace,
+		name,
+	}
+
+	return row
+}
+
+// List returns k8s list object
 func (plr *PipelineResource) List(clientset *client.ConfigSet) (*v1alpha1.PipelineResourceList, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).List(metav1.ListOptions{})
 }

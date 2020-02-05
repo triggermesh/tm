@@ -16,11 +16,30 @@ package build
 
 import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Describe describes knative build object
+// GetObject converts k8s object into printable structure
+func (b *Build) GetObject(build *buildv1alpha1.Build) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":              metav1.TypeMeta{}.Kind,
+			"APIVersion":        metav1.TypeMeta{}.APIVersion,
+			"Namespace":         metav1.ObjectMeta{}.Namespace,
+			"Name":              metav1.ObjectMeta{}.Name,
+			"CreationTimestamp": metav1.Time{},
+			"Source":            &buildv1alpha1.SourceSpec{},
+			"Template":          &buildv1alpha1.TemplateInstantiationSpec{},
+			"Conditions":        duckv1alpha1.Conditions{},
+		},
+		K8sObject: build,
+	}
+}
+
+// Get returns k8s object
 func (b *Build) Get(clientset *client.ConfigSet) (*buildv1alpha1.Build, error) {
 	return clientset.Build.BuildV1alpha1().Builds(b.Namespace).Get(b.Name, metav1.GetOptions{})
 }

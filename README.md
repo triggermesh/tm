@@ -141,8 +141,11 @@ tm push | kubectl apply -f -
 
 1. Tekton task with `tm` image to build AWS Lambda project using [KLR](https://github.com/triggermesh/knative-lambda-runtime)
 1. Tekton taskrun to initiate project build and corresponding pipelineresource with source URL
-1. Triggermesh Github custom "third-party" containersource that allows to track events on Github repositories
+1. Triggermesh Github custom "third-party" containersource that allows to track events on Github repositories*
 1. Triggermesh Aktion [transceiver](https://github.com/triggermesh/aktion/tree/master/cmd/transceiver) and its configmap to create new taskruns on incoming events from Github containersource
+
+
+\* our Github containersource is aimed at simplifying event tracking and based on periodic Github API requests (one request per minute). As a result, you don't need to create and store any tokens. Downside of this approach is that containersource have requests rate limitation (60 requests per hour) and it doesn't work with private repositories. Both of these limitation can be bypassed by providing Github personal access token in push command parameter: `tm push --token <TOKEN>` 
 
 After few minutes you should be able to see new Knative service deployed in cluster. Any commits will trigger new build and deploy so that new function will reflect all code changes.   
 

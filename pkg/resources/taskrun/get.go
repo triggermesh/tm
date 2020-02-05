@@ -17,9 +17,28 @@ package taskrun
 import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
+// GetObject converts k8s object into printable structure
+func (tr *TaskRun) GetObject(taskrun *v1alpha1.TaskRun) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":              metav1.TypeMeta{}.Kind,
+			"APIVersion":        metav1.TypeMeta{}.APIVersion,
+			"Namespace":         metav1.ObjectMeta{}.Namespace,
+			"Name":              metav1.ObjectMeta{}.Name,
+			"CreationTimestamp": metav1.Time{},
+			"Spec":              v1alpha1.TaskRunSpec{},
+			"Conditions":        duckv1beta1.Conditions{},
+		},
+		K8sObject: taskrun,
+	}
+}
+
+// Get returns k8s object
 func (tr *TaskRun) Get(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error) {
 	return clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 }

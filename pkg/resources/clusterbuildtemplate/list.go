@@ -17,9 +17,36 @@ package clusterbuildtemplate
 import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetTable converts k8s list instance into printable object
+func (cbt *ClusterBuildtemplate) GetTable(list *buildv1alpha1.ClusterBuildTemplateList) printer.Table {
+	table := printer.Table{
+		Headers: []string{
+			"Name",
+		},
+		Rows: make([][]string, 0, len(list.Items)),
+	}
+
+	for _, item := range list.Items {
+		table.Rows = append(table.Rows, cbt.row(&item))
+	}
+	return table
+}
+
+func (cbt *ClusterBuildtemplate) row(item *buildv1alpha1.ClusterBuildTemplate) []string {
+	name := item.Name
+
+	row := []string{
+		name,
+	}
+
+	return row
+}
+
+// List returns k8s list object
 func (cbt *ClusterBuildtemplate) List(clientset *client.ConfigSet) (*buildv1alpha1.ClusterBuildTemplateList, error) {
 	return clientset.Build.BuildV1alpha1().ClusterBuildTemplates().List(metav1.ListOptions{})
 }

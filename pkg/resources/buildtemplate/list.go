@@ -17,9 +17,39 @@ package buildtemplate
 import (
 	buildv1alpha1 "github.com/knative/build/pkg/apis/build/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (b *Buildtemplate) List(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplateList, error) {
-	return clientset.Build.BuildV1alpha1().BuildTemplates(b.Namespace).List(metav1.ListOptions{})
+// GetTable converts k8s list instance into printable object
+func (bt *Buildtemplate) GetTable(list *buildv1alpha1.BuildTemplateList) printer.Table {
+	table := printer.Table{
+		Headers: []string{
+			"Namespace",
+			"Name",
+		},
+		Rows: make([][]string, 0, len(list.Items)),
+	}
+
+	for _, item := range list.Items {
+		table.Rows = append(table.Rows, bt.row(&item))
+	}
+	return table
+}
+
+func (bt *Buildtemplate) row(item *buildv1alpha1.BuildTemplate) []string {
+	name := item.Name
+	namespace := item.Namespace
+
+	row := []string{
+		namespace,
+		name,
+	}
+
+	return row
+}
+
+// List returns k8s list object
+func (bt *Buildtemplate) List(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplateList, error) {
+	return clientset.Build.BuildV1alpha1().BuildTemplates(bt.Namespace).List(metav1.ListOptions{})
 }

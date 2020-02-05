@@ -15,11 +15,29 @@
 package route
 
 import (
-	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
-func (r *Route) Get(clientset *client.ConfigSet) (*servingv1alpha1.Route, error) {
-	return clientset.Serving.ServingV1alpha1().Routes(r.Namespace).Get(r.Name, metav1.GetOptions{})
+// GetObject converts k8s object into printable structure
+func (r *Route) GetObject(route *servingv1.Route) printer.Object {
+	return printer.Object{
+		Fields: map[string]interface{}{
+			"Kind":              metav1.TypeMeta{}.Kind,
+			"APIVersion":        metav1.TypeMeta{}.APIVersion,
+			"Namespace":         metav1.ObjectMeta{}.Namespace,
+			"Name":              metav1.ObjectMeta{}.Name,
+			"CreationTimestamp": metav1.Time{},
+			"Spec":              servingv1.RouteSpec{},
+			"Status":            servingv1.RouteStatus{},
+		},
+		K8sObject: route,
+	}
+}
+
+// Get returns k8s object
+func (r *Route) Get(clientset *client.ConfigSet) (*servingv1.Route, error) {
+	return clientset.Serving.ServingV1().Routes(r.Namespace).Get(r.Name, metav1.GetOptions{})
 }

@@ -15,11 +15,57 @@
 package channel
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/triggermesh/tm/pkg/client"
+	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/duration"
+	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 )
 
-func (c *Channel) List(clientset *client.ConfigSet) (*eventingApi.ChannelList, error) {
-	return clientset.Eventing.MessagingV1alpha1().Channels(c.Namespace).List(metav1.ListOptions{})
+// GetTable converts k8s list instance into printable object
+func (c *Channel) GetTable(list *messagingApi.InMemoryChannelList) printer.Table {
+	table := printer.Table{
+		Headers: []string{
+			"Namespace",
+			"Name",
+			"Url",
+			"Age",
+			"Ready",
+			"Reason",
+		},
+		Rows: make([][]string, 0, len(list.Items)),
+	}
+
+	for _, item := range list.Items {
+		table.Rows = append(table.Rows, c.row(&item))
+	}
+	return table
+}
+
+func (c *Channel) row(item *messagingApi.InMemoryChannel) []string {
+	name := item.Name
+	namespace := item.Namespace
+	url := item.Status.Address.URL.String()
+	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
+	ready := fmt.Sprintf("%v", item.Status.IsReady())
+	reason := item.Status.GetCondition(messagingApi.ChannelConditionReady).Message
+
+	row := []string{
+		namespace,
+		name,
+		url,
+		age,
+		ready,
+		reason,
+	}
+
+	return row
+}
+
+// List returns list of knative build objects
+func (c *Channel) List(clientset *client.ConfigSet) (*messagingApi.InMemoryChannelList, error) {
+	return clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).List(metav1.ListOptions{})
 }
