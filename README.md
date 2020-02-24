@@ -54,6 +54,8 @@ Moreover, for more complex deployments, tm CLI supports function definition pars
 tm deploy -f https://github.com/tzununbekov/serverless
 ```
 
+_If you are interested in a building image without deploying knative service, then `--build-only` flag is available in "deploy service" command_
+
 ### Running Tests Locally
 
 To run tests you first have to set namespace you have access to with the following command:
