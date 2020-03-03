@@ -50,9 +50,10 @@ func (tr *TaskRun) row(item *v1alpha1.TaskRun) []string {
 	namespace := item.Namespace
 	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
 	ready := fmt.Sprintf("%v", item.Status.GetCondition(apis.ConditionSucceeded).IsTrue())
+	readyCondition := item.Status.GetCondition(apis.ConditionSucceeded)
 	reason := ""
-	if !item.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
-		reason = item.Status.GetCondition(apis.ConditionSucceeded).Message
+	if readyCondition != nil {
+		reason = readyCondition.Reason
 	}
 
 	row := []string{

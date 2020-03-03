@@ -52,7 +52,11 @@ func (s *Service) row(item *servingv1.Service) []string {
 	// lastestRevision := item.Status.ConfigurationStatusFields.LatestReadyRevisionName
 	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
 	ready := fmt.Sprintf("%v", item.Status.IsReady())
-	reason := item.Status.GetCondition(servingv1.ServiceConditionReady).Message
+	readyCondition := item.Status.GetCondition(servingv1.ServiceConditionReady)
+	reason := ""
+	if readyCondition != nil {
+		reason = readyCondition.Reason
+	}
 
 	row := []string{
 		namespace,

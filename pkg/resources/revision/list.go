@@ -54,7 +54,11 @@ func (r *Revision) row(item *servingv1.Revision) []string {
 	// }
 	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
 	ready := fmt.Sprintf("%v", item.Status.IsReady())
-	reason := item.Status.GetCondition(servingv1.ServiceConditionReady).Message
+	readyCondition := item.Status.GetCondition(servingv1.RevisionConditionReady)
+	reason := ""
+	if readyCondition != nil {
+		reason = readyCondition.Reason
+	}
 
 	row := []string{
 		namespace,
