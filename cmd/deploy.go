@@ -28,7 +28,8 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
-			s.Registry = client.Registry
+			s.Registry = client.RegistryHost
+			s.RegistrySecret = client.RegistrySecret
 			if clientset.Log.IsDebug() && concurrency > 1 {
 				clientset.Log.Warnf(`You are about to run %d deployments in parallel with verbose output.
 				It's better to either add "--concurrency=1" argument or remove debug flag.
@@ -64,7 +65,8 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Name = args[0]
 			s.Namespace = client.Namespace
-			s.Registry = client.Registry
+			s.Registry = client.RegistryHost
+			s.RegistrySecret = client.RegistrySecret
 			output, err := s.Deploy(clientset)
 			if err != nil {
 				clientset.Log.Fatal(err)
@@ -81,7 +83,7 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 	deployServiceCmd.Flags().StringVarP(&s.Source, "from", "f", "", "Service source to deploy: local folder with sources, git repository or docker image")
 	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
 	deployServiceCmd.Flags().StringVar(&s.Runtime, "runtime", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
-	deployServiceCmd.Flags().StringVar(&s.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
+	// deployServiceCmd.Flags().StringVar(&s.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
 	// deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
 	// deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
 	deployServiceCmd.Flags().StringVar(&s.BuildTimeout, "build-timeout", "10m", "Service image build timeout")
@@ -186,7 +188,8 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Deploy tekton TaskRun object",
 		Run: func(cmd *cobra.Command, args []string) {
 			tr.Namespace = client.Namespace
-			tr.Registry = client.Registry
+			tr.Registry = client.RegistryHost
+			tr.RegistrySecret = client.RegistrySecret
 			tr.Wait = client.Wait
 			tr.Name = args[0]
 			_, err := tr.Deploy(clientset)
@@ -198,7 +201,7 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 	deployTaskRunCmd.Flags().StringVarP(&tr.Task.Name, "task", "t", "", "Name of task to run")
 	deployTaskRunCmd.Flags().StringVarP(&tr.Function.Path, "file", "f", "", "Function source")
 	deployTaskRunCmd.Flags().StringVarP(&tr.PipelineResource.Name, "resources", "r", "", "Name of pipelineresource to pass into task")
-	deployTaskRunCmd.Flags().StringVarP(&tr.RegistrySecret, "secret", "s", "", "Secret name with registry credentials")
+	// deployTaskRunCmd.Flags().StringVarP(&tr.RegistrySecret, "secret", "s", "", "Secret name with registry credentials")
 	deployTaskRunCmd.Flags().StringArrayVar(&tr.Params, "args", []string{}, "Image build arguments")
 	return deployTaskRunCmd
 }

@@ -231,7 +231,6 @@ func (s *Service) setupParentVars(definition file.Definition) {
 	s.PullPolicy = definition.Provider.PullPolicy
 	s.Runtime = definition.Provider.Runtime
 	s.BuildTimeout = definition.Provider.Buildtimeout
-	s.RegistrySecret = definition.Provider.RegistrySecret
 
 	if len(s.Namespace) == 0 {
 		s.Namespace = definition.Provider.Namespace
@@ -244,6 +243,9 @@ func (s *Service) setupParentVars(definition file.Definition) {
 	}
 	if len(definition.Description) != 0 {
 		s.Annotations["Description"] = definition.Description
+	}
+	if len(definition.Provider.RegistrySecret) != 0 {
+		s.RegistrySecret = definition.Provider.RegistrySecret
 	}
 	for k, v := range definition.Provider.Environment {
 		s.Env = append(s.Env, k+":"+v)

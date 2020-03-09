@@ -52,7 +52,8 @@ var (
 	Namespace string
 	// Registry to store docker images for user services
 	// Default value for tm cloud is knative.registry.svc.cluster.local
-	Registry string
+	RegistryHost   string
+	RegistrySecret string
 	// Output format for k8s objects in "tm get" result. Can be either "yaml" (default) or "json"
 	Output string
 	// Debug enables verbose output for CLI commands
