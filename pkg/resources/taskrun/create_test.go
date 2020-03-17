@@ -39,7 +39,6 @@ func TestTaskRunDryDeployment(t *testing.T) {
 		taskrun: TaskRun{
 			Name:      "test-taskrun-success",
 			Namespace: namespace,
-			Registry:  "knative.registry.svc.cluster.local",
 			Task: Resource{
 				Name: "foo",
 			},
@@ -76,7 +75,6 @@ func TestTaskRunDryDeployment(t *testing.T) {
 			Function: Source{
 				Path: "https://github.com/golang/example",
 			},
-			Registry: "knative.registry.svc.cluster.local",
 		},
 		err: errors.New("pipelineresource \"not-existing-resource\" not found"),
 	}}

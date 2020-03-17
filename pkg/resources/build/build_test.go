@@ -66,7 +66,6 @@ func TestBuild(t *testing.T) {
 			Namespace:     namespace,
 			Source:        tt.Source,
 			Revision:      tt.Revision,
-			Registry:      "knative.registry.svc.cluster.local",
 			Buildtemplate: tt.Buildtemplate,
 			Args:          tt.Args,
 		}

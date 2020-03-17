@@ -217,8 +217,6 @@ func (s *Service) parseSchedule(events []map[string]interface{}) {
 				if err := yaml.Unmarshal(eventBody, &cron); err != nil {
 					continue
 				}
-				s.Cronjob.Schedule = cron.Rate
-				s.Cronjob.Data = cron.Data
 			}
 		}
 	}
@@ -235,17 +233,11 @@ func (s *Service) setupParentVars(definition file.Definition) {
 	if len(s.Namespace) == 0 {
 		s.Namespace = definition.Provider.Namespace
 	}
-	if len(s.Registry) == 0 {
-		s.Registry = definition.Provider.Registry
-	}
 	for k, v := range definition.Provider.Annotations {
 		s.Annotations[k] = v
 	}
 	if len(definition.Description) != 0 {
 		s.Annotations["Description"] = definition.Description
-	}
-	if len(definition.Provider.RegistrySecret) != 0 {
-		s.RegistrySecret = definition.Provider.RegistrySecret
 	}
 	for k, v := range definition.Provider.Environment {
 		s.Env = append(s.Env, k+":"+v)
@@ -255,7 +247,6 @@ func (s *Service) setupParentVars(definition file.Definition) {
 func (s *Service) serviceObject(function file.Function) Service {
 	service := Service{
 		Source:         function.Source,
-		Registry:       s.Registry,
 		Revision:       function.Revision,
 		Namespace:      s.Namespace,
 		Concurrency:    function.Concurrency,
@@ -265,7 +256,6 @@ func (s *Service) serviceObject(function file.Function) Service {
 		ResultImageTag: "latest",
 		BuildArgs:      function.Buildargs,
 		BuildTimeout:   s.BuildTimeout,
-		RegistrySecret: s.RegistrySecret,
 		Env:            s.Env,
 		Annotations:    make(map[string]string),
 		EnvSecrets:     append(s.EnvSecrets, function.EnvSecrets...),

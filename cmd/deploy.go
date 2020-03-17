@@ -28,8 +28,6 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Deploy knative resource",
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
-			s.Registry = client.RegistryHost
-			s.RegistrySecret = client.RegistrySecret
 			if clientset.Log.IsDebug() && concurrency > 1 {
 				clientset.Log.Warnf(`You are about to run %d deployments in parallel with verbose output.
 				It's better to either add "--concurrency=1" argument or remove debug flag.
@@ -65,8 +63,6 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Name = args[0]
 			s.Namespace = client.Namespace
-			s.Registry = client.RegistryHost
-			s.RegistrySecret = client.RegistrySecret
 			output, err := s.Deploy(clientset)
 			if err != nil {
 				clientset.Log.Fatal(err)
@@ -137,7 +133,6 @@ func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
 	}
 
 	deployBuildTemplateCmd.Flags().StringVarP(&bt.File, "from", "f", "", "Local path or URL to buildtemplate yaml file")
-	deployBuildTemplateCmd.Flags().StringVar(&bt.RegistrySecret, "credentials", "", "Name of k8s secret to use in buildtemplate as registry auth json")
 	return deployBuildTemplateCmd
 }
 
@@ -188,8 +183,6 @@ func cmdDeployTaskRun(clientset *client.ConfigSet) *cobra.Command {
 		Short:   "Deploy tekton TaskRun object",
 		Run: func(cmd *cobra.Command, args []string) {
 			tr.Namespace = client.Namespace
-			tr.Registry = client.RegistryHost
-			tr.RegistrySecret = client.RegistrySecret
 			tr.Wait = client.Wait
 			tr.Name = args[0]
 			_, err := tr.Deploy(clientset)

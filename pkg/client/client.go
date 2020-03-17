@@ -52,8 +52,9 @@ var (
 	Namespace string
 	// Registry to store docker images for user services
 	// Default value for tm cloud is knative.registry.svc.cluster.local
-	RegistryHost   string
-	RegistrySecret string
+	// RegistryHost    string
+	// RegistrySecret  string
+	// RegistrySkipTLS bool
 	// Output format for k8s objects in "tm get" result. Can be either "yaml" (default) or "json"
 	Output string
 	// Debug enables verbose output for CLI commands
@@ -63,6 +64,12 @@ var (
 	// Wait till deployment operation finishes
 	Wait bool
 )
+
+type Registry struct {
+	Host    string
+	Secret  string
+	SkipTLS bool
+}
 
 // ConfigSet contains different information that may be needed by underlying functions
 type ConfigSet struct {
@@ -74,6 +81,7 @@ type ConfigSet struct {
 	GithubSource    *githubSource.Clientset
 	TektonPipelines *pipelineApi.Clientset
 	TektonTriggers  *triggersApi.Clientset
+	Registry        *Registry
 	Log             *logwrapper.StandardLogger
 	Printer         *printerwrapper.Printer
 	Config          *rest.Config
@@ -167,6 +175,7 @@ func NewClient(cfgFile string, output ...io.Writer) (ConfigSet, error) {
 	if len(output) == 1 {
 		c.Printer = printerwrapper.NewPrinter(output[0])
 	}
+	c.Registry = &Registry{}
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
 		return c, err

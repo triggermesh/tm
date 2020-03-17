@@ -285,9 +285,8 @@ func (b *Build) installBuildTemplate(clientset *client.ConfigSet) (string, error
 		return "", err
 	} else if newBuildtemplate == nil {
 		bt := buildtemplate.Buildtemplate{
-			File:           b.Buildtemplate,
-			Namespace:      b.Namespace,
-			RegistrySecret: b.RegistrySecret,
+			File:      b.Buildtemplate,
+			Namespace: b.Namespace,
 		}
 		if newBuildtemplate, err = bt.Deploy(clientset); err != nil {
 			return "", err
@@ -311,9 +310,8 @@ func (b *Build) setBuildtemplateOwner(clientset *client.ConfigSet, owner metav1.
 
 func (b *Build) cloneBuildtemplate(clientset *client.ConfigSet) (*buildv1alpha1.BuildTemplate, error) {
 	bt := buildtemplate.Buildtemplate{
-		Name:           b.Buildtemplate,
-		Namespace:      b.Namespace,
-		RegistrySecret: b.RegistrySecret,
+		Name:      b.Buildtemplate,
+		Namespace: b.Namespace,
 	}
 
 	sourceBt, err := bt.Get(clientset)
@@ -390,10 +388,10 @@ func getBuildArguments(image, tag string, buildArgs []string) []buildv1alpha1.Ar
 }
 
 func (b *Build) imageName(clientset *client.ConfigSet) (string, error) {
-	if len(b.RegistrySecret) == 0 {
-		return fmt.Sprintf("%s/%s/%s", b.Registry, b.Namespace, b.Name), nil
+	if len(clientset.Registry.Secret) == 0 {
+		return fmt.Sprintf("%s/%s/%s", clientset.Registry.Host, b.Namespace, b.Name), nil
 	}
-	secret, err := clientset.Core.CoreV1().Secrets(b.Namespace).Get(b.RegistrySecret, metav1.GetOptions{})
+	secret, err := clientset.Core.CoreV1().Secrets(b.Namespace).Get(clientset.Registry.Secret, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

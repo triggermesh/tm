@@ -34,7 +34,6 @@ func TestDeployAndDelete(t *testing.T) {
 
 	foo := &Service{
 		Name:      "test-service-buildtemplate",
-		Registry:  "knative.registry.svc.cluster.local",
 		Namespace: namespace,
 		Source:    "https://github.com/golang/example",
 		Runtime:   "https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/go/openfaas-go-runtime.yaml",
@@ -48,7 +47,6 @@ func TestDeployAndDelete(t *testing.T) {
 
 	bar := &Service{
 		Name:      "test-service-taskrun",
-		Registry:  "knative.registry.svc.cluster.local",
 		Namespace: namespace,
 		Source:    "https://github.com/serverless/examples",
 		Runtime:   "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python-3.7/runtime.yaml",

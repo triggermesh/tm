@@ -17,6 +17,7 @@ package task
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
@@ -67,10 +68,15 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 		task.SetName(t.Name)
 	}
 
-	if t.RegistrySecret != "" {
-		clientset.Log.Debugf("setting registry secret %q for task \"%s/%s\"\n", t.RegistrySecret, task.GetNamespace(), task.GetName())
-		t.setupEnv(task)
-		t.setupVolume(task)
+	if clientset.Registry.Secret != "" {
+		clientset.Log.Debugf("setting registry secret %q for task \"%s/%s\"\n", clientset.Registry.Secret, task.GetNamespace(), task.GetName())
+		setupEnv(clientset, task)
+		setupVolume(clientset, task)
+	}
+
+	if clientset.Registry.SkipTLS {
+		clientset.Log.Debugf("setting '--skip-tls-verify' flag for task \"%s/%s\"\n", task.GetNamespace(), task.GetName())
+		setupArgs(clientset, task)
 	}
 
 	if t.FromLocalSource {
@@ -93,9 +99,14 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 	task.SetGenerateName(task.GetName() + "-")
 	task.SetName("")
 	task.SetResourceVersion("")
-	if t.RegistrySecret != "" {
-		t.setupEnv(task)
-		t.setupVolume(task)
+	if clientset.Registry.Secret != "" {
+		clientset.Log.Debugf("setting registry secret %q for task \"%s/%s\"\n", clientset.Registry.Secret, task.GetNamespace(), task.GetName())
+		setupEnv(clientset, task)
+		setupVolume(clientset, task)
+	}
+	if clientset.Registry.SkipTLS {
+		clientset.Log.Debugf("setting '--skip-tls-verify' flag for task \"%s/%s\"\n", task.GetNamespace(), task.GetName())
+		setupArgs(clientset, task)
 	}
 	if t.FromLocalSource {
 		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\" clone\n", task.GetNamespace(), task.GetGenerateName())
@@ -179,33 +190,63 @@ func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference
 	return err
 }
 
-func (t *Task) setupEnv(task *tekton.Task) {
+func setupEnv(clientset *client.ConfigSet, task *tekton.Task) {
 	for i, container := range task.Spec.Steps {
-		envs := append(container.Env, corev1.EnvVar{
-			Name:  "DOCKER_CONFIG",
-			Value: "/" + t.RegistrySecret,
-		})
-		task.Spec.Steps[i].Env = envs
+		appendConfig := true
+		for j, env := range container.Env {
+			if env.Name == "DOCKER_CONFIG" {
+				task.Spec.Steps[i].Env[j].Value = "/" + clientset.Registry.Secret
+				appendConfig = false
+				break
+			}
+		}
+		if appendConfig {
+			task.Spec.Steps[i].Env = append(container.Env, corev1.EnvVar{
+				Name:  "DOCKER_CONFIG",
+				Value: "/" + clientset.Registry.Secret,
+			})
+		}
 	}
 }
 
-func (t *Task) setupVolume(task *tekton.Task) {
+func setupVolume(clientset *client.ConfigSet, task *tekton.Task) {
 	task.Spec.Volumes = []corev1.Volume{
 		{
-			Name: t.RegistrySecret,
+			Name: clientset.Registry.Secret,
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
-					SecretName: t.RegistrySecret,
+					SecretName: clientset.Registry.Secret,
 				},
 			},
 		},
 	}
 	for i, step := range task.Spec.Steps {
 		mounts := append(step.VolumeMounts, corev1.VolumeMount{
-			Name:      t.RegistrySecret,
-			MountPath: "/" + t.RegistrySecret,
+			Name:      clientset.Registry.Secret,
+			MountPath: "/" + clientset.Registry.Secret,
 			ReadOnly:  true,
 		})
 		task.Spec.Steps[i].VolumeMounts = mounts
+	}
+}
+
+func setupArgs(clientset *client.ConfigSet, task *tekton.Task) {
+	// not the best way to add kaniko build arguments
+	for i, step := range task.Spec.Steps {
+		exportStep := false
+		if !strings.HasPrefix(step.Image, "gcr.io/kaniko-project/executor") {
+			continue
+		}
+		for _, arg := range step.Args {
+			if strings.HasPrefix(arg, "--destination=") {
+				exportStep = true
+				break
+			}
+		}
+		// TODO check if "--skip-tls-verify" is already set
+		if exportStep {
+			task.Spec.Steps[i].Args = append(step.Args, "--skip-tls-verify")
+			break
+		}
 	}
 }

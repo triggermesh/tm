@@ -39,13 +39,16 @@ import (
 )
 
 var (
-	version     string
-	err         error
-	kubeConf    string
-	clientset   client.ConfigSet
-	yaml        string
-	concurrency int
-	debug       bool
+	version         string
+	err             error
+	kubeConf        string
+	clientset       client.ConfigSet
+	yaml            string
+	concurrency     int
+	debug           bool
+	registryHost    string
+	registrySecret  string
+	registrySkipTLS bool
 
 	b   build.Build
 	c   channel.Channel
@@ -82,8 +85,9 @@ func init() {
 	tmCmd.PersistentFlags().StringVar(&kubeConf, "config", "", "k8s config file")
 	tmCmd.PersistentFlags().StringVarP(&client.Namespace, "namespace", "n", "", "User namespace")
 	tmCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debug output")
-	tmCmd.PersistentFlags().StringVar(&client.RegistryHost, "registry-host", "knative.registry.svc.cluster.local", "Docker registry host address")
-	tmCmd.PersistentFlags().StringVar(&client.RegistrySecret, "registry-secret", "", "K8s secret name to use as image registry credentials")
+	tmCmd.PersistentFlags().StringVar(&registryHost, "registry-host", "knative.registry.svc.cluster.local", "Docker registry host address")
+	tmCmd.PersistentFlags().StringVar(&registrySecret, "registry-secret", "", "K8s secret name to use as image registry credentials")
+	tmCmd.PersistentFlags().BoolVar(&registrySkipTLS, "registry-skip-tls", false, "Accept untrusted registries certificates")
 	tmCmd.PersistentFlags().StringVarP(&client.Output, "output", "o", "", "Output format")
 	tmCmd.PersistentFlags().BoolVar(&client.Wait, "wait", false, "Wait for the operation to complete")
 	tmCmd.PersistentFlags().BoolVar(&client.Dry, "dry", false, "Do not create k8s objects, just print its structure")
@@ -114,4 +118,7 @@ func initConfig() {
 	if debug {
 		clientset.Log.SetDebugLevel()
 	}
+	clientset.Registry.Host = registryHost
+	clientset.Registry.Secret = registrySecret
+	clientset.Registry.SkipTLS = registrySkipTLS
 }

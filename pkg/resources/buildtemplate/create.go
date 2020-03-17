@@ -50,9 +50,9 @@ func (b *Buildtemplate) Deploy(clientset *client.ConfigSet) (*buildv1alpha1.Buil
 	}
 	bt.ObjectMeta.Namespace = b.Namespace
 
-	if len(b.RegistrySecret) != 0 {
-		addSecretVolume(b.RegistrySecret, &bt)
-		setEnvConfig(b.RegistrySecret, &bt)
+	if len(clientset.Registry.Secret) != 0 {
+		addSecretVolume(clientset.Registry.Secret, &bt)
+		setEnvConfig(clientset.Registry.Secret, &bt)
 	}
 
 	return createBuildTemplate(bt, clientset)
@@ -66,9 +66,9 @@ func (b *Buildtemplate) Clone(source buildv1alpha1.BuildTemplate, clientset *cli
 	source.SetOwnerReferences([]metav1.OwnerReference{})
 	source.SetResourceVersion("")
 	source.Kind = "BuildTemplate"
-	if len(b.RegistrySecret) != 0 {
-		addSecretVolume(b.RegistrySecret, &source)
-		setEnvConfig(b.RegistrySecret, &source)
+	if len(clientset.Registry.Secret) != 0 {
+		addSecretVolume(clientset.Registry.Secret, &source)
+		setEnvConfig(clientset.Registry.Secret, &source)
 	}
 	return createBuildTemplate(source, clientset)
 }
