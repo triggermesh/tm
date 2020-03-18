@@ -21,9 +21,7 @@ type Definition struct {
 
 // TriggermeshProvider structure contains serverless provider parameters specific to triggermesh
 type TriggermeshProvider struct {
-	Name string `yaml:"name,omitempty"`
-	// Registry       string            `yaml:"registry,omitempty"`
-	// RegistrySecret string            `yaml:"registry-secret,omitempty"`
+	Name         string            `yaml:"name,omitempty"`
 	PullPolicy   string            `yaml:"pull-policy,omitempty"`
 	Namespace    string            `yaml:"namespace,omitempty"`
 	Runtime      string            `yaml:"runtime,omitempty"`
@@ -31,6 +29,11 @@ type TriggermeshProvider struct {
 	Environment  map[string]string `yaml:"environment,omitempty"`
 	EnvSecrets   []string          `yaml:"env-secrets,omitempty"`
 	Annotations  map[string]string `yaml:"annotations,omitempty"`
+
+	// registry configs moved to client Configset
+	// these variables kept for backward compatibility
+	Registry       string `yaml:"registry,omitempty"`
+	RegistrySecret string `yaml:"registry-secret,omitempty"`
 }
 
 // Function describes function definition in serverless format
