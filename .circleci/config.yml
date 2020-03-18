@@ -64,11 +64,10 @@ jobs:
       - run:
           name: "Publish Release on GitHub"
           command: |
-            go get github.com/tcnksm/ghr
-            VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
             # Workaround not to trigger build loop by updating tag with artifacts
-            status=$(curl -s -I https://github.com/triggermesh/tm/releases/download/${VERSION}/tm | grep "Status:" | tr -d "\r")
-            if [[ "${status}" != "Status: 302 Found" ]]; then
+            VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
+            if [[ $(curl -o /dev/null -sfIw "%{http_code}" https://github.com/triggermesh/tm/releases/download/${VERSION}/tm) -ne 302 ]]; then
+              go get github.com/tcnksm/ghr
               ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts
             fi
 
