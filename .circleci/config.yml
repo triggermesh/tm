@@ -63,7 +63,7 @@ jobs:
           at: /tmp/artifacts
       - run:
           name: "Install github-release tool"
-          command: go get github.com/aktau/github-release
+          command: go get github.com/meterup/github-release
       - run:
           name: "Publish Release on GitHub"
           command: |
