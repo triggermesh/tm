@@ -4,33 +4,23 @@ go 1.13
 
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
-	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.9 // indirect
-	github.com/aws/aws-lambda-go v1.15.0
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/frankban/quicktest v1.7.2 // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
-	github.com/golang/snappy v0.0.1 // indirect
-	github.com/json-iterator/go v1.1.8 // indirect
 	github.com/knative/build v0.7.0
 	github.com/knative/pkg v0.0.0-20190624141606-d82505e6c5b4
-	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mholt/archiver v2.1.0+incompatible
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/openzipkin/zipkin-go v0.2.2 // indirect
 	github.com/pierrec/lz4 v2.4.0+incompatible // indirect
-	github.com/prometheus/client_golang v1.1.0 // indirect
-	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
-	github.com/prometheus/common v0.7.0 // indirect
-	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/tektoncd/pipeline v0.11.2
 	github.com/tektoncd/triggers v0.1.0
@@ -42,8 +32,6 @@ require (
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v0.17.0
-	k8s.io/klog v1.0.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a // indirect
 	k8s.io/utils v0.0.0-20191030222137-2b95a09bc58d // indirect
 	knative.dev/eventing v0.12.0
 	knative.dev/eventing-contrib v0.11.2
@@ -53,7 +41,6 @@ require (
 )
 
 replace (
-	knative.dev/pkg => knative.dev/pkg v0.0.0-20200122022923-4e81bc3c320f
 	k8s.io/api => k8s.io/api v0.0.0-20191016110246-af539daaa43a
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191016113439-b64f2075a530
 	k8s.io/apimachinery => k8s.io/apimachinery v0.15.10-beta.0
@@ -74,4 +61,5 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20191016115707-22244e5b01eb
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20191016113728-f445c7b35c1c
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20191016112728-ceb381866e80
+	knative.dev/pkg => knative.dev/pkg v0.0.0-20200122022923-4e81bc3c320f
 )

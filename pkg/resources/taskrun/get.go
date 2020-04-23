@@ -16,6 +16,7 @@ package taskrun
 
 import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,7 +24,7 @@ import (
 )
 
 // GetObject converts k8s object into printable structure
-func (tr *TaskRun) GetObject(taskrun *v1alpha1.TaskRun) printer.Object {
+func (tr *TaskRun) GetObject(taskrun *v1beta1.TaskRun) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{
 			"Kind":              metav1.TypeMeta{}.Kind,
@@ -39,6 +40,6 @@ func (tr *TaskRun) GetObject(taskrun *v1alpha1.TaskRun) printer.Object {
 }
 
 // Get returns k8s object
-func (tr *TaskRun) Get(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error) {
-	return clientset.TektonTasks.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
+func (tr *TaskRun) Get(clientset *client.ConfigSet) (*v1beta1.TaskRun, error) {
+	return clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 }
