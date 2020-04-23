@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	corev1 "k8s.io/api/core/v1"
@@ -30,7 +30,7 @@ import (
 
 const (
 	kind              = "Task"
-	api               = "tekton.dev/v1alpha1"
+	api               = "tekton.dev/v1beta1"
 	uploadDoneTrigger = ".uploadIsDone"
 )
 
@@ -52,13 +52,13 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 
 	// sometimes, if input param type is not set, string value causing the error
 	// so we're explicitly setting "string" param type
-	if inputs := task.TaskSpec().Inputs; inputs != nil {
-		for k, v := range inputs.Params {
-			if v.Type == "" {
-				inputs.Params[k].Type = tekton.ParamTypeString
-			}
+	// if inputs := task.TaskSpec().Inputs; inputs != nil {
+	for k, v := range task.Spec.Params {
+		if v.Type == "" {
+			task.Spec.Params[k].Type = tekton.ParamTypeString
 		}
 	}
+	// }
 
 	task.SetNamespace(t.Namespace)
 	if t.GenerateName != "" {
@@ -82,9 +82,9 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	if t.FromLocalSource {
 		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\"\n", task.GetNamespace(), task.GetGenerateName())
 		task.Spec.Steps = append([]tekton.Step{t.customStep()}, task.Spec.Steps...)
-		if task.Spec.Inputs != nil {
-			task.Spec.Inputs.Resources = []tekton.TaskResource{}
-		}
+		// if task.Spec.Inputs != nil {
+		task.Spec.Resources = &tekton.TaskResources{}
+		// }
 	}
 	if client.Dry {
 		return task, nil
@@ -111,9 +111,9 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 	if t.FromLocalSource {
 		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\" clone\n", task.GetNamespace(), task.GetGenerateName())
 		task.Spec.Steps = append([]tekton.Step{t.customStep()}, task.Spec.Steps...)
-		if task.Spec.Inputs != nil {
-			task.Spec.Inputs.Resources = []tekton.TaskResource{}
-		}
+		// if task.Spec.Inputs != nil {
+		task.Spec.Resources = &tekton.TaskResources{}
+		// }
 	}
 	if client.Dry {
 		return task, nil
@@ -155,38 +155,31 @@ func (t *Task) readYAML() (*tekton.Task, error) {
 
 // CreateOrUpdate creates new tekton Task object or updates existing one
 func (t *Task) CreateOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*tekton.Task, error) {
-	if task.TypeMeta.Kind != kind {
-		return nil, fmt.Errorf("Object Kind mismatch: got %q, want %q", task.TypeMeta.Kind, kind)
-	}
-	if task.TypeMeta.APIVersion != api {
-		return nil, fmt.Errorf("Object API mismatch: got %q, want %q", task.TypeMeta.APIVersion, api)
-	}
-
 	if task.GetGenerateName() != "" {
-		return clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Create(task)
+		return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Create(task)
 	}
 
-	taskObj, err := clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Create(task)
+	taskObj, err := clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Create(task)
 	if k8sErrors.IsAlreadyExists(err) {
 		clientset.Log.Debugf("task %q is already exist, updating\n", task.GetName())
-		if taskObj, err = clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Get(task.ObjectMeta.Name, metav1.GetOptions{}); err != nil {
+		if taskObj, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(task.ObjectMeta.Name, metav1.GetOptions{}); err != nil {
 			return nil, err
 		}
 		task.ObjectMeta.ResourceVersion = taskObj.GetResourceVersion()
-		taskObj, err = clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Update(task)
+		taskObj, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Update(task)
 	}
 	return taskObj, err
 }
 
 // SetOwner updates tekton Task object with provided owner reference
 func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
-	task, err := clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
+	task, err := clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	clientset.Log.Debugf("setting task \"%s/%s\" owner to %s/%s\n", task.GetNamespace(), task.GetName(), owner.Kind, owner.Name)
 	task.SetOwnerReferences([]metav1.OwnerReference{owner})
-	_, err = clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Update(task)
+	_, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Update(task)
 	return err
 }
 

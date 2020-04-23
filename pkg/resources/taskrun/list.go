@@ -69,5 +69,5 @@ func (tr *TaskRun) row(item *v1alpha1.TaskRun) []string {
 
 // List returns k8s list object
 func (tr *TaskRun) List(clientset *client.ConfigSet) (*v1alpha1.TaskRunList, error) {
-	return clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).List(metav1.ListOptions{})
+	return clientset.TektonTasks.TektonV1alpha1().TaskRuns(tr.Namespace).List(metav1.ListOptions{})
 }

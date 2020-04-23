@@ -26,6 +26,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/clustertask"
@@ -37,7 +38,7 @@ import (
 )
 
 const (
-	tektonAPI         = "tekton.dev/v1alpha1"
+	tektonAPI         = "tekton.dev/v1beta1"
 	taskRunKind       = "TaskRun"
 	taskKind          = "Task"
 	clusterTaskKind   = "ClusterTask"
@@ -72,7 +73,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 	image = fmt.Sprintf("%s:%s", image, file.RandString(6))
 	clientset.Log.Debugf("taskrun \"%s/%s\" output image will be %q\n", tr.Namespace, tr.Name, image)
 	taskRunObject := tr.newTaskRun()
-	taskRunObject.Spec.Inputs.Params = tr.getBuildArguments(image)
+	taskRunObject.Spec.Params = tr.getBuildArguments(image)
 
 	if file.IsLocal(tr.Function.Path) {
 		if file.IsDir(tr.Function.Path) {
@@ -94,16 +95,27 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return string(taskObj), err
 	}
 
-	taskRunObject, err = clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Create(taskRunObject)
+	taskRunObject, err = clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Create(taskRunObject)
 	if err != nil {
 		return "", fmt.Errorf("creating taskrun: %s", err)
 	}
 	tr.Name = taskRunObject.GetName()
 	clientset.Log.Debugf("taskrun \"%s/%s\" created\n", tr.Namespace, tr.Name)
 
+	task := task.Task{
+		Name:      tr.Task.Name,
+		Namespace: tr.Namespace,
+	}
+
 	ownerRef := owner(taskRunObject)
 	if tr.Task.Owned {
-		tr.setTaskOwner(clientset, ownerRef)
+		err = task.SetOwner(clientset, ownerRef)
+		if err != nil {
+			if err := task.Delete(clientset); err != nil {
+				clientset.Log.Errorf("Can't cleanup task: %s\n", err)
+			}
+			return "", err
+		}
 	}
 	if tr.PipelineResource.Owned {
 		clientset.Log.Debugf("setting pipelineresource owner\n")
@@ -168,7 +180,7 @@ func (tr *TaskRun) setupPipelineresources(clientset *client.ConfigSet) (*v1alpha
 	return plr.Deploy(clientset)
 }
 
-func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error) {
+func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1beta1.Task, error) {
 	task := task.Task{
 		Name:            tr.Task.Name,
 		Namespace:       tr.Namespace,
@@ -198,18 +210,6 @@ func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error
 	return nil, nil
 }
 
-func (tr *TaskRun) setTaskOwner(clientset *client.ConfigSet, ownerRef metav1.OwnerReference) {
-	task := task.Task{
-		Name:      tr.Task.Name,
-		Namespace: tr.Namespace,
-	}
-	if err := task.SetOwner(clientset, ownerRef); err != nil {
-		if err = task.Delete(clientset); err != nil {
-			clientset.Log.Errorf("Can't cleanup task: %s\n", err)
-		}
-	}
-}
-
 func (tr *TaskRun) setPipelineResourceOwner(clientset *client.ConfigSet, ownerRef metav1.OwnerReference) {
 	plr := pipelineresource.PipelineResource{
 		Name:      tr.PipelineResource.Name,
@@ -222,9 +222,9 @@ func (tr *TaskRun) setPipelineResourceOwner(clientset *client.ConfigSet, ownerRe
 	}
 }
 
-func owner(taskRunObject *v1alpha1.TaskRun) metav1.OwnerReference {
+func owner(taskRunObject *v1beta1.TaskRun) metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion: "tekton.dev/v1alpha1",
+		APIVersion: "tekton.dev/v1beta1",
 		Kind:       "TaskRun",
 		Name:       taskRunObject.GetName(),
 		UID:        taskRunObject.GetUID(),
@@ -243,13 +243,13 @@ func (tr *TaskRun) checkPipelineResource(clientset *client.ConfigSet) error {
 	return err
 }
 
-func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
+func (tr *TaskRun) newTaskRun() *v1beta1.TaskRun {
 	// root := int64(0)
 	name := tr.Name + "-"
 	if tr.Name == "" {
 		name = tr.Task.Name + "-"
 	}
-	taskref := &v1alpha1.TaskRef{
+	taskref := &v1beta1.TaskRef{
 		Kind:       taskKind,
 		APIVersion: tektonAPI,
 		Name:       tr.Task.Name,
@@ -257,7 +257,7 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 	if tr.Task.ClusterScope {
 		taskref.Kind = clusterTaskKind
 	}
-	taskrun := &v1alpha1.TaskRun{
+	taskrun := &v1beta1.TaskRun{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       taskRunKind,
 			APIVersion: tektonAPI,
@@ -266,9 +266,10 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 			GenerateName: name,
 			Namespace:    tr.Namespace,
 		},
-		Spec: v1alpha1.TaskRunSpec{
-			TaskRef: taskref,
-			Inputs:  v1alpha1.TaskRunInputs{},
+		Spec: v1beta1.TaskRunSpec{
+			TaskRef:   taskref,
+			Resources: &v1beta1.TaskRunResources{},
+			// Inputs:  &v1alpha1.TaskRunInputs{},
 			// PodTemplate: v1alpha1.PodTemplate{
 			// SecurityContext: &corev1.PodSecurityContext{
 			// RunAsUser: &root,
@@ -277,13 +278,13 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 		},
 	}
 	if tr.PipelineResource.Name != "" {
-		taskrun.Spec.Inputs.Resources = []v1alpha1.TaskResourceBinding{
+		taskrun.Spec.Resources.Inputs = []v1beta1.TaskResourceBinding{
 			{
-				PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
+				PipelineResourceBinding: v1beta1.PipelineResourceBinding{
 					Name: "sources",
-					ResourceRef: &v1alpha1.PipelineResourceRef{
+					ResourceRef: &v1beta1.PipelineResourceRef{
 						Name:       tr.PipelineResource.Name,
-						APIVersion: "tekton.dev/v1alpha1",
+						APIVersion: "tekton.dev/v1beta1",
 					},
 				},
 			},
@@ -324,7 +325,7 @@ func gitlabEnv() (string, bool) {
 }
 
 func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
-	trWatchInterface, err := clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+	trWatchInterface, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", tr.Name),
 	})
 	if err != nil || trWatchInterface == nil {
@@ -337,7 +338,7 @@ func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
 		if event.Object == nil {
 			return tr.wait(clientset)
 		}
-		taskrun, ok := event.Object.(*v1alpha1.TaskRun)
+		taskrun, ok := event.Object.(*v1beta1.TaskRun)
 		if !ok || taskrun == nil {
 			continue
 		}
@@ -360,18 +361,18 @@ func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
 
 // SetOwner updates TaskRun object with provided owner reference
 func (tr *TaskRun) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
-	taskrun, err := clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
+	taskrun, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	clientset.Log.Debugf("setting taskrun \"%s/%s\" owner to %s/%s\n", taskrun.GetNamespace(), taskrun.GetName(), owner.Kind, owner.Name)
 	taskrun.SetOwnerReferences([]metav1.OwnerReference{owner})
-	_, err = clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Update(taskrun)
+	_, err = clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Update(taskrun)
 	return err
 }
 
 func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
-	watch, err := clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+	watch, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: "metadata.name=" + tr.Name,
 	})
 	if err != nil || watch == nil {
@@ -393,7 +394,7 @@ func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
 			if event.Object == nil {
 				return tr.taskPod(clientset)
 			}
-			res, ok := event.Object.(*v1alpha1.TaskRun)
+			res, ok := event.Object.(*v1beta1.TaskRun)
 			if !ok || res == nil {
 				continue
 			}
@@ -470,21 +471,21 @@ func (tr *TaskRun) injectSources(clientset *client.ConfigSet, pod, container str
 	return nil
 }
 
-func (tr *TaskRun) getBuildArguments(image string) []v1alpha1.Param {
-	params := []v1alpha1.Param{
+func (tr *TaskRun) getBuildArguments(image string) []v1beta1.Param {
+	params := []v1beta1.Param{
 		{
 			Name: "IMAGE",
-			Value: v1alpha1.ArrayOrString{
-				Type:      v1alpha1.ParamTypeString,
+			Value: v1beta1.ArrayOrString{
+				Type:      v1beta1.ParamTypeString,
 				StringVal: image,
 			},
 		},
 	}
 	for k, v := range mapFromSlice(tr.Params) {
-		params = append(params, v1alpha1.Param{
+		params = append(params, v1beta1.Param{
 			Name: k,
-			Value: v1alpha1.ArrayOrString{
-				Type:      v1alpha1.ParamTypeString,
+			Value: v1beta1.ArrayOrString{
+				Type:      v1beta1.ParamTypeString,
 				StringVal: v,
 			},
 		})

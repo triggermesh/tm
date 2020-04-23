@@ -40,5 +40,5 @@ func (tr *TaskRun) GetObject(taskrun *v1alpha1.TaskRun) printer.Object {
 
 // Get returns k8s object
 func (tr *TaskRun) Get(clientset *client.ConfigSet) (*v1alpha1.TaskRun, error) {
-	return clientset.TektonPipelines.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
+	return clientset.TektonTasks.TektonV1alpha1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
 }

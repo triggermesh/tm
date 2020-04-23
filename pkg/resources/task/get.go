@@ -16,13 +16,14 @@ package task
 
 import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // GetObject converts k8s object into printable structure
-func (t *Task) GetObject(task *v1alpha1.Task) printer.Object {
+func (t *Task) GetObject(task *v1beta1.Task) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{
 			"Kind":              metav1.TypeMeta{}.Kind,
@@ -37,8 +38,8 @@ func (t *Task) GetObject(task *v1alpha1.Task) printer.Object {
 }
 
 // Get return tekton Task object
-func (t *Task) Get(clientset *client.ConfigSet) (*v1alpha1.Task, error) {
-	return clientset.TektonPipelines.TektonV1alpha1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
+func (t *Task) Get(clientset *client.ConfigSet) (*v1beta1.Task, error) {
+	return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
 }
 
 // Exist returns true if Task with provided name is available in current namespace
