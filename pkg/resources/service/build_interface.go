@@ -71,11 +71,9 @@ func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 
 func (s *Service) taskRun() *taskrun.TaskRun {
 	return &taskrun.TaskRun{
-		Name:           s.Name,
-		Namespace:      s.Namespace,
-		Params:         s.BuildArgs,
-		Registry:       s.Registry,
-		RegistrySecret: s.RegistrySecret,
+		Name:      s.Name,
+		Namespace: s.Namespace,
+		Params:    s.BuildArgs,
 		Function: taskrun.Source{
 			Path:     s.Source,
 			Revision: s.Revision,
@@ -94,14 +92,12 @@ func (s *Service) build(clientset *client.ConfigSet) *build.Build {
 	clientset.Log.Warnf("https://github.com/triggermesh/knative-lambda-runtime")
 	clientset.Log.Warnf("*******")
 	return &build.Build{
-		Args:           s.BuildArgs,
-		Buildtemplate:  s.Runtime,
-		GenerateName:   s.Name + "-",
-		Namespace:      s.Namespace,
-		Registry:       s.Registry,
-		RegistrySecret: s.RegistrySecret,
-		Source:         s.Source,
-		Timeout:        s.BuildTimeout,
-		Wait:           true,
+		Args:          s.BuildArgs,
+		Buildtemplate: s.Runtime,
+		GenerateName:  s.Name + "-",
+		Namespace:     s.Namespace,
+		Source:        s.Source,
+		Timeout:       s.BuildTimeout,
+		Wait:          true,
 	}
 }

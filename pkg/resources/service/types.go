@@ -27,14 +27,8 @@ type Service struct {
 	Name           string
 	Namespace      string
 	PullPolicy     string
-	Registry       string
 	Revision       string
 	ResultImageTag string
-	RegistrySecret string // Does not belong to the service, need to be deleted
 	Runtime        string // Originally knative/buildtemplate, but now also tekton/task
 	Source         string
-	Cronjob        struct {
-		Schedule string
-		Data     string
-	}
 }

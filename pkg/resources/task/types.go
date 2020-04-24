@@ -20,6 +20,5 @@ type Task struct {
 	GenerateName    string
 	Name            string
 	Namespace       string
-	RegistrySecret  string
 	FromLocalSource bool
 }

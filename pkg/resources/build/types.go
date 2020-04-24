@@ -16,17 +16,15 @@ package build
 
 // Build structure represents knative build object
 type Build struct {
-	Name           string
-	GenerateName   string
-	Namespace      string
-	Source         string
-	Timeout        string
-	Revision       string
-	Buildtemplate  string
-	Registry       string
-	RegistrySecret string
-	Args           []string
-	Wait           bool
+	Name          string
+	GenerateName  string
+	Namespace     string
+	Source        string
+	Timeout       string
+	Revision      string
+	Buildtemplate string
+	Args          []string
+	Wait          bool
 }
 
 type registryAuths struct {

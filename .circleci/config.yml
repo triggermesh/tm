@@ -17,7 +17,7 @@ jobs:
           name: Store Service Account
           command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
       - run:
-          name: Setup credentials 
+          name: Setup credentials
           command: |
             gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
             gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
@@ -62,15 +62,20 @@ jobs:
       - attach_workspace:
           at: /tmp/artifacts
       - run:
+          name: "Install github-release tool"
+          command: go get github.com/meterup/github-release
+      - run:
           name: "Publish Release on GitHub"
           command: |
-            go get github.com/tcnksm/ghr
-            VERSION=$(/tmp/artifacts/tm --version | awk '{print $3}')
-            # Workaround not to trigger build loop by updating tag with artifacts
-            status=$(curl -s -I https://github.com/triggermesh/tm/releases/download/${VERSION}/tm | grep "Status:" | tr -d "\r")
-            if [[ "${status}" != "Status: 302 Found" ]]; then
-              ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} /tmp/artifacts
-            fi
+            # delete the release if it exists (it does not delete the tag, only the github release and associated artifacts)
+            github-release delete -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -t ${CIRCLE_TAG} 2>/dev/null ||:
+            github-release release -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -t ${CIRCLE_TAG} -d "tm ${CIRCLE_TAG}"
+      - run:
+          name: "Upload Release Artifacts"
+          command: |
+            for f in $(find /tmp/artifacts/ -type f); do
+              github-release upload -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -t ${CIRCLE_TAG} -n "$(basename ${f})" -f "${f}"
+            done
 
 workflows:
   version: 2

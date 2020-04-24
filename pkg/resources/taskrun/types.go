@@ -21,8 +21,6 @@ type TaskRun struct {
 	Namespace        string
 	Params           []string
 	PipelineResource Resource
-	Registry         string
-	RegistrySecret   string
 	Task             Resource
 	Timeout          string
 	Wait             bool

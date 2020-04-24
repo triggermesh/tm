@@ -46,25 +46,23 @@ func TestBuildTemplate(t *testing.T) {
 	assert.NoError(t, err)
 
 	testCases := []struct {
-		Name           string
-		File           string
-		RegistrySecret string
-		ErrMSG         error
+		Name   string
+		File   string
+		ErrMSG error
 	}{
-		{"foo", "", "", errors.New("Buildtemplate \"\" not found")},
+		{"foo", "", errors.New("Buildtemplate \"\" not found")},
 		//{"foo", "https://github.com/triggermesh/tm/blob/master/testfiles/broken-buildtemplate.yaml", "", errors.New("error converting YAML to JSON: yaml: line 526: mapping values are not allowed in this context")},
-		{"foo", "../../../testfiles/buildtemplate-err1-test.yaml", "", errors.New("Build template \"IMAGE\" parameter is missing")},
-		{"foo", "../../../testfiles/buildtemplate-err2-test.yaml", "", errors.New("Can't create object, only BuildTemplate is allowed")},
-		{"foo", "../../../testfiles/buildtemplate-test.yaml", "", nil},
-		{"foo", "../../../testfiles/buildtemplate-test.yaml", "secretBar", nil},
+		{"foo", "../../../testfiles/buildtemplate-err1-test.yaml", errors.New("Build template \"IMAGE\" parameter is missing")},
+		{"foo", "../../../testfiles/buildtemplate-err2-test.yaml", errors.New("Can't create object, only BuildTemplate is allowed")},
+		{"foo", "../../../testfiles/buildtemplate-test.yaml", nil},
+		{"foo", "../../../testfiles/buildtemplate-test.yaml", nil},
 	}
 
 	for _, tt := range testCases {
 		buildtemplate := &Buildtemplate{
-			Name:           tt.Name,
-			File:           tt.File,
-			RegistrySecret: tt.RegistrySecret,
-			Namespace:      namespace,
+			Name:      tt.Name,
+			File:      tt.File,
+			Namespace: namespace,
 		}
 
 		_, err := buildtemplate.Deploy(&buildTemplateClient)

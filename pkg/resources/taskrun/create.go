@@ -172,7 +172,6 @@ func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error
 	task := task.Task{
 		Name:            tr.Task.Name,
 		Namespace:       tr.Namespace,
-		RegistrySecret:  tr.RegistrySecret,
 		FromLocalSource: file.IsLocal(tr.Function.Path),
 	}
 	taskObj, err := task.Get(clientset)
@@ -191,7 +190,7 @@ func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1alpha1.Task, error
 		taskObj.ObjectMeta = clustertaskObj.ObjectMeta
 		tr.Task.ClusterScope = true
 	}
-	if tr.RegistrySecret != "" || task.FromLocalSource {
+	if clientset.Registry.Secret != "" || task.FromLocalSource {
 		tr.Task.ClusterScope = false
 		clientset.Log.Debugf("cloning task to a new object \"%s/%s\"\n", task.Namespace, task.Name)
 		return task.Clone(clientset, taskObj)
@@ -245,6 +244,7 @@ func (tr *TaskRun) checkPipelineResource(clientset *client.ConfigSet) error {
 }
 
 func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
+	// root := int64(0)
 	name := tr.Name + "-"
 	if tr.Name == "" {
 		name = tr.Task.Name + "-"
@@ -269,6 +269,11 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 		Spec: v1alpha1.TaskRunSpec{
 			TaskRef: taskref,
 			Inputs:  v1alpha1.TaskRunInputs{},
+			// PodTemplate: v1alpha1.PodTemplate{
+			// SecurityContext: &corev1.PodSecurityContext{
+			// RunAsUser: &root,
+			// },
+			// },
 		},
 	}
 	if tr.PipelineResource.Name != "" {
@@ -288,10 +293,10 @@ func (tr *TaskRun) newTaskRun() *v1alpha1.TaskRun {
 }
 
 func (tr *TaskRun) imageName(clientset *client.ConfigSet) (string, error) {
-	if len(tr.RegistrySecret) == 0 {
-		return fmt.Sprintf("%s/%s/%s", tr.Registry, tr.Namespace, tr.Name), nil
+	if len(clientset.Registry.Secret) == 0 {
+		return fmt.Sprintf("%s/%s/%s", clientset.Registry.Host, tr.Namespace, tr.Name), nil
 	}
-	secret, err := clientset.Core.CoreV1().Secrets(tr.Namespace).Get(tr.RegistrySecret, metav1.GetOptions{})
+	secret, err := clientset.Core.CoreV1().Secrets(tr.Namespace).Get(clientset.Registry.Secret, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

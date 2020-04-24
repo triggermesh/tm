@@ -6,6 +6,7 @@ require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.9 // indirect
+	github.com/aws/aws-lambda-go v1.15.0
 	github.com/aws/aws-sdk-go v1.25.23 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dsnet/compress v0.0.1 // indirect

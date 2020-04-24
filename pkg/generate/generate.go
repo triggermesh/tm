@@ -49,8 +49,9 @@ func (p *Project) Generate(clientset *client.ConfigSet) error {
 	}
 
 	provider := file.TriggermeshProvider{
-		Name:     "triggermesh",
-		Registry: client.Registry,
+		Name: "triggermesh",
+		// Registry:       clientset.Registry.Host,
+		// RegistrySecret: clientset.Registry.Secret,
 	}
 
 	functionName := fmt.Sprintf("%s-function", p.Runtime)
