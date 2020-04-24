@@ -43,7 +43,8 @@ import (
 )
 
 const (
-	confPath = "/.tm/config.json"
+	confPath        = "/.tm/config.json"
+	defaultRegistry = "knative.registry.svc.cluster.local"
 )
 
 // CLI global flags
@@ -175,7 +176,9 @@ func NewClient(cfgFile string, output ...io.Writer) (ConfigSet, error) {
 	if len(output) == 1 {
 		c.Printer = printerwrapper.NewPrinter(output[0])
 	}
-	c.Registry = &Registry{}
+	c.Registry = &Registry{
+		Host: defaultRegistry,
+	}
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
 		return c, err
