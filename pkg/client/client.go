@@ -25,7 +25,8 @@ import (
 
 	"github.com/ghodss/yaml"
 	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
-	pipelineApi "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	tektonTask "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	tektonResource "github.com/tektoncd/pipeline/pkg/client/resource/clientset/versioned"
 	triggersApi "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
 	logwrapper "github.com/triggermesh/tm/pkg/log"
 	printerwrapper "github.com/triggermesh/tm/pkg/printer"
@@ -80,7 +81,8 @@ type ConfigSet struct {
 	LegacyEventing  *legacyEventingApi.Clientset
 	Eventing        *eventingApi.Clientset
 	GithubSource    *githubSource.Clientset
-	TektonPipelines *pipelineApi.Clientset
+	TektonPipelines *tektonResource.Clientset
+	TektonTasks     *tektonTask.Clientset
 	TektonTriggers  *triggersApi.Clientset
 	Registry        *Registry
 	Log             *logwrapper.StandardLogger
@@ -195,7 +197,10 @@ func NewClient(cfgFile string, output ...io.Writer) (ConfigSet, error) {
 	if c.Core, err = kubernetes.NewForConfig(config); err != nil {
 		return c, err
 	}
-	if c.TektonPipelines, err = pipelineApi.NewForConfig(config); err != nil {
+	if c.TektonPipelines, err = tektonResource.NewForConfig(config); err != nil {
+		return c, err
+	}
+	if c.TektonTasks, err = tektonTask.NewForConfig(config); err != nil {
 		return c, err
 	}
 	if c.TektonTriggers, err = triggersApi.NewForConfig(config); err != nil {

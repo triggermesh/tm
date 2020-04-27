@@ -15,14 +15,14 @@
 package clustertask
 
 import (
-	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Get returns tekton ClusterTask object by its name
-func (ct *ClusterTask) Get(clientset *client.ConfigSet) (*v1alpha1.ClusterTask, error) {
-	return clientset.TektonPipelines.TektonV1alpha1().ClusterTasks().Get(ct.Name, metav1.GetOptions{})
+func (ct *ClusterTask) Get(clientset *client.ConfigSet) (*v1beta1.ClusterTask, error) {
+	return clientset.TektonTasks.TektonV1beta1().ClusterTasks().Get(ct.Name, metav1.GetOptions{})
 }
 
 // Exist returns true if ClusterTask with provided name is available

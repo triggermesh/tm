@@ -85,7 +85,7 @@ func TestTaskRunDryDeployment(t *testing.T) {
 		assert.Equal(t, tr.err, err)
 		if output != "" {
 			assert.Contains(t, output, "\"kind\": \"TaskRun\"")
-			assert.Contains(t, output, "\"apiVersion\": \"tekton.dev/v1alpha1\"")
+			assert.Contains(t, output, "\"apiVersion\": \"tekton.dev/v1beta1\"")
 			assert.Contains(t, output, "\"value\": \"knative.registry.svc.cluster.local/test-namespace/"+tr.taskrun.Name)
 		}
 	}

@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
@@ -187,7 +187,7 @@ func getContainerSource(project, owner, token string) *legacysourcesv1alpha1.Con
 func getTaskRun(taskName, namespace string) *tekton.TaskRun {
 	return &tekton.TaskRun{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "tekton.dev/v1alpha1",
+			APIVersion: "tekton.dev/v1beta1",
 			Kind:       "TaskRun",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -195,14 +195,14 @@ func getTaskRun(taskName, namespace string) *tekton.TaskRun {
 			Namespace:    namespace,
 		},
 		Spec: tekton.TaskRunSpec{
-			Inputs: tekton.TaskRunInputs{
-				Resources: []tekton.TaskResourceBinding{
+			Resources: &tekton.TaskRunResources{
+				Inputs: []tekton.TaskResourceBinding{
 					{
 						PipelineResourceBinding: tekton.PipelineResourceBinding{
 							Name: "url",
 							ResourceRef: &tekton.PipelineResourceRef{
 								Name:       taskName,
-								APIVersion: "tekton.dev/v1alpha1",
+								APIVersion: "tekton.dev/v1beta1",
 							},
 						},
 					},
@@ -211,7 +211,7 @@ func getTaskRun(taskName, namespace string) *tekton.TaskRun {
 			TaskRef: &tekton.TaskRef{
 				Name:       taskName,
 				Kind:       "Task",
-				APIVersion: "tekton.dev/v1alpha1",
+				APIVersion: "tekton.dev/v1beta1",
 			},
 		},
 	}
@@ -220,7 +220,7 @@ func getTaskRun(taskName, namespace string) *tekton.TaskRun {
 func getTask(name, namespace string) *tekton.Task {
 	return &tekton.Task{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "tekton.dev/v1alpha1",
+			APIVersion: "tekton.dev/v1beta1",
 			Kind:       "Task",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -228,8 +228,8 @@ func getTask(name, namespace string) *tekton.Task {
 			Namespace: namespace,
 		},
 		Spec: tekton.TaskSpec{
-			Inputs: &tekton.Inputs{
-				Resources: []tekton.TaskResource{
+			Resources: &tekton.TaskResources{
+				Inputs: []tekton.TaskResource{
 					{
 						ResourceDeclaration: tekton.ResourceDeclaration{
 							Name: "url",
