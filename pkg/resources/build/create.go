@@ -463,5 +463,4 @@ func (b *Build) wait(build *buildv1alpha1.Build, clientset *client.ConfigSet) er
 			return fmt.Errorf("Watch build timeout")
 		}
 	}
-	return nil
 }

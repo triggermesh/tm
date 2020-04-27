@@ -1,4 +1,14 @@
+## Continuous integration
+c.out
+tm-coverage.html
+tm-unit-tests.xml
+
+# Build artifacts
 tm
-tm_osx
+tm-linux-amd64
+tm-darwin-amd64
+tm-windows-amd64.exe
+
+# Editors and IDES
 .vscode
-go-test.out
+
