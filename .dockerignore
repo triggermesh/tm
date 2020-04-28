@@ -1,0 +1,23 @@
+# Top level files and directories
+/.circleci/
+/.dockerignore
+/.git/
+/cloudbuild.yaml
+/doc/
+/Dockerfile
+/scripts/
+/testfiles/
+
+# Patterns
+**/tm-coverage.html
+**/tm-unit-tests.xml
+**/README.md
+**/*_test.go
+**/.gitignore
+**/c.out
+
+# Binaries
+/tm
+/tm-darwin-amd64
+/tm-linux-amd64
+/tm-windows-amd64.exe
