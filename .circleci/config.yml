@@ -10,9 +10,10 @@ jobs:
           command: |
             echo "deb http://packages.cloud.google.com/apt cloud-sdk-stretch main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
             curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-            go get -u github.com/jstemmer/go-junit-report
             sudo apt-get update -y
             sudo apt-get install google-cloud-sdk -y
+            go get -u golang.org/x/lint/golint
+            go get -u github.com/Masterminds/glide
       - run:
           name: Store Service Account
           command: echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
@@ -30,37 +31,36 @@ jobs:
           keys:
             - v1-pkg-cache
       - run:
-          name: Run validations
-          command: make validation
+          name: Run lint
+          command: make lint
+      - run:
+          name: Run fmt-test
+          command: make fmt-test
+      - run:
+          name: Run vet
+          command: make vet
       - run:
           name: Run unit tests
-          command: |
-            mkdir tests
-            make test | tee go-test.out
-            go-junit-report <go-test.out > tests/go-test-report.xml
+          command: mkdir -p ${OUTPUT_DIR} && make test
+          environment:
+            OUTPUT_DIR: /tmp/test-results/
       - store_test_results:
-         path: tests
-      - run:
-          name: Build binaries
-          command: |
-            make build
-            make build-osx
+         path: /tmp/test-results/
       - save_cache:
           key: v1-pkg-cache
           paths:
             - "/go/pkg"
-      - persist_to_workspace:
-          root: /go/src/github.com/triggermesh/tm
-          paths:
-            - tm
-            - tm_osx
 
   release:
     docker:
       - image: circleci/golang
     steps:
-      - attach_workspace:
-          at: /tmp/artifacts
+      - run:
+          name: Build binaries
+          command: make release
+          environment:
+            DIST_DIR: /tmp/dist/
+            GIT_TAG: ${CIRCLE_TAG}
       - run:
           name: "Install github-release tool"
           command: go get github.com/meterup/github-release
@@ -82,6 +82,7 @@ workflows:
   main:
     jobs:
       - build:
+          context: staging
           filters:
             tags:
               only: /^v\d+\.\d+\.\d+$/
