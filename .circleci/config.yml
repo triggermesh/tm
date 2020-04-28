@@ -41,6 +41,7 @@ jobs:
           command: make vet
       - run:
           name: Run unit tests
+          no_output_timeout: 15m
           command: mkdir -p ${OUTPUT_DIR} && make test
           environment:
             OUTPUT_DIR: /tmp/test-results/
