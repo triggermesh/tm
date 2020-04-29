@@ -1,7 +1,24 @@
 steps:
-- name: 'gcr.io/cloud-builders/go:debian'
-  args: ['install', '.']
-  env: ['PROJECT_ROOT=github.com/triggermesh/tm']
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/$PROJECT_ID/tm:$REVISION_ID', '-t', 'gcr.io/$PROJECT_ID/tm:latest', '.']
-images: ['gcr.io/$PROJECT_ID/tm']
+- name: 'gcr.io/kaniko-project/executor:latest'
+  args:
+  - --dockerfile=Dockerfile
+  - --destination=gcr.io/$PROJECT_ID/tm:${COMMIT_SHA}
+  - --destination=gcr.io/$PROJECT_ID/tm:${_KANIKO_IMAGE_TAG}
+  - --cache-repo=gcr.io/$PROJECT_ID/tm/cache
+  - --build-arg=GIT_TAG=${TAG_NAME}
+  - --no-push=${_KANIKO_NO_PUSH}
+  - --cache=${_KANIKO_USE_BUILD_CACHE}
+  - ${_KANIKO_EXTRA_ARGS}
+  waitFor: ['-']
+
+substitutions:
+  _KANIKO_IMAGE_TAG: "latest"
+  _KANIKO_NO_PUSH: "false"
+  _KANIKO_USE_BUILD_CACHE: "true"
+  _KANIKO_EXTRA_ARGS: ""
+
+options:
+  substitution_option: 'ALLOW_LOOSE'
+
+tags:
+  - tm

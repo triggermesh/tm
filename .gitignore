@@ -1,14 +1,16 @@
-## Continuous integration
-c.out
-tm-coverage.html
-tm-unit-tests.xml
+# Continuous integration
+**/c.out
+**/tm-coverage.html
+**/tm-unit-tests.xml
+
+# Editors and IDEs
+*.swp
+*~
+/*.sublime-project
+/.vscode/
 
 # Build artifacts
 tm
-tm-linux-amd64
 tm-darwin-amd64
+tm-linux-amd64
 tm-windows-amd64.exe
-
-# Editors and IDES
-.vscode
-
