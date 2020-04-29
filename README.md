@@ -1,4 +1,4 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/triggermesh/tm)](https://goreportcard.com/report/github.com/triggermesh/tm) [![CircleCI](https://circleci.com/gh/triggermesh/tm/tree/master.svg?style=shield)](https://circleci.com/gh/triggermesh/tm/tree/master)
+[![Release](https://img.shields.io/github/v/release/triggermesh/tm?label=release)](https://github.com/triggermesh/tm/releases) [![Downloads](https://img.shields.io/github/downloads/triggermesh/tm/total?label=downloads)](https://github.com/triggermesh/tm/releases) [![CircleCI](https://circleci.com/gh/triggermesh/tm/tree/master.svg?style=shield)](https://circleci.com/gh/triggermesh/tm/tree/master) [![Go Report Card](https://goreportcard.com/badge/github.com/triggermesh/tm)](https://goreportcard.com/report/github.com/triggermesh/tm) [![License](https://img.shields.io/github/license/triggermesh/tm?label=license)](LICENSE)
 
 A CLI for [knative](https://github.com/knative)
 
@@ -62,7 +62,7 @@ To run tests you first have to set namespace you have access to with the followi
 ```
 export NAMESPACE=yourNamespace
 ```
-Run unit-tests with following command from project root directory: 
+Run unit-tests with following command from project root directory:
 ```
 make test
 ```
@@ -147,9 +147,9 @@ tm push | kubectl apply -f -
 1. Triggermesh Aktion [transceiver](https://github.com/triggermesh/aktion/tree/master/cmd/transceiver) and its configmap to create new taskruns on incoming events from Github containersource
 
 
-\* our Github containersource is aimed at simplifying event tracking and based on periodic Github API requests (one request per minute). As a result, you don't need to create and store any tokens. Downside of this approach is that containersource have requests rate limitation (60 requests per hour) and it doesn't work with private repositories. Both of these limitation can be bypassed by providing Github personal access token in push command parameter: `tm push --token <TOKEN>` 
+\* our Github containersource is aimed at simplifying event tracking and based on periodic Github API requests (one request per minute). As a result, you don't need to create and store any tokens. Downside of this approach is that containersource have requests rate limitation (60 requests per hour) and it doesn't work with private repositories. Both of these limitation can be bypassed by providing Github personal access token in push command parameter: `tm push --token <TOKEN>`
 
-After few minutes you should be able to see new Knative service deployed in cluster. Any commits will trigger new build and deploy so that new function will reflect all code changes.   
+After few minutes you should be able to see new Knative service deployed in cluster. Any commits will trigger new build and deploy so that new function will reflect all code changes.
 
 ### Docker registry
 
@@ -198,7 +198,7 @@ script:
   - tm -n "$KUBE_NAMESPACE" set registry-auth gitlab-registry --registry "$CI_REGISTRY" --username "$CI_DEPLOY_USER" --password "$CI_DEPLOY_PASSWORD" --pull
 ...
 ```
-After this, you may pass `--registry-secret gitlab-registry` parameter to `tm deploy` command (or in [serverless.yml](https://gitlab.com/knative-examples/functions/blob/master/serverless.yaml#L6)) so that Knative could authenticate against Gitlab registry. 
+After this, you may pass `--registry-secret gitlab-registry` parameter to `tm deploy` command (or in [serverless.yml](https://gitlab.com/knative-examples/functions/blob/master/serverless.yaml#L6)) so that Knative could authenticate against Gitlab registry.
 Gitlab registry doesn't provide permanent read-write token that can be used in CI, but it has job-specific `CI_JOB_TOKEN` with "write" permission which is valid only while CI job running and `CI_DEPLOY_PASSWORD` with read permission which we created before. Considering this, we can see that CLI `set registry-auth` command supports `--push` and `--pull` flags that indicates which secret must be used to push image and which for "pull" operations only. Resulting images will be stored under `registry.gitlab.com/username/project/function_name` path
 
 #### Unauthenticated registry
