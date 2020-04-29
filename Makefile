@@ -47,13 +47,13 @@ release: ## Build release binaries
 	done
 
 test: ## Run unit tests
-	$(GOTEST) -v -timeout 15m -p=1 -cover -coverprofile=c.out $(GIT_REPO)/...
+	$(GOTEST) -v -timeout 20m -p=1 -cover -coverprofile=c.out $(GIT_REPO)/...
 
 coverage: ## Generate code coverage
 	$(GOTOOL) cover -html=c.out -o $(OUTPUT_DIR)$(PACKAGE)-coverage.html
 
 lint: ## Link source files
-	$(GOLINT) $(shell $(GLIDE) novendor)
+	$(GOLINT) -set_exit_status $(shell $(GLIDE) novendor)
 
 vet: ## Vet source files
 	$(GO) vet $(GIT_REPO)/...
