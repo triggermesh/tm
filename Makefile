@@ -68,7 +68,13 @@ image: ## Builds the container image
 	$(DOCKER) build . -t $(IMAGE) --build-arg GIT_TAG=$(GIT_TAG)
 
 clean: ## Clean build artifacts
-	$(RM) -rf $(PACKAGE)
-	$(RM) -rf $(PACKAGE)-unit-tests.xml
-	$(RM) -rf c.out $(PACKAGE)-coverage.html
-	@for platform in $(TARGETS); do $(RM) -rf $(DIST_DIR)$(PACKAGE)-$${platform%/*}-$${platform#*/}; done
+	@$(RM) -v $(PACKAGE)
+	@$(RM) -v $(PACKAGE)-unit-tests.xml
+	@$(RM) -v c.out $(PACKAGE)-coverage.html
+	@for platform in $(TARGETS); do \
+		GOOS=$${platform%/*} ; \
+		GOARCH=$${platform#*/} ; \
+		RELEASE_BINARY=$(PACKAGE)-$${GOOS}-$${GOARCH} ; \
+		[ $${GOOS} = "windows" ] && RELEASE_BINARY=$${RELEASE_BINARY}.exe ; \
+		$(RM) -v $(DIST_DIR)$${RELEASE_BINARY}; \
+	done
