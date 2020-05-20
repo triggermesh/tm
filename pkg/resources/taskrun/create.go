@@ -310,11 +310,14 @@ func (tr *TaskRun) imageName(clientset *client.ConfigSet) (string, error) {
 	if len(config.Auths) > 1 {
 		return "", errors.New("credentials with multiple registries not supported")
 	}
-	for k, v := range config.Auths {
-		if url, ok := gitlabEnv(); ok {
-			return fmt.Sprintf("%s/%s", url, tr.Name), nil
+	if url, ok := gitlabEnv(); ok {
+		return fmt.Sprintf("%s/%s", url, tr.Name), nil
+	}
+	for host, creds := range config.Auths {
+		if config.Project != "" {
+			return fmt.Sprintf("%s/%s/%s", host, config.Project, tr.Name), nil
 		}
-		return fmt.Sprintf("%s/%s/%s", k, v.Username, tr.Name), nil
+		return fmt.Sprintf("%s/%s/%s", host, creds.Username, tr.Name), nil
 	}
 	return "", errors.New("empty registry credentials")
 }

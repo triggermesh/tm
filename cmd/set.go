@@ -49,6 +49,7 @@ func cmdSetRegistryCreds(clientset *client.ConfigSet) *cobra.Command {
 	}
 
 	setRegistryCredsCmd.Flags().StringVar(&rc.Host, "registry", "", "Registry host address")
+	setRegistryCredsCmd.Flags().StringVar(&rc.ProjectID, "project", "", "If set, use this value instead of the username in image URL: <host>/<project>/<image>")
 	setRegistryCredsCmd.Flags().StringVar(&rc.Username, "username", "", "Registry username")
 	setRegistryCredsCmd.Flags().StringVar(&rc.Password, "password", "", "Registry password")
 	setRegistryCredsCmd.Flags().BoolVar(&rc.Pull, "pull", false, "Indicates if this token must be used for pull operations only")

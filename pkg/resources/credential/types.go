@@ -25,6 +25,7 @@ type RegistryCreds struct {
 	Name      string
 	Namespace string
 	Host      string
+	ProjectID string
 	Username  string
 	Password  string
 	Pull      bool

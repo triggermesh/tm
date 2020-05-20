@@ -201,6 +201,20 @@ script:
 After this, you may pass `--registry-secret gitlab-registry` parameter to `tm deploy` command (or in [serverless.yml](https://gitlab.com/knative-examples/functions/blob/master/serverless.yaml#L6)) so that Knative could authenticate against Gitlab registry.
 Gitlab registry doesn't provide permanent read-write token that can be used in CI, but it has job-specific `CI_JOB_TOKEN` with "write" permission which is valid only while CI job running and `CI_DEPLOY_PASSWORD` with read permission which we created before. Considering this, we can see that CLI `set registry-auth` command supports `--push` and `--pull` flags that indicates which secret must be used to push image and which for "pull" operations only. Resulting images will be stored under `registry.gitlab.com/username/project/function_name` path
 
+### Custom registry name
+
+While using a username as a registry identifier (docker.io/username) is a common practice, in some cases we must be able to use different values for an authentication and in destination URL (for example, [gcr.io](https://cloud.google.com/container-registry/docs/advanced-authentication#linux-macos)). Triggermesh CLI `set registry-auth` command provides such ability by exposing an optional `--project` argument which will be used as a part of the image URL instead of the username:
+
+```
+TOKEN=$(gcloud auth print-access-token)
+tm set registry-auth gcr --registry eu.gcr.io --username oauth2accesstoken --project foo --password $TOKEN
+tm generate python
+tm deploy -f python --registry-secret gcr --wait
+```
+
+As a result, Knative service image will be pushed to `eu.gcr.io/foo/` registry
+
+
 #### Unauthenticated registry
 
 Besides hosted registries, triggermesh CLI may work with unauthenticated registries which does not require setting access credentials. For such cases, you may simply add `--registry-host` argument to deployment command with registry domain name parameter and resulting image will be pushed to `registry-host/namespace/service_name` URL

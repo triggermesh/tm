@@ -34,7 +34,7 @@ func (c *RegistryCreds) CreateRegistryCreds(clientset *client.ConfigSet) error {
 			return err
 		}
 	}
-	secret := fmt.Sprintf("{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\"}}}", c.Host, c.Username, c.Password)
+	secret := fmt.Sprintf("{\"project\":%q,\"auths\":{%q:{\"username\":%q,\"password\":%q}}}", c.ProjectID, c.Host, c.Username, c.Password)
 	if s, err := clientset.Core.CoreV1().Secrets(c.Namespace).Get(c.Name, metav1.GetOptions{}); err == nil {
 		for k, v := range s.Data {
 			secrets[k] = string(v)
