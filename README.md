@@ -207,12 +207,12 @@ While using a username as a registry identifier (docker.io/username) is a common
 
 ```
 TOKEN=$(gcloud auth print-access-token)
-tm set registry-auth gcr --registry eu.gcr.io --username oauth2accesstoken --project foo --password $TOKEN
+tm set registry-auth gcr --registry eu.gcr.io --project my-org/my-project --username oauth2accesstoken --password $TOKEN
 tm generate python
 tm deploy -f python --registry-secret gcr --wait
 ```
 
-As a result, Knative service image will be pushed to `eu.gcr.io/foo/` registry
+As a result, Knative service image will be pushed to `eu.gcr.io/my-org/my-project` registry
 
 
 #### Unauthenticated registry
