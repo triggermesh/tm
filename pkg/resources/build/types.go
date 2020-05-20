@@ -28,7 +28,8 @@ type Build struct {
 }
 
 type registryAuths struct {
-	Auths registry
+	Project string
+	Auths   registry
 }
 
 type registry map[string]credentials

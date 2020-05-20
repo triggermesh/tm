@@ -41,7 +41,8 @@ type Source struct {
 }
 
 type registryAuths struct {
-	Auths registry
+	Project string
+	Auths   registry
 }
 
 type credentials struct {
