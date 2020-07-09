@@ -11,6 +11,8 @@ steps:
   - ${_KANIKO_EXTRA_ARGS}
   waitFor: ['-']
 
+timeout: 1800s
+
 substitutions:
   _KANIKO_IMAGE_TAG: "latest"
   _KANIKO_NO_PUSH: "false"

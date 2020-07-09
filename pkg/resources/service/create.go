@@ -22,13 +22,17 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/triggermesh/tm/pkg/client"
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"knative.dev/pkg/apis"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
+
+	"github.com/triggermesh/tm/pkg/client"
 )
+
+const defaultBuildTimeout = 10
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
@@ -119,12 +123,20 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("Creating service: %s", err)
 	}
 
-	// TODO Add cronjob yaml into --dry output
-	// if len(s.Cronjob.Schedule) != 0 {
-	// 	if err := s.CreateCronjobSource(clientset); err != nil {
-	// 		return "", fmt.Errorf("Creating cronjob source: %s", err)
-	// 	}
-	// }
+	// before creating PingSources remove old ones
+	// to make sure that we're in sync with manifest
+	if err := s.removePingSources(service.UID, clientset); err != nil {
+		clientset.Log.Warnf("Failed to remove schedule: %v\n", err)
+	}
+
+	for _, sched := range s.Schedule {
+		ps := s.pingSource(sched.Cron, sched.JSONData, service.UID)
+		clientset.Log.Infof("Creating %q schedule\n", ps.Spec.Schedule)
+		err := s.createPingSource(ps, clientset)
+		if err != nil {
+			clientset.Log.Errorf("Failed to create schedule: %v\n", err)
+		}
+	}
 
 	if !client.Wait {
 		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
@@ -210,7 +222,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 
 	duration, err := time.ParseDuration(s.BuildTimeout)
 	if err != nil {
-		duration = 10 * time.Minute
+		duration = defaultBuildTimeout * time.Minute
 	}
 
 	ticker := time.NewTicker(duration)
@@ -265,7 +277,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 				}
 			}
 		case <-ticker.C:
-			return "", fmt.Errorf("watch service timeout")
+			return "", fmt.Errorf("Service %q didn't become ready in time", s.Name)
 		}
 	}
 }

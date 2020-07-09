@@ -29,8 +29,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	legacysourcesv1alpha1 "knative.dev/eventing/pkg/apis/legacysources/v1alpha1"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	sourcesv1alpha2 "knative.dev/eventing/pkg/apis/sources/v1alpha2"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // Push tries to read git configuration in current directory and if it succeeds
@@ -137,8 +137,8 @@ func Push(clientset *client.ConfigSet, token string) error {
 	return nil
 }
 
-func getContainerSource(project, owner, token string) *legacysourcesv1alpha1.ContainerSource {
-	return &legacysourcesv1alpha1.ContainerSource{
+func getContainerSource(project, owner, token string) *sourcesv1alpha2.ContainerSource {
+	return &sourcesv1alpha2.ContainerSource{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ContainerSource",
 			APIVersion: "sources.eventing.knative.dev/v1alpha1",
@@ -147,15 +147,17 @@ func getContainerSource(project, owner, token string) *legacysourcesv1alpha1.Con
 			Name:      project,
 			Namespace: client.Namespace,
 		},
-		Spec: legacysourcesv1alpha1.ContainerSourceSpec{
-			Sink: &duckv1beta1.Destination{
-				Ref: &corev1.ObjectReference{
-					Kind:       "Service",
-					APIVersion: "serving.knative.dev/v1beta1",
-					Name:       project + "-transceiver",
+		Spec: sourcesv1alpha2.ContainerSourceSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						Kind:       "Service",
+						APIVersion: "serving.knative.dev/v1beta1",
+						Name:       project + "-transceiver",
+					},
 				},
 			},
-			Template: &corev1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
@@ -269,14 +271,14 @@ func createOrUpdateConfigmap(clientset *client.ConfigSet, cm *corev1.ConfigMap) 
 	return nil
 }
 
-func createOrUpdateContainersource(clientset *client.ConfigSet, cs *legacysourcesv1alpha1.ContainerSource) error {
-	if _, err := clientset.LegacyEventing.SourcesV1alpha1().ContainerSources(cs.Namespace).Create(cs); k8sErrors.IsAlreadyExists(err) {
-		csObj, err := clientset.LegacyEventing.SourcesV1alpha1().ContainerSources(cs.Namespace).Get(cs.Name, metav1.GetOptions{})
+func createOrUpdateContainersource(clientset *client.ConfigSet, cs *sourcesv1alpha2.ContainerSource) error {
+	if _, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Create(cs); k8sErrors.IsAlreadyExists(err) {
+		csObj, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Get(cs.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		cs.ObjectMeta.ResourceVersion = csObj.GetResourceVersion()
-		if _, err := clientset.LegacyEventing.SourcesV1alpha1().ContainerSources(cs.Namespace).Update(cs); err != nil {
+		if _, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Update(cs); err != nil {
 			return err
 		}
 	} else if err != nil {

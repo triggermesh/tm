@@ -38,26 +38,27 @@ type TriggermeshProvider struct {
 
 // Function describes function definition in serverless format
 type Function struct {
-	Handler     string                   `yaml:"handler,omitempty"`
-	Source      string                   `yaml:"source,omitempty"`
-	Revision    string                   `yaml:"revision,omitempty"`
-	Runtime     string                   `yaml:"runtime,omitempty"`
-	Concurrency int                      `yaml:"concurrency,omitempty"`
-	Buildargs   []string                 `yaml:"buildargs,omitempty"`
-	Description string                   `yaml:"description,omitempty"`
-	Labels      []string                 `yaml:"labels,omitempty"`
-	Environment map[string]string        `yaml:"environment,omitempty"`
-	EnvSecrets  []string                 `yaml:"env-secrets,omitempty"`
-	Annotations map[string]string        `yaml:"annotations,omitempty"`
-	Events      []map[string]interface{} `yaml:"events,omitempty"`
+	Handler     string            `yaml:"handler,omitempty"`
+	Source      string            `yaml:"source,omitempty"`
+	Revision    string            `yaml:"revision,omitempty"`
+	Runtime     string            `yaml:"runtime,omitempty"`
+	Concurrency int               `yaml:"concurrency,omitempty"`
+	Buildargs   []string          `yaml:"buildargs,omitempty"`
+	Description string            `yaml:"description,omitempty"`
+	Labels      []string          `yaml:"labels,omitempty"`
+	Environment map[string]string `yaml:"environment,omitempty"`
+	EnvSecrets  []string          `yaml:"env-secrets,omitempty"`
+	Annotations map[string]string `yaml:"annotations,omitempty"`
+	Schedule    []Schedule        `yaml:"schedule,omitempty"`
 }
 
-// Schedule represents simple structure of event schedule
-// with cronjob-style rate string and data to use in event.
-// Deprecated.
+// Schedule struct contains a data in JSON format and a cron
+// that defines how often events should be sent to a function.
+// Description string may be used to explain events purpose.
 type Schedule struct {
-	Rate string
-	Data string
+	Cron        string
+	JSONData    string
+	Description string
 }
 
 // Aos returns filesystem object with standard set of os methods implemented by afero package

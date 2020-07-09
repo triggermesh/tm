@@ -14,6 +14,8 @@
 
 package service
 
+import "github.com/triggermesh/tm/pkg/file"
+
 // Service represents knative service structure
 type Service struct {
 	Annotations    map[string]string
@@ -29,6 +31,9 @@ type Service struct {
 	PullPolicy     string
 	Revision       string
 	ResultImageTag string
-	Runtime        string // Originally knative/buildtemplate, but now also tekton/task
-	Source         string
+	// Originally knative/buildtemplate, but now also tekton/task
+	Runtime string
+	Source  string
+	// TODO: get rid of file package dependency
+	Schedule []file.Schedule
 }
