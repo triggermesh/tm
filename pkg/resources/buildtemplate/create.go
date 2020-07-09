@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -135,7 +135,7 @@ func createBuildTemplate(template buildv1alpha1.BuildTemplate, clientset *client
 	if err == nil {
 		template.ObjectMeta.ResourceVersion = btOld.ObjectMeta.ResourceVersion
 		return clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Update(&template)
-	} else if k8sErrors.IsNotFound(err) {
+	} else if k8serrors.IsNotFound(err) {
 		return clientset.Build.BuildV1alpha1().BuildTemplates(template.Namespace).Create(&template)
 	}
 	return nil, err

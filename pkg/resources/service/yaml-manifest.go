@@ -1,4 +1,4 @@
-// Copyright 2018 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import (
 	"path"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
-	yaml "gopkg.in/yaml.v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Output contains input-output writer interface
@@ -118,7 +118,7 @@ func (s *Service) DeleteYAML(yamlFile string, functionsToDelete []string, thread
 		if !s.inList(function.Name, functionsToDelete) {
 			continue
 		}
-		clientset.Log.Infof("Deleting %s\n", function.Name)
+		clientset.Log.Infof("Deleting %s", function.Name)
 		jobs <- function
 		inProgress++
 	}
@@ -184,10 +184,10 @@ func (s *Service) parseFunctions(functions map[string]file.Function, workdir ...
 		service := s.serviceObject(function)
 		service.Name = fmt.Sprintf("%s-%s", s.Name, name)
 		service.Labels = append(service.Labels, "service:"+s.Name)
+		service.Schedule = function.Schedule
 		if !file.IsRemote(service.Source) && len(workdir) == 1 {
 			service.Source = path.Join(workdir[0], service.Source)
 		}
-		service.parseSchedule(function.Events)
 		services = append(services, service)
 	}
 	return services
@@ -202,24 +202,6 @@ func (s *Service) inList(name string, list []string) bool {
 		}
 	}
 	return listed
-}
-
-func (s *Service) parseSchedule(events []map[string]interface{}) {
-	for _, v := range events {
-		for eventType, event := range v {
-			eventBody, err := yaml.Marshal(event)
-			if err != nil {
-				continue
-			}
-			switch eventType {
-			case "schedule":
-				var cron file.Schedule
-				if err := yaml.Unmarshal(eventBody, &cron); err != nil {
-					continue
-				}
-			}
-		}
-	}
 }
 
 func (s *Service) setupParentVars(definition file.Definition) {

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 TriggerMesh, Inc
+Copyright (c) 2020 TriggerMesh Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import (
 	printerwrapper "github.com/triggermesh/tm/pkg/printer"
 	githubSource "knative.dev/eventing-contrib/github/pkg/client/clientset/versioned"
 	eventingApi "knative.dev/eventing/pkg/client/clientset/versioned"
-	legacyEventingApi "knative.dev/eventing/pkg/legacyclient/clientset/versioned"
 	servingApi "knative.dev/serving/pkg/client/clientset/versioned"
 
 	"k8s.io/client-go/kubernetes"
@@ -52,11 +51,6 @@ const (
 var (
 	// Namespace to work in passed with "-n" argument or defined in kube configs
 	Namespace string
-	// Registry to store docker images for user services
-	// Default value for tm cloud is knative.registry.svc.cluster.local
-	// RegistryHost    string
-	// RegistrySecret  string
-	// RegistrySkipTLS bool
 	// Output format for k8s objects in "tm get" result. Can be either "yaml" (default) or "json"
 	Output string
 	// Debug enables verbose output for CLI commands
@@ -67,6 +61,7 @@ var (
 	Wait bool
 )
 
+// Registry to store container images for user services
 type Registry struct {
 	Host    string
 	Secret  string
@@ -78,7 +73,6 @@ type ConfigSet struct {
 	Core            *kubernetes.Clientset
 	Build           *buildApi.Clientset
 	Serving         *servingApi.Clientset
-	LegacyEventing  *legacyEventingApi.Clientset
 	Eventing        *eventingApi.Clientset
 	GithubSource    *githubSource.Clientset
 	TektonPipelines *tektonResource.Clientset
@@ -183,9 +177,6 @@ func NewClient(cfgFile string, output ...io.Writer) (ConfigSet, error) {
 	}
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
-		return c, err
-	}
-	if c.LegacyEventing, err = legacyEventingApi.NewForConfig(config); err != nil {
 		return c, err
 	}
 	if c.Build, err = buildApi.NewForConfig(config); err != nil {

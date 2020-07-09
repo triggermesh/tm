@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,5 @@ import (
 
 // Delete removes knative service object
 func (s *Service) Delete(clientset *client.ConfigSet) error {
-	// clientset.EventSources.SourcesV1alpha1().CronJobSources(s.Namespace).Delete(s.Name+"-cronjob", &metav1.DeleteOptions{})
 	return clientset.Serving.ServingV1alpha1().Services(s.Namespace).Delete(s.Name, &metav1.DeleteOptions{})
 }

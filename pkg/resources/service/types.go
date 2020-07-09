@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 package service
+
+import "github.com/triggermesh/tm/pkg/file"
 
 // Service represents knative service structure
 type Service struct {
@@ -29,6 +31,9 @@ type Service struct {
 	PullPolicy     string
 	Revision       string
 	ResultImageTag string
-	Runtime        string // Originally knative/buildtemplate, but now also tekton/task
-	Source         string
+	// Originally knative/buildtemplate, but now also tekton/task
+	Runtime string
+	Source  string
+	// TODO: get rid of file package dependency
+	Schedule []file.Schedule
 }
