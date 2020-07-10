@@ -17,9 +17,6 @@ package service
 import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
-	"github.com/triggermesh/tm/pkg/resources/build"
-	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
-	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/clustertask"
 	"github.com/triggermesh/tm/pkg/resources/task"
 	"github.com/triggermesh/tm/pkg/resources/taskrun"
@@ -34,7 +31,7 @@ type Builder interface {
 	Delete(clientset *client.ConfigSet) error
 }
 
-// NewBuilder checks Service build method (knative buildtemplate or tekton task)
+// NewBuilder checks Service build method (tekton task)
 // and returns corresponding builder interface
 func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 	if !file.IsLocal(s.Source) && !file.IsGit(s.Source) {
@@ -44,12 +41,7 @@ func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 
 	if task.Exist(clientset, s.Runtime) ||
 		clustertask.Exist(clientset, s.Runtime) {
-		clientset.Log.Debugf("%q is a task\n", s.Runtime)
 		return s.taskRun()
-	} else if buildtemplate.Exist(clientset, s.Runtime) ||
-		clusterbuildtemplate.Exist(clientset, s.Runtime) {
-		clientset.Log.Debugf("%q is a buildtemplate\n", s.Runtime)
-		return s.build(clientset)
 	}
 
 	if file.IsRemote(s.Runtime) {
@@ -61,11 +53,6 @@ func NewBuilder(clientset *client.ConfigSet, s *Service) Builder {
 		}
 	}
 
-	if file.IsBuildTemplate(s.Runtime) {
-		clientset.Log.Debugf("%q is a buildtemplate\n", s.Runtime)
-		return s.build(clientset)
-	}
-	clientset.Log.Debugf("%q is a task\n", s.Runtime)
 	return s.taskRun()
 }
 
@@ -83,21 +70,5 @@ func (s *Service) taskRun() *taskrun.TaskRun {
 		},
 		Timeout: s.BuildTimeout,
 		Wait:    true,
-	}
-}
-
-func (s *Service) build(clientset *client.ConfigSet) *build.Build {
-	clientset.Log.Warnf("*******")
-	clientset.Log.Warnf("Warning! You're using deprecated knative/build component. Please use tekton/pipelines instead")
-	clientset.Log.Warnf("https://github.com/triggermesh/knative-lambda-runtime")
-	clientset.Log.Warnf("*******")
-	return &build.Build{
-		Args:          s.BuildArgs,
-		Buildtemplate: s.Runtime,
-		GenerateName:  s.Name + "-",
-		Namespace:     s.Namespace,
-		Source:        s.Source,
-		Timeout:       s.BuildTimeout,
-		Wait:          true,
 	}
 }

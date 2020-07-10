@@ -141,7 +141,7 @@ func getContainerSource(project, owner, token string) *sourcesv1alpha2.Container
 	return &sourcesv1alpha2.ContainerSource{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ContainerSource",
-			APIVersion: "sources.eventing.knative.dev/v1alpha1",
+			APIVersion: "sources.knative.dev/v1alpha2",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      project,
@@ -152,7 +152,7 @@ func getContainerSource(project, owner, token string) *sourcesv1alpha2.Container
 				Sink: duckv1.Destination{
 					Ref: &duckv1.KReference{
 						Kind:       "Service",
-						APIVersion: "serving.knative.dev/v1beta1",
+						APIVersion: "serving.knative.dev/v1",
 						Name:       project + "-transceiver",
 					},
 				},

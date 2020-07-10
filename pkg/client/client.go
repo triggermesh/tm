@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
-	buildApi "github.com/knative/build/pkg/client/clientset/versioned"
 	tektonTask "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	tektonResource "github.com/tektoncd/pipeline/pkg/client/resource/clientset/versioned"
 	triggersApi "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
@@ -71,7 +70,6 @@ type Registry struct {
 // ConfigSet contains different information that may be needed by underlying functions
 type ConfigSet struct {
 	Core            *kubernetes.Clientset
-	Build           *buildApi.Clientset
 	Serving         *servingApi.Clientset
 	Eventing        *eventingApi.Clientset
 	GithubSource    *githubSource.Clientset
@@ -177,9 +175,6 @@ func NewClient(cfgFile string, output ...io.Writer) (ConfigSet, error) {
 	}
 
 	if c.Eventing, err = eventingApi.NewForConfig(config); err != nil {
-		return c, err
-	}
-	if c.Build, err = buildApi.NewForConfig(config); err != nil {
 		return c, err
 	}
 	if c.Serving, err = servingApi.NewForConfig(config); err != nil {
