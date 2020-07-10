@@ -21,10 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/generate"
-	"github.com/triggermesh/tm/pkg/resources/build"
-	"github.com/triggermesh/tm/pkg/resources/buildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/channel"
-	"github.com/triggermesh/tm/pkg/resources/clusterbuildtemplate"
 	"github.com/triggermesh/tm/pkg/resources/configuration"
 	"github.com/triggermesh/tm/pkg/resources/credential"
 	"github.com/triggermesh/tm/pkg/resources/pipelineresource"
@@ -50,7 +47,6 @@ var (
 	registrySecret  string
 	registrySkipTLS bool
 
-	b   build.Build
 	c   channel.Channel
 	t   task.Task
 	tr  taskrun.TaskRun
@@ -62,8 +58,6 @@ var (
 	cf  configuration.Configuration
 	gc  credential.GitCreds
 	rc  credential.RegistryCreds
-	bt  buildtemplate.Buildtemplate
-	cbt clusterbuildtemplate.ClusterBuildtemplate
 )
 
 // tmCmd represents the base command when called without any subcommands

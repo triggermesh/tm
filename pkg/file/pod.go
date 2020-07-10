@@ -46,8 +46,8 @@ func (c *Copy) Upload(clientset *client.ConfigSet) error {
 		return err
 	}
 
-	tar := path.Join(uploadPath, RandString(10))
-	if err := archiver.Tar.Make(tar, []string{c.Source}); err != nil {
+	tar := path.Join(uploadPath, RandString(10)+".tar")
+	if err := archiver.DefaultTar.Archive([]string{c.Source}, tar); err != nil {
 		return err
 	}
 	clientset.Log.Debugf("sources are packed into %q archive, opening reader\n", tar)

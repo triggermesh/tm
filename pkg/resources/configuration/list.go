@@ -53,7 +53,7 @@ func (cf *Configuration) row(item *servingv1.Configuration) []string {
 	// 	image = item.Spec.Template.Spec.Containers[0].Image
 	// }
 	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
-	ready := fmt.Sprintf("%v", item.Status.IsReady())
+	ready := fmt.Sprintf("%v", item.IsReady())
 	readyCondition := item.Status.GetCondition(servingv1.ConfigurationConditionReady)
 	reason := ""
 	if readyCondition != nil {

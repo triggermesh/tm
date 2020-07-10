@@ -18,7 +18,7 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1"
 )
 
 // GetObject converts k8s object into printable structure
@@ -38,5 +38,5 @@ func (c *Channel) GetObject(service *messagingApi.InMemoryChannel) printer.Objec
 
 // Get returns k8s object
 func (c *Channel) Get(clientset *client.ConfigSet) (*messagingApi.InMemoryChannel, error) {
-	return clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Get(c.Name, metav1.GetOptions{})
+	return clientset.Eventing.MessagingV1().InMemoryChannels(c.Namespace).Get(c.Name, metav1.GetOptions{})
 }

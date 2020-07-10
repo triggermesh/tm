@@ -23,5 +23,5 @@ import (
 
 // Delete removes knative inmemory channel object
 func (c *Channel) Delete(clientset *client.ConfigSet) error {
-	return clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Delete(c.Name, &metav1.DeleteOptions{})
+	return clientset.Eventing.MessagingV1().InMemoryChannels(c.Namespace).Delete(c.Name, &metav1.DeleteOptions{})
 }

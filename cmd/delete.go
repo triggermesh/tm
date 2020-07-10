@@ -38,10 +38,8 @@ func newDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 	deleteCmd.Flags().StringVarP(&file, "file", "f", "serverless.yaml", "Delete functions defined in yaml")
 	deleteCmd.Flags().IntVarP(&concurrency, "concurrency", "c", 3, "Number of concurrent deletion threads")
 	deleteCmd.AddCommand(cmdDeleteConfiguration(clientset))
-	deleteCmd.AddCommand(cmdDeleteBuildTemplate(clientset))
 	deleteCmd.AddCommand(cmdDeleteRevision(clientset))
 	deleteCmd.AddCommand(cmdDeleteService(clientset))
-	deleteCmd.AddCommand(cmdDeleteBuild(clientset))
 	deleteCmd.AddCommand(cmdDeleteRoute(clientset))
 	deleteCmd.AddCommand(cmdDeleteChannel(clientset))
 	deleteCmd.AddCommand(cmdDeleteTask(clientset))
@@ -49,40 +47,6 @@ func newDeleteCmd(clientset *client.ConfigSet) *cobra.Command {
 	deleteCmd.AddCommand(cmdDeletePipelineResource(clientset))
 
 	return deleteCmd
-}
-
-func cmdDeleteBuild(clientset *client.ConfigSet) *cobra.Command {
-	return &cobra.Command{
-		Use:     "build",
-		Aliases: []string{"builds"},
-		Short:   "Delete knative build resource",
-		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			b.Name = args[0]
-			b.Namespace = client.Namespace
-			if err := b.Delete(clientset); err != nil {
-				log.Fatalln(err)
-			}
-			clientset.Log.Infoln("Build is being deleted")
-		},
-	}
-}
-
-func cmdDeleteBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
-	return &cobra.Command{
-		Use:     "buildtemplate",
-		Aliases: []string{"buildtemplates"},
-		Short:   "Delete knative buildtemplate resource",
-		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			bt.Name = args[0]
-			bt.Namespace = client.Namespace
-			if err := bt.Delete(clientset); err != nil {
-				log.Fatalln(err)
-			}
-			clientset.Log.Infoln("BuildTemplate is being deleted")
-		},
-	}
 }
 
 func cmdDeleteChannel(clientset *client.ConfigSet) *cobra.Command {
