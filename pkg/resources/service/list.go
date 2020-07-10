@@ -51,7 +51,7 @@ func (s *Service) row(item *servingv1.Service) []string {
 	url := item.Status.URL.String()
 	// lastestRevision := item.Status.ConfigurationStatusFields.LatestReadyRevisionName
 	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
-	ready := fmt.Sprintf("%v", item.Status.IsReady())
+	ready := fmt.Sprintf("%v", item.IsReady())
 	readyCondition := item.Status.GetCondition(servingv1.ServiceConditionReady)
 	reason := ""
 	if readyCondition != nil {

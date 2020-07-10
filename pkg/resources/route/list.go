@@ -46,7 +46,7 @@ func (rt *Route) row(item *servingv1.Route) []string {
 	name := item.Name
 	namespace := item.Namespace
 	url := item.Status.URL.String()
-	ready := fmt.Sprintf("%v", item.Status.IsReady())
+	ready := fmt.Sprintf("%v", item.IsReady())
 	readyCondition := item.Status.GetCondition(servingv1.RouteConditionReady)
 	reason := ""
 	if readyCondition != nil {

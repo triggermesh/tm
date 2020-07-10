@@ -45,8 +45,6 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 
 	deployCmd.AddCommand(cmdDeployService(clientset))
 	deployCmd.AddCommand(cmdDeployChannel(clientset))
-	deployCmd.AddCommand(cmdDeployBuild(clientset))
-	deployCmd.AddCommand(cmdDeployBuildTemplate(clientset))
 	deployCmd.AddCommand(cmdDeployTask(clientset))
 	deployCmd.AddCommand(cmdDeployTaskRun(clientset))
 	deployCmd.AddCommand(cmdDeployPipelineResource(clientset))
@@ -78,62 +76,16 @@ func cmdDeployService(clientset *client.ConfigSet) *cobra.Command {
 
 	deployServiceCmd.Flags().StringVarP(&s.Source, "from", "f", "", "Service source to deploy: local folder with sources, git repository or docker image")
 	deployServiceCmd.Flags().StringVar(&s.Revision, "revision", "master", "Git revision (branch, tag, commit SHA or ref)")
-	deployServiceCmd.Flags().StringVar(&s.Runtime, "runtime", "", "Existing buildtemplate name, local path or URL to buildtemplate yaml file")
-	// deployServiceCmd.Flags().StringVar(&s.RegistrySecret, "registry-secret", "", "Name of k8s secret to use in buildtemplate as registry auth json")
-	// deployServiceCmd.Flags().StringVar(&s.ResultImageTag, "tag", "latest", "Image tag to build")
-	// deployServiceCmd.Flags().StringVar(&s.PullPolicy, "image-pull-policy", "Always", "Image pull policy")
+	deployServiceCmd.Flags().StringVar(&s.Runtime, "runtime", "", "Existing task name, local path or URL to task yaml file")
 	deployServiceCmd.Flags().StringVar(&s.BuildTimeout, "build-timeout", "10m", "Service image build timeout")
 	deployServiceCmd.Flags().IntVar(&s.Concurrency, "concurrency", 0, "Number of concurrent events per container: 0 - multiple events, 1 - single event, N - particular number of events")
-	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Buildtemplate arguments")
+	deployServiceCmd.Flags().StringSliceVar(&s.BuildArgs, "build-argument", []string{}, "Build arguments")
 	deployServiceCmd.Flags().StringSliceVar(&s.EnvSecrets, "env-secret", []string{}, "Name of k8s secrets to populate pod environment variables")
 	deployServiceCmd.Flags().BoolVar(&s.BuildOnly, "build-only", false, "Build image and exit")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Labels, "label", "l", []string{}, "Service labels")
 	deployServiceCmd.Flags().StringToStringVarP(&s.Annotations, "annotation", "a", map[string]string{}, "Revision template annotations")
 	deployServiceCmd.Flags().StringSliceVarP(&s.Env, "env", "e", []string{}, "Environment variables of the service, eg. `--env foo=bar`")
 	return deployServiceCmd
-}
-
-func cmdDeployBuild(clientset *client.ConfigSet) *cobra.Command {
-	deployBuildCmd := &cobra.Command{
-		Use:     "build",
-		Aliases: []string{"builds"},
-		Args:    cobra.ExactArgs(1),
-		Short:   "Deploy knative build",
-		Example: "tm deploy build foo-builder --source git-repo --buildtemplate kaniko --args IMAGE=knative-local-registry:5000/foo-image",
-		Run: func(cmd *cobra.Command, args []string) {
-			b.Name = args[0]
-			b.Namespace = client.Namespace
-			if _, err := b.Deploy(clientset); err != nil {
-				clientset.Log.Fatal(err)
-			}
-			clientset.Log.Infoln("Build created")
-		},
-	}
-
-	deployBuildCmd.Flags().StringVar(&b.Source, "source", "", "Git URL or local path to get sources from")
-	deployBuildCmd.Flags().StringVar(&b.Revision, "revision", "master", "Git source revision")
-	deployBuildCmd.Flags().StringVar(&b.Buildtemplate, "buildtemplate", "", "Buildtemplate name to use with build")
-	deployBuildCmd.Flags().StringSliceVar(&b.Args, "args", []string{}, "Build arguments")
-	deployBuildCmd.MarkFlagRequired("source")
-	return deployBuildCmd
-}
-
-func cmdDeployBuildTemplate(clientset *client.ConfigSet) *cobra.Command {
-	deployBuildTemplateCmd := &cobra.Command{
-		Use:     "buildtemplate",
-		Aliases: []string{"buildtemplates", "bldtmpl"},
-		Short:   "Deploy knative build template",
-		Example: "tm -n default deploy buildtemplate -f https://raw.githubusercontent.com/triggermesh/nodejs-runtime/master/knative-build-template.yaml",
-		Run: func(cmd *cobra.Command, args []string) {
-			bt.Namespace = client.Namespace
-			if _, err := bt.Deploy(clientset); err != nil {
-				clientset.Log.Fatal(err)
-			}
-		},
-	}
-
-	deployBuildTemplateCmd.Flags().StringVarP(&bt.File, "from", "f", "", "Local path or URL to buildtemplate yaml file")
-	return deployBuildTemplateCmd
 }
 
 func cmdDeployChannel(clientset *client.ConfigSet) *cobra.Command {
