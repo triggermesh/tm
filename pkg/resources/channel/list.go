@@ -22,7 +22,7 @@ import (
 	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
-	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1"
+	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1beta1"
 )
 
 // GetTable converts k8s list instance into printable object
@@ -71,5 +71,5 @@ func (c *Channel) row(item *messagingApi.InMemoryChannel) []string {
 
 // List returns list of knative build objects
 func (c *Channel) List(clientset *client.ConfigSet) (*messagingApi.InMemoryChannelList, error) {
-	return clientset.Eventing.MessagingV1().InMemoryChannels(c.Namespace).List(metav1.ListOptions{})
+	return clientset.Eventing.MessagingV1beta1().InMemoryChannels(c.Namespace).List(metav1.ListOptions{})
 }
