@@ -41,7 +41,7 @@ func (c *Channel) Deploy(clientset *client.ConfigSet) error {
 func (c *Channel) newObject(clientset *client.ConfigSet) messagingApi.InMemoryChannel {
 	return messagingApi.InMemoryChannel{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       c.Kind,
+			Kind:       "InMemoryChannel",
 			APIVersion: "messaging.knative.dev/v1beta1",
 		},
 		ObjectMeta: metav1.ObjectMeta{

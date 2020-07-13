@@ -18,5 +18,4 @@ package channel
 type Channel struct {
 	Name      string
 	Namespace string
-	Kind      string
 }

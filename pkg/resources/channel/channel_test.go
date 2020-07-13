@@ -47,34 +47,32 @@ func TestBuild(t *testing.T) {
 	assert.NoError(t, err)
 
 	testCases := []struct {
-		Name   string
-		Kind   string
-		ErrMSG error
+		Name        string
+		ExpectedErr string
 	}{
-		{"foo", "bar", nil},
+		{
+			Name: "foo",
+		},
 	}
 
-	for _, tt := range testCases {
+	for _, tc := range testCases {
 		channel := &Channel{
-			Name:      tt.Name,
+			Name:      tc.Name,
 			Namespace: namespace,
-			Kind:      tt.Kind,
 		}
 
 		err = channel.Deploy(&channelClient)
 		if err != nil {
-			assert.Error(t, err)
-			continue
+			if tc.ExpectedErr != "" {
+				assert.EqualError(t, err, tc.ExpectedErr)
+				continue
+			}
+			t.Error(err)
 		}
 
 		ch, err := channel.Get(&channelClient)
 		assert.NoError(t, err)
-		assert.Equal(t, tt.Name, ch.Name)
-
-		err = channel.Deploy(&channelClient)
-		if err != nil {
-			assert.Error(t, err)
-		}
+		assert.Equal(t, tc.Name, ch.Name)
 
 		err = channel.Delete(&channelClient)
 		assert.NoError(t, err)
