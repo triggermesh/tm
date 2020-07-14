@@ -38,11 +38,10 @@ import (
 )
 
 const (
-	tektonAPI         = "tekton.dev/v1beta1"
-	taskRunKind       = "TaskRun"
-	taskKind          = "Task"
-	clusterTaskKind   = "ClusterTask"
-	uploadDoneTrigger = ".uploadIsDone"
+	tektonAPI       = "tekton.dev/v1beta1"
+	taskRunKind     = "TaskRun"
+	taskKind        = "Task"
+	clusterTaskKind = "ClusterTask"
 )
 
 // Deploy prepares and verifies tekton resources (Task and PipelineResource) required for TaskRun,
@@ -457,21 +456,8 @@ func (tr *TaskRun) sourceContainer(clientset *client.ConfigSet, podName string) 
 }
 
 func (tr *TaskRun) injectSources(clientset *client.ConfigSet, pod, container string) error {
-	c := file.Copy{
-		Pod:         pod,
-		Namespace:   tr.Namespace,
-		Container:   container,
-		Source:      tr.Function.Path,
-		Destination: path.Join("/home", path.Base(tr.Function.Path)),
-	}
-	if err := c.Upload(clientset); err != nil {
-		return err
-	}
-	clientset.Log.Debugf("creating upload completion flag\n")
-	if _, _, err := c.RemoteExec(clientset, "touch "+uploadDoneTrigger, nil); err != nil {
-		return err
-	}
-	return nil
+	dst := file.NewDestination(tr.Namespace, pod, container, path.Join("/home", path.Base(tr.Function.Path)))
+	return dst.Upload(clientset, tr.Function.Path)
 }
 
 func (tr *TaskRun) getBuildArguments(image string) []v1beta1.Param {

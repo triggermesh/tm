@@ -8,8 +8,6 @@ require (
 	github.com/googleapis/gnostic v0.4.2 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
-	github.com/mholt/archiver v3.1.1+incompatible
-	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/afero v1.3.1
