@@ -1,4 +1,4 @@
-// Copyright 2018 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package pipelineresource
 import (
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -53,7 +53,7 @@ func (plr *PipelineResource) newObject(clientset *client.ConfigSet) v1alpha1.Pip
 func (plr *PipelineResource) createOrUpdate(pipelineResourceObject v1alpha1.PipelineResource, clientset *client.ConfigSet) (*v1alpha1.PipelineResource, error) {
 	var pipeline *v1alpha1.PipelineResource
 	res, err := clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Create(&pipelineResourceObject)
-	if k8sErrors.IsAlreadyExists(err) {
+	if k8serrors.IsAlreadyExists(err) {
 		pipeline, err = clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Get(pipelineResourceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return res, err

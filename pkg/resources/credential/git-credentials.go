@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 
 	"github.com/triggermesh/tm/pkg/client"
 	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -50,7 +50,7 @@ func (g *GitCreds) CreateGitCreds(clientset *client.ConfigSet) error {
 		StringData: secretData,
 	}
 	_, err := clientset.Core.CoreV1().Secrets(client.Namespace).Create(&secret)
-	if k8sErrors.IsAlreadyExists(err) {
+	if k8serrors.IsAlreadyExists(err) {
 		oldSecret, err := clientset.Core.CoreV1().Secrets(client.Namespace).Get(secretName, metav1.GetOptions{})
 		if err != nil {
 			return err

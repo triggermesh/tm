@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/triggermesh/tm/pkg/client"
 )
@@ -29,10 +27,7 @@ func newDeployCmd(clientset *client.ConfigSet) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			s.Namespace = client.Namespace
 			if clientset.Log.IsDebug() && concurrency > 1 {
-				clientset.Log.Warnf(`You are about to run %d deployments in parallel with verbose output.
-				It's better to either add "--concurrency=1" argument or remove debug flag.
-				Press Ctr+C to abort or Enter to continue anyway...`, concurrency)
-				fmt.Scanln()
+				clientset.Log.Warnf(`You are about to run %d deployments in parallel with verbose logging - the output may be unreadable.`, concurrency)
 			}
 			if err := s.DeployYAML(yaml, args, concurrency, clientset); err != nil {
 				clientset.Log.Fatal(err)

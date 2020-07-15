@@ -1,4 +1,4 @@
-// Copyright 2018 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("composing image name: %s", err)
 	}
 	image = fmt.Sprintf("%s:%s", image, file.RandString(6))
-	clientset.Log.Debugf("taskrun \"%s/%s\" output image will be %q\n", tr.Namespace, tr.Name, image)
+	clientset.Log.Debugf("taskrun \"%s/%s\" output image will be %q", tr.Namespace, tr.Name, image)
 	taskRunObject := tr.newTaskRun()
 	taskRunObject.Spec.Params = tr.getBuildArguments(image)
 
@@ -82,7 +82,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 			tr.Params = append(tr.Params, "HANDLER="+path.Base(tr.Function.Path))
 			tr.Function.Path = path.Clean(path.Dir(tr.Function.Path))
 		}
-		clientset.Log.Debugf("function path is %q\n", tr.Function.Path)
+		clientset.Log.Debugf("function path is %q", tr.Function.Path)
 	}
 
 	if client.Dry {
@@ -100,7 +100,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("creating taskrun: %s", err)
 	}
 	tr.Name = taskRunObject.GetName()
-	clientset.Log.Debugf("taskrun \"%s/%s\" created\n", tr.Namespace, tr.Name)
+	clientset.Log.Debugf("taskrun \"%s/%s\" created", tr.Namespace, tr.Name)
 
 	task := task.Task{
 		Name:      tr.Task.Name,
@@ -112,13 +112,13 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		err = task.SetOwner(clientset, ownerRef)
 		if err != nil {
 			if err := task.Delete(clientset); err != nil {
-				clientset.Log.Errorf("Can't cleanup task: %s\n", err)
+				clientset.Log.Errorf("Can't cleanup task: %s", err)
 			}
 			return "", err
 		}
 	}
 	if tr.PipelineResource.Owned {
-		clientset.Log.Debugf("setting pipelineresource owner\n")
+		clientset.Log.Debugf("setting pipelineresource owner")
 		tr.setPipelineResourceOwner(clientset, ownerRef)
 	}
 	if file.IsLocal(tr.Function.Path) {
@@ -130,13 +130,13 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("waiting for source container: %s", err)
 		}
-		clientset.Log.Infof("Uploading %q to %s\n", tr.Function.Path, pod)
+		clientset.Log.Infof("Uploading %q to %s", tr.Function.Path, pod)
 		if err := tr.injectSources(clientset, pod, sourceContainer); err != nil {
 			return "", fmt.Errorf("injecting sources: %s", err)
 		}
 	}
 	if tr.Wait {
-		clientset.Log.Infof("Waiting for taskrun %q ready state\n", taskRunObject.Name)
+		clientset.Log.Infof("Waiting for taskrun %q ready state", taskRunObject.Name)
 		if err = tr.wait(clientset); err != nil {
 			return image, fmt.Errorf("taskrun %q deployment failed: %s", tr.Name, err)
 		}
@@ -204,7 +204,7 @@ func (tr *TaskRun) setupTask(clientset *client.ConfigSet) (*v1beta1.Task, error)
 	}
 	if clientset.Registry.Secret != "" || task.FromLocalSource {
 		tr.Task.ClusterScope = false
-		clientset.Log.Debugf("cloning task to a new object \"%s/%s\"\n", task.Namespace, task.Name)
+		clientset.Log.Debugf("cloning task to a new object \"%s/%s\"", task.Namespace, task.Name)
 		return task.Clone(clientset, taskObj)
 	}
 	return nil, nil
@@ -217,7 +217,7 @@ func (tr *TaskRun) setPipelineResourceOwner(clientset *client.ConfigSet, ownerRe
 	}
 	if err := plr.SetOwner(clientset, ownerRef); err != nil {
 		if err = plr.Delete(clientset); err != nil {
-			clientset.Log.Errorf("Can't remove pipelineresource: %s\n", err)
+			clientset.Log.Errorf("Can't remove pipelineresource: %s", err)
 		}
 	}
 }
@@ -346,9 +346,9 @@ func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
 			continue
 		}
 		if clientset.Log.IsDebug() {
-			clientset.Log.Debugf("got new event:\n")
+			clientset.Log.Debugf("got new event:")
 			for _, v := range taskrun.Status.Conditions {
-				clientset.Log.Debugf(" condition: %q, status: %q, message: %q\n", v.Type, v.Status, v.Message)
+				clientset.Log.Debugf(" condition: %q, status: %q, message: %q", v.Type, v.Status, v.Message)
 			}
 		}
 		for _, v := range taskrun.Status.Conditions {
@@ -368,7 +368,7 @@ func (tr *TaskRun) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerRefer
 	if err != nil {
 		return err
 	}
-	clientset.Log.Debugf("setting taskrun \"%s/%s\" owner to %s/%s\n", taskrun.GetNamespace(), taskrun.GetName(), owner.Kind, owner.Name)
+	clientset.Log.Debugf("setting taskrun \"%s/%s\" owner to %s/%s", taskrun.GetNamespace(), taskrun.GetName(), owner.Kind, owner.Name)
 	taskrun.SetOwnerReferences([]metav1.OwnerReference{owner})
 	_, err = clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Update(taskrun)
 	return err
@@ -467,7 +467,7 @@ func (tr *TaskRun) injectSources(clientset *client.ConfigSet, pod, container str
 	if err := c.Upload(clientset); err != nil {
 		return err
 	}
-	clientset.Log.Debugf("creating upload completion flag\n")
+	clientset.Log.Debugf("creating upload completion flag")
 	if _, _, err := c.RemoteExec(clientset, "touch "+uploadDoneTrigger, nil); err != nil {
 		return err
 	}

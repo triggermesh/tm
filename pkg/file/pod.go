@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018 TriggerMesh, Inc
+Copyright (c) 2020 TriggerMesh Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ func (c *Copy) Upload(clientset *client.ConfigSet) error {
 		return err
 	}
 
-	clientset.Log.Debugf("starting remote untar proccess\n")
+	clientset.Log.Debugf("starting remote untar proccess")
 	command := fmt.Sprintf("tar -xvf - -C /home")
 	stdout, stderr, err := c.RemoteExec(clientset, command, fileReader)
 	clientset.Log.Debugf("stdout:\n%s", stdout)
@@ -84,7 +84,7 @@ func (c *Copy) RemoteExec(clientset *client.ConfigSet, command string, file io.R
 	if len(urlAndParams) == 2 {
 		url = fmt.Sprintf("%s&%s", url, urlAndParams[1])
 	}
-	clientset.Log.Debugf("remote exec request URL: %q\n", url)
+	clientset.Log.Debugf("remote exec request URL: %q", url)
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return "", "", err

@@ -20,7 +20,10 @@ func NewLogger() *StandardLogger {
 	var baseLogger = logrus.New()
 	var standardLogger = &StandardLogger{baseLogger}
 
-	standardLogger.Formatter = &logrus.TextFormatter{}
+	standardLogger.Formatter = &logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "15:04:05",
+	}
 
 	return standardLogger
 }

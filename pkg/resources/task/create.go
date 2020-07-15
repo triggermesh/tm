@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/file"
 	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,7 +37,7 @@ const (
 // Deploy accepts path (local or URL) to tekton Task manifest and installs it
 func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	if !file.IsLocal(t.File) {
-		clientset.Log.Debugf("cannot find %q locally, downloading\n", t.File)
+		clientset.Log.Debugf("cannot find %q locally, downloading", t.File)
 		path, err := file.Download(t.File)
 		if err != nil {
 			return nil, fmt.Errorf("task not found: %s", err)
@@ -69,18 +69,18 @@ func (t *Task) Deploy(clientset *client.ConfigSet) (*tekton.Task, error) {
 	}
 
 	if clientset.Registry.Secret != "" {
-		clientset.Log.Debugf("setting registry secret %q for task \"%s/%s\"\n", clientset.Registry.Secret, task.GetNamespace(), task.GetName())
+		clientset.Log.Debugf("setting registry secret %q for task \"%s/%s\"", clientset.Registry.Secret, task.GetNamespace(), task.GetName())
 		setupEnv(clientset, task)
 		setupVolume(clientset, task)
 	}
 
 	if clientset.Registry.SkipTLS {
-		clientset.Log.Debugf("setting '--skip-tls-verify' flag for task \"%s/%s\"\n", task.GetNamespace(), task.GetName())
+		clientset.Log.Debugf("setting '--skip-tls-verify' flag for task \"%s/%s\"", task.GetNamespace(), task.GetName())
 		setupArgs(clientset, task)
 	}
 
 	if t.FromLocalSource {
-		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\"\n", task.GetNamespace(), task.GetGenerateName())
+		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\"", task.GetNamespace(), task.GetGenerateName())
 		task.Spec.Steps = append([]tekton.Step{t.customStep()}, task.Spec.Steps...)
 		// if task.Spec.Inputs != nil {
 		task.Spec.Resources = &tekton.TaskResources{}
@@ -100,16 +100,16 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 	task.SetName("")
 	task.SetResourceVersion("")
 	if clientset.Registry.Secret != "" {
-		clientset.Log.Debugf("setting registry secret %q for task \"%s/%s\"\n", clientset.Registry.Secret, task.GetNamespace(), task.GetName())
+		clientset.Log.Debugf("setting registry secret %q for task \"%s/%s\"", clientset.Registry.Secret, task.GetNamespace(), task.GetName())
 		setupEnv(clientset, task)
 		setupVolume(clientset, task)
 	}
 	if clientset.Registry.SkipTLS {
-		clientset.Log.Debugf("setting '--skip-tls-verify' flag for task \"%s/%s\"\n", task.GetNamespace(), task.GetName())
+		clientset.Log.Debugf("setting '--skip-tls-verify' flag for task \"%s/%s\"", task.GetNamespace(), task.GetName())
 		setupArgs(clientset, task)
 	}
 	if t.FromLocalSource {
-		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\" clone\n", task.GetNamespace(), task.GetGenerateName())
+		clientset.Log.Debugf("adding source uploading step to task \"%s/%s\" clone", task.GetNamespace(), task.GetGenerateName())
 		task.Spec.Steps = append([]tekton.Step{t.customStep()}, task.Spec.Steps...)
 		// if task.Spec.Inputs != nil {
 		task.Spec.Resources = &tekton.TaskResources{}
@@ -160,8 +160,8 @@ func (t *Task) CreateOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*
 	}
 
 	taskObj, err := clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Create(task)
-	if k8sErrors.IsAlreadyExists(err) {
-		clientset.Log.Debugf("task %q is already exist, updating\n", task.GetName())
+	if k8serrors.IsAlreadyExists(err) {
+		clientset.Log.Debugf("task %q is already exist, updating", task.GetName())
 		if taskObj, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(task.ObjectMeta.Name, metav1.GetOptions{}); err != nil {
 			return nil, err
 		}
@@ -177,7 +177,7 @@ func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference
 	if err != nil {
 		return err
 	}
-	clientset.Log.Debugf("setting task \"%s/%s\" owner to %s/%s\n", task.GetNamespace(), task.GetName(), owner.Kind, owner.Name)
+	clientset.Log.Debugf("setting task \"%s/%s\" owner to %s/%s", task.GetNamespace(), task.GetName(), owner.Kind, owner.Name)
 	task.SetOwnerReferences([]metav1.OwnerReference{owner})
 	_, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Update(task)
 	return err

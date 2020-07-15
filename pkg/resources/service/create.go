@@ -1,4 +1,4 @@
-// Copyright 2019 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,13 +22,18 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/triggermesh/tm/pkg/client"
 	corev1 "k8s.io/api/core/v1"
-	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"knative.dev/pkg/apis"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
+
+	"github.com/triggermesh/tm/pkg/client"
 )
+
+// time duration to wait for knative service ready state
+const ksvcWaitTimeout = 10 * time.Minute
 
 // Deploy receives Service structure and generate knative/service object to deploy it in knative cluster
 func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
@@ -63,10 +68,10 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 			return "", fmt.Errorf("Deploying builder: %s", err)
 		}
 	}
-	clientset.Log.Debugf("image is ready, creating service\n")
+	clientset.Log.Debugf("image is ready, creating service")
 
 	if s.BuildOnly {
-		return fmt.Sprintf("Build-only flag set, service image is %s\n", image), nil
+		return fmt.Sprintf("Build-only flag set, service image is %s", image), nil
 	}
 
 	concurrency := int64(s.Concurrency)
@@ -119,18 +124,26 @@ func (s *Service) Deploy(clientset *client.ConfigSet) (string, error) {
 		return "", fmt.Errorf("Creating service: %s", err)
 	}
 
-	// TODO Add cronjob yaml into --dry output
-	// if len(s.Cronjob.Schedule) != 0 {
-	// 	if err := s.CreateCronjobSource(clientset); err != nil {
-	// 		return "", fmt.Errorf("Creating cronjob source: %s", err)
-	// 	}
-	// }
+	// before creating PingSources remove old ones
+	// to make sure that we're in sync with manifest
+	if err := s.removePingSources(service.UID, clientset); err != nil {
+		clientset.Log.Warnf("Failed to remove schedule: %v", err)
+	}
+
+	for _, sched := range s.Schedule {
+		ps := s.pingSource(sched.Cron, sched.JSONData, service)
+		clientset.Log.Infof("Creating %q schedule", ps.Spec.Schedule)
+		err := s.createPingSource(ps, clientset)
+		if err != nil {
+			clientset.Log.Errorf("Failed to create schedule: %v", err)
+		}
+	}
 
 	if !client.Wait {
 		return fmt.Sprintf("Deployment started. Run \"tm -n %s describe service %s\" to see details", s.Namespace, s.Name), nil
 	}
 
-	clientset.Log.Infof("Waiting for service %q ready state\n", s.Name)
+	clientset.Log.Infof("Waiting for service %q ready state", s.Name)
 	domain, err := s.wait(clientset)
 	return fmt.Sprintf("Service %s URL: %s", s.Name, domain), err
 }
@@ -160,10 +173,10 @@ func (s *Service) setupEnvSecrets() []corev1.EnvFromSource {
 }
 
 func (s *Service) createOrUpdate(serviceObject *servingv1.Service, clientset *client.ConfigSet) (*servingv1.Service, error) {
-	clientset.Log.Debugf("creating \"%s/%s\" service\n", s.Namespace, s.Name)
+	clientset.Log.Debugf("creating \"%s/%s\" service", s.Namespace, s.Name)
 	newService, err := clientset.Serving.ServingV1().Services(s.Namespace).Create(serviceObject)
-	if k8sErrors.IsAlreadyExists(err) {
-		clientset.Log.Debugf("service \"%s/%s\" already exist, updating\n", serviceObject.GetNamespace(), serviceObject.GetName())
+	if k8serrors.IsAlreadyExists(err) {
+		clientset.Log.Debugf("service \"%s/%s\" already exist, updating", serviceObject.GetNamespace(), serviceObject.GetName())
 		service, err := clientset.Serving.ServingV1().Services(s.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
@@ -210,7 +223,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 
 	duration, err := time.ParseDuration(s.BuildTimeout)
 	if err != nil {
-		duration = 10 * time.Minute
+		duration = ksvcWaitTimeout
 	}
 
 	ticker := time.NewTicker(duration)
@@ -237,9 +250,9 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 				continue
 			}
 			if clientset.Log.IsDebug() {
-				clientset.Log.Debugf("got new event:\n")
+				clientset.Log.Debugf("got new event:")
 				for _, v := range serviceEvent.Status.Conditions {
-					clientset.Log.Debugf(" condition: %q, status: %q, message: %q\n", v.Type, v.Status, v.Message)
+					clientset.Log.Debugf(" condition: %q, status: %q, message: %q", v.Type, v.Status, v.Message)
 				}
 			}
 			if serviceEvent.Status.IsReady() {
@@ -265,7 +278,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 				}
 			}
 		case <-ticker.C:
-			return "", fmt.Errorf("watch service timeout")
+			return "", fmt.Errorf("Service %q didn't become ready in time", s.Name)
 		}
 	}
 }

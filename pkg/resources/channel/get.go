@@ -1,4 +1,4 @@
-// Copyright 2018 TriggerMesh, Inc
+// Copyright 2020 TriggerMesh Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ import (
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	messagingApi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
+	messagingapi "knative.dev/eventing/pkg/apis/messaging/v1alpha1"
 )
 
 // GetObject converts k8s object into printable structure
-func (c *Channel) GetObject(service *messagingApi.InMemoryChannel) printer.Object {
+func (c *Channel) GetObject(service *messagingapi.InMemoryChannel) printer.Object {
 	return printer.Object{
 		Fields: map[string]interface{}{
 			"Kind":              metav1.TypeMeta{}.Kind,
@@ -30,13 +30,13 @@ func (c *Channel) GetObject(service *messagingApi.InMemoryChannel) printer.Objec
 			"Namespace":         metav1.ObjectMeta{}.Namespace,
 			"Name":              metav1.ObjectMeta{}.Name,
 			"CreationTimestamp": metav1.Time{},
-			"Status":            messagingApi.InMemoryChannelStatus{},
+			"Status":            messagingapi.InMemoryChannelStatus{},
 		},
 		K8sObject: service,
 	}
 }
 
 // Get returns k8s object
-func (c *Channel) Get(clientset *client.ConfigSet) (*messagingApi.InMemoryChannel, error) {
+func (c *Channel) Get(clientset *client.ConfigSet) (*messagingapi.InMemoryChannel, error) {
 	return clientset.Eventing.MessagingV1alpha1().InMemoryChannels(c.Namespace).Get(c.Name, metav1.GetOptions{})
 }
