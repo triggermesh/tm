@@ -36,9 +36,6 @@ var getCmd = &cobra.Command{
 
 // NewGetCmd returns "Get" cobra CLI command with its subcommands
 func newGetCmd(clientset *client.ConfigSet) *cobra.Command {
-	getCmd.AddCommand(cmdListBuild(clientset))
-	getCmd.AddCommand(cmdListBuildTemplates(clientset))
-	getCmd.AddCommand(cmdListClusterBuildTemplates(clientset))
 	getCmd.AddCommand(cmdListConfigurations(clientset))
 	getCmd.AddCommand(cmdListRevision(clientset))
 	getCmd.AddCommand(cmdListRoute(clientset))
@@ -49,92 +46,6 @@ func newGetCmd(clientset *client.ConfigSet) *cobra.Command {
 	getCmd.AddCommand(cmdListPipelineResources(clientset))
 
 	return getCmd
-}
-
-func cmdListBuild(clientset *client.ConfigSet) *cobra.Command {
-	return &cobra.Command{
-		Use:     "build",
-		Aliases: []string{"builds"},
-		Short:   "List of knative build resources",
-		Run: func(cmd *cobra.Command, args []string) {
-			b.Namespace = client.Namespace
-			if len(args) == 0 {
-				list, err := b.List(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				if len(list.Items) == 0 {
-					fmt.Fprintf(cmd.OutOrStdout(), "No builds found\n")
-					return
-				}
-				clientset.Printer.PrintTable(b.GetTable(list))
-				return
-			}
-			b.Name = args[0]
-			build, err := b.Get(clientset)
-			if err != nil {
-				clientset.Log.Fatalln(err)
-			}
-			clientset.Printer.PrintObject(b.GetObject(build))
-		},
-	}
-}
-
-func cmdListBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
-	return &cobra.Command{
-		Use:     "buildtemplate",
-		Aliases: []string{"buildtemplates"},
-		Short:   "List of buildtemplates",
-		Run: func(cmd *cobra.Command, args []string) {
-			bt.Namespace = client.Namespace
-			if len(args) == 0 {
-				list, err := bt.List(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				if len(list.Items) == 0 {
-					fmt.Fprintf(cmd.OutOrStdout(), "No builds found\n")
-					return
-				}
-				clientset.Printer.PrintTable(bt.GetTable(list))
-				return
-			}
-			bt.Name = args[0]
-			buildtemplate, err := bt.Get(clientset)
-			if err != nil {
-				clientset.Log.Fatalln(err)
-			}
-			clientset.Printer.PrintObject(bt.GetObject(buildtemplate))
-		},
-	}
-}
-
-func cmdListClusterBuildTemplates(clientset *client.ConfigSet) *cobra.Command {
-	return &cobra.Command{
-		Use:     "clusterbuildtemplate",
-		Aliases: []string{"cbuildtemplates", "cbuildtemplate", "clusterbuildtemplates"},
-		Short:   "List of clusterbuildtemplates",
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				list, err := cbt.List(clientset)
-				if err != nil {
-					clientset.Log.Fatalln(err)
-				}
-				if len(list.Items) == 0 {
-					fmt.Fprintf(cmd.OutOrStdout(), "No clusterbuildtemplates found\n")
-					return
-				}
-				clientset.Printer.PrintTable(cbt.GetTable(list))
-				return
-			}
-			cbt.Name = args[0]
-			cbuildtemplate, err := cbt.Get(clientset)
-			if err != nil {
-				clientset.Log.Fatalln(err)
-			}
-			clientset.Printer.PrintObject(cbt.GetObject(cbuildtemplate))
-		},
-	}
 }
 
 func cmdListChannels(clientset *client.ConfigSet) *cobra.Command {

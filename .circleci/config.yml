@@ -28,6 +28,7 @@ jobs:
       - run:
           name: Building package
           command: make build
+          no_output_timeout: 20m
       - gcp-cli/install
       - gcp-cli/initialize
       - run:
@@ -58,6 +59,7 @@ jobs:
       - run:
           name: Running unit tests
           command: mkdir -p ${OUTPUT_DIR} && make test
+          no_output_timeout: 20m
           environment:
             OUTPUT_DIR: /tmp/test-results/
       - store_test_results:

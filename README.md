@@ -4,13 +4,16 @@ A CLI for [knative](https://github.com/knative)
 
 ## Installation
 
-With a working [Golang](https://golang.org/doc/install) environment do:
+There are two ways of tm CLI installation:
 
-```
-go get github.com/triggermesh/tm
-```
+- Download a binary from the [latest release](https://github.com/triggermesh/tm/releases/latest)
 
-Or head to the GitHub [release page](https://github.com/triggermesh/tm/releases) and download a release.
+- Install CLI from sources:
+```
+git clone https://github.com/triggermesh/tm.git
+cd tm
+go install
+```
 
 ### Configuration
 
@@ -31,11 +34,11 @@ Deploy service from Docker image
 tm deploy service foo -f gcr.io/google-samples/hello-app:1.0 --wait
 ```
 
-If you have Dockerfile for your service, you can use kaniko buildtemplate to deploy it
+If you have Dockerfile for your service, you can use kaniko runtime to deploy it
 ```
 tm deploy service foobar \
     -f https://github.com/knative/docs \
-    --build-template https://raw.githubusercontent.com/triggermesh/build-templates/master/kaniko/kaniko.yaml \
+    --runtime https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/kaniko/runtime.yaml \
     --build-argument DIRECTORY=docs/serving/samples/hello-world/helloworld-go \
     --wait
 ```
@@ -44,7 +47,7 @@ or deploy service straight from Go source using Openfaas runtime
 ```
 tm deploy service bar \
     -f https://github.com/golang/example \
-    --build-template https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/go/openfaas-go-runtime.yaml \
+    --runtime https://raw.githubusercontent.com/triggermesh/openfaas-runtime/master/go/openfaas-go-runtime.yaml \
     --build-argument DIRECTORY=hello \
     --wait
 ```
@@ -100,10 +103,10 @@ func main() {
 EOF
 ```
 
-Deploy function using Knative lambda buildtemplate with Go runtime
+Deploy function using Go Knative lambda runtime
 
 ```
-tm deploy service go-lambda -f . --build-template https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/go-1.x/buildtemplate.yaml --wait
+tm deploy service go-lambda -f . --runtime https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/go-1.x/runtime.yaml --wait
 ```
 
 Lambda function available via http events
@@ -177,7 +180,7 @@ Besides pulling, this secret may be used to push new images for service deployme
 
 ```
 tm deploy service foo-private -f https://github.com/serverless/examples \
-                              --build-template knative-node4-runtime \
+                              --runtime knative-node4-runtime \
                               --build-argument DIRECTORY=aws-node-serve-dynamic-html-via-http-endpoint \
                               --build-argument HANDLER=handler.landingPage \
                               --registry-secret foo-registry \

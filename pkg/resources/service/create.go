@@ -255,7 +255,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 					clientset.Log.Debugf(" condition: %q, status: %q, message: %q", v.Type, v.Status, v.Message)
 				}
 			}
-			if serviceEvent.Status.IsReady() {
+			if serviceEvent.IsReady() {
 				return serviceEvent.Status.URL.String(), nil
 			}
 			for _, v := range serviceEvent.Status.Conditions {
