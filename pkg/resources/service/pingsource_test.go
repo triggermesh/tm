@@ -66,7 +66,7 @@ func TestPingSource(t *testing.T) {
 	}
 
 	client.Dry = false
-	client.Wait = true
+	client.Wait = false
 	serviceClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
