@@ -13,7 +13,9 @@ ARG GIT_TAG
 ENV GIT_TAG=${GIT_TAG:-unknown}
 
 COPY . .
-RUN make install
+RUN make install && \
+    rm -rf ${GOPATH}/src && \
+    rm -rf ${HOME}/.cache
 
 FROM debian:stable-slim
 
