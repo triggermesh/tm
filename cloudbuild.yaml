@@ -8,6 +8,8 @@ steps:
   - --build-arg=GIT_TAG=${TAG_NAME}
   - --no-push=${_KANIKO_NO_PUSH}
   - --cache=${_KANIKO_USE_BUILD_CACHE}
+  - --snapshotMode=redo
+  - --use-new-run
   - ${_KANIKO_EXTRA_ARGS}
   waitFor: ['-']
 
