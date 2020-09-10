@@ -91,8 +91,6 @@ func TestPingSource(t *testing.T) {
 			assert.Len(t, psList.Items, 1)
 			ps := psList.Items[0]
 
-			assert.True(t, ps.Status.IsReady())
-
 			assert.Equal(t, ps.Spec.Sink.Ref.Name, tc.service.Name)
 			assert.Equal(t, ps.Spec.Sink.Ref.Namespace, tc.service.Namespace)
 

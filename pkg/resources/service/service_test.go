@@ -17,6 +17,7 @@ package service
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -94,8 +95,18 @@ func TestDeployAndDelete(t *testing.T) {
 				return
 			}
 
-			address := strings.TrimPrefix(output, fmt.Sprintf("Service %s URL: https://", tc.service.Name))
-			conn, err := net.DialTimeout("tcp", address+":443", dialTimeout)
+			address := strings.TrimPrefix(output, fmt.Sprintf("Service %s URL: ", tc.service.Name))
+			addr, err := url.Parse(address)
+			assert.NoError(t, err)
+			switch addr.Scheme {
+			case "https":
+				address = addr.Host + ":443"
+			case "http":
+				address = addr.Host + ":80"
+			default:
+				t.Error("malformed service URL scheme", addr.Scheme)
+			}
+			conn, err := net.DialTimeout("tcp", address, dialTimeout)
 			assert.NoError(t, err)
 			assert.NoError(t, conn.Close())
 
