@@ -68,12 +68,12 @@ func TestIsGit(t *testing.T) {
 		{"https://github.com/triggermesh/tm.git", true},
 		{"https://github.com/triggermesh/tm", true},
 		{"github.com/triggermesh/tm", true},
-		{"git@github.com:triggermesh/tm.git", true},
-		{"https://triggermesh.com/", true}, //should not be true?
+		{"https://triggermesh.com/", false},
+		{"some-random-string", false},
 	}
 	for _, tc := range testCases {
 		result := IsGit(tc.path)
-		assert.Equal(t, tc.result, result)
+		assert.Equal(t, tc.result, result, "isGit(%s) expected to be %v, got %v", tc.path, tc.result, result)
 	}
 }
 
