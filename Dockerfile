@@ -1,4 +1,4 @@
-FROM golang:1.14 AS build
+FROM golang:1.15 AS build
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
@@ -13,7 +13,9 @@ ARG GIT_TAG
 ENV GIT_TAG=${GIT_TAG:-unknown}
 
 COPY . .
-RUN make install
+RUN make install && \
+    rm -rf ${GOPATH}/src && \
+    rm -rf ${HOME}/.cache
 
 FROM debian:stable-slim
 
