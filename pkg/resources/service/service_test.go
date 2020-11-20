@@ -80,6 +80,7 @@ func TestDeployAndDelete(t *testing.T) {
 
 	client.Dry = false
 	client.Wait = true
+	client.Debug = true
 	serviceClient, err := client.NewClient(client.ConfigPath(""))
 	assert.NoError(t, err)
 
@@ -105,6 +106,7 @@ func TestDeployAndDelete(t *testing.T) {
 				address = addr.Host + ":80"
 			default:
 				t.Error("malformed service URL scheme", addr.Scheme)
+				return
 			}
 			conn, err := net.DialTimeout("tcp", address, dialTimeout)
 			assert.NoError(t, err)
