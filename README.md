@@ -222,6 +222,10 @@ As a result, Knative service image will be pushed to `eu.gcr.io/my-org/my-projec
 
 Besides hosted registries, triggermesh CLI may work with unauthenticated registries which does not require setting access credentials. For such cases, you may simply add `--registry-host` argument to deployment command with registry domain name parameter and resulting image will be pushed to `registry-host/namespace/service_name` URL
 
+### How-To
+
+For additional details on how to use `tm`, consult the [HOWTO Guide](./HOWTO.md)
+
 ### Support
 
 We would love your feedback on this CLI tool so don't hesitate to let us know what is wrong and how we could improve it, just file an [issue](https://github.com/triggermesh/tm/issues/new)
