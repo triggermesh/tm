@@ -106,7 +106,7 @@ EOF
 Deploy function using Go Knative lambda runtime
 
 ```
-tm deploy service go-lambda -f . --runtime https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/go-1.x/runtime.yaml --wait
+tm deploy service go-lambda -f . --runtime https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/go/runtime.yaml --wait
 ```
 
 Lambda function available via http events
