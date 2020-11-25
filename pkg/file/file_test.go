@@ -31,7 +31,7 @@ func TestIsLocal(t *testing.T) {
 	}{
 		{"", false},
 		{"/", true},
-		{"../../testfiles/buildtemplate-test.yaml", true},
+		{"../../testfiles/cfgfile-test.json", true},
 	}
 	for _, tc := range testCases {
 		result := IsLocal(tc.path)
