@@ -48,7 +48,7 @@ func TestDeployAndDelete(t *testing.T) {
 				Name:         "test-service-taskrun",
 				Namespace:    namespace,
 				Source:       "https://github.com/serverless/examples",
-				Runtime:      "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python-3.7/runtime.yaml",
+				Runtime:      "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python37/runtime.yaml",
 				BuildArgs:    []string{"DIRECTORY=aws-python-simple-http-endpoint", "HANDLER=handler.endpoint"},
 				BuildTimeout: "15m",
 			},

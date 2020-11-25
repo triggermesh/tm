@@ -84,26 +84,26 @@ func NewTable() *SamplesTable {
 	return &SamplesTable{
 		"python": service{
 			source:     "handler.py",
-			runtime:    "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python-3.7/runtime.yaml",
+			runtime:    "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python37/runtime.yaml",
 			function:   pythonFunc,
 			handler:    "handler.endpoint",
 			apiGateway: true,
 		},
 		"go": service{
 			source:   "main.go",
-			runtime:  "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/go-1.x/runtime.yaml",
+			runtime:  "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/go/runtime.yaml",
 			function: golangFunc,
 		},
 		"ruby": service{
 			source:     "handler.rb",
-			runtime:    "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/ruby-2.5/runtime.yaml",
+			runtime:    "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/ruby25/runtime.yaml",
 			function:   rubyFunc,
 			handler:    "handler.endpoint",
 			apiGateway: true,
 		},
 		"node": service{
 			source:   "handler.js",
-			runtime:  "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/node-10.x/runtime.yaml",
+			runtime:  "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/node10/runtime.yaml",
 			function: nodejsFunc,
 			handler:  "handler.sayHelloAsync",
 		},
