@@ -15,6 +15,7 @@
 package task
 
 import (
+	"context"
 	"time"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -57,5 +58,5 @@ func (t *Task) row(item *v1beta1.Task) []string {
 
 // List returns k8s list object
 func (t *Task) List(clientset *client.ConfigSet) (*v1beta1.TaskList, error) {
-	return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).List(metav1.ListOptions{})
+	return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).List(context.Background(), metav1.ListOptions{})
 }

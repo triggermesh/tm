@@ -15,6 +15,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -265,7 +266,7 @@ func (s *Service) serviceObject(function file.Function) Service {
 }
 
 func (s *Service) removeOrphans(created []Service, clientset *client.ConfigSet) error {
-	list, err := clientset.Serving.ServingV1alpha1().Services(s.Namespace).List(metav1.ListOptions{
+	list, err := clientset.Serving.ServingV1().Services(s.Namespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "service=" + s.Name,
 	})
 	if err != nil {

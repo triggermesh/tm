@@ -15,10 +15,12 @@
 package task
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (t *Task) Delete(clientset *client.ConfigSet) error {
-	return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Delete(t.Name, &metav1.DeleteOptions{})
+	return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Delete(context.Background(), t.Name, metav1.DeleteOptions{})
 }

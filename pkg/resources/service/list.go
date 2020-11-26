@@ -15,6 +15,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -73,5 +74,5 @@ func (s *Service) row(item *servingv1.Service) []string {
 
 // List returns k8s list object
 func (s *Service) List(clientset *client.ConfigSet) (*servingv1.ServiceList, error) {
-	return clientset.Serving.ServingV1().Services(s.Namespace).List(metav1.ListOptions{})
+	return clientset.Serving.ServingV1().Services(s.Namespace).List(context.Background(), metav1.ListOptions{})
 }

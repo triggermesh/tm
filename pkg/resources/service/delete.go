@@ -15,11 +15,13 @@
 package service
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Delete removes knative service object
 func (s *Service) Delete(clientset *client.ConfigSet) error {
-	return clientset.Serving.ServingV1().Services(s.Namespace).Delete(s.Name, &metav1.DeleteOptions{})
+	return clientset.Serving.ServingV1().Services(s.Namespace).Delete(context.Background(), s.Name, metav1.DeleteOptions{})
 }

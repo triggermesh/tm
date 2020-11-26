@@ -15,6 +15,8 @@
 package revision
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/printer"
 	corev1 "k8s.io/api/core/v1"
@@ -40,5 +42,5 @@ func (r *Revision) GetObject(revision *servingv1.Revision) printer.Object {
 
 // Get returns k8s object
 func (r *Revision) Get(clientset *client.ConfigSet) (*servingv1.Revision, error) {
-	return clientset.Serving.ServingV1().Revisions(r.Namespace).Get(r.Name, metav1.GetOptions{})
+	return clientset.Serving.ServingV1().Revisions(r.Namespace).Get(context.Background(), r.Name, metav1.GetOptions{})
 }

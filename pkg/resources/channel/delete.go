@@ -17,11 +17,13 @@ limitations under the License.
 package channel
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Delete removes knative inmemory channel object
 func (c *Channel) Delete(clientset *client.ConfigSet) error {
-	return clientset.Eventing.MessagingV1beta1().InMemoryChannels(c.Namespace).Delete(c.Name, &metav1.DeleteOptions{})
+	return clientset.Eventing.MessagingV1beta1().InMemoryChannels(c.Namespace).Delete(context.Background(), c.Name, metav1.DeleteOptions{})
 }

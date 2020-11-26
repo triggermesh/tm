@@ -15,6 +15,7 @@
 package service
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -77,7 +78,7 @@ func TestPingSource(t *testing.T) {
 			assert.NoError(t, err)
 			defer tc.service.Delete(&serviceClient)
 
-			psList, err := serviceClient.Eventing.SourcesV1alpha2().PingSources(tc.service.Namespace).List(metav1.ListOptions{
+			psList, err := serviceClient.Eventing.SourcesV1alpha2().PingSources(tc.service.Namespace).List(context.Background(), metav1.ListOptions{
 				LabelSelector: serviceLabelKey + "=" + tc.service.Name,
 			})
 			assert.NoError(t, err)

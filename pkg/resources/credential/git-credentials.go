@@ -16,6 +16,7 @@ package credential
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 
@@ -49,20 +50,21 @@ func (g *GitCreds) CreateGitCreds(clientset *client.ConfigSet) error {
 		},
 		StringData: secretData,
 	}
-	_, err := clientset.Core.CoreV1().Secrets(client.Namespace).Create(&secret)
+	ctx := context.Background()
+	_, err := clientset.Core.CoreV1().Secrets(client.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
 	if k8serrors.IsAlreadyExists(err) {
-		oldSecret, err := clientset.Core.CoreV1().Secrets(client.Namespace).Get(secretName, metav1.GetOptions{})
+		oldSecret, err := clientset.Core.CoreV1().Secrets(client.Namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		oldSecret.StringData = secretData
-		if _, err := clientset.Core.CoreV1().Secrets(client.Namespace).Update(oldSecret); err != nil {
+		if _, err := clientset.Core.CoreV1().Secrets(client.Namespace).Update(ctx, oldSecret, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 	} else if err != nil {
 		return err
 	}
-	sa, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Get("default", metav1.GetOptions{})
+	sa, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Get(ctx, "default", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -76,7 +78,7 @@ func (g *GitCreds) CreateGitCreds(clientset *client.ConfigSet) error {
 		Name:      secretName,
 		Namespace: client.Namespace,
 	})
-	_, err = clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Update(sa)
+	_, err = clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Update(ctx, sa, metav1.UpdateOptions{})
 	return err
 }
 

@@ -15,10 +15,12 @@
 package pipelineresource
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (plr *PipelineResource) Delete(clientset *client.ConfigSet) error {
-	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Delete(plr.Name, &metav1.DeleteOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).Delete(context.Background(), plr.Name, metav1.DeleteOptions{})
 }

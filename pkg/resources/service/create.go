@@ -15,6 +15,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -174,10 +175,11 @@ func (s *Service) setupEnvSecrets() []corev1.EnvFromSource {
 
 func (s *Service) createOrUpdate(serviceObject *servingv1.Service, clientset *client.ConfigSet) (*servingv1.Service, error) {
 	clientset.Log.Debugf("creating \"%s/%s\" service", s.Namespace, s.Name)
-	newService, err := clientset.Serving.ServingV1().Services(s.Namespace).Create(serviceObject)
+	ctx := context.Background()
+	newService, err := clientset.Serving.ServingV1().Services(s.Namespace).Create(ctx, serviceObject, metav1.CreateOptions{})
 	if k8serrors.IsAlreadyExists(err) {
 		clientset.Log.Debugf("service \"%s/%s\" already exist, updating", serviceObject.GetNamespace(), serviceObject.GetName())
-		service, err := clientset.Serving.ServingV1().Services(s.Namespace).Get(serviceObject.ObjectMeta.Name, metav1.GetOptions{})
+		service, err := clientset.Serving.ServingV1().Services(s.Namespace).Get(ctx, serviceObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -191,7 +193,7 @@ func (s *Service) createOrUpdate(serviceObject *servingv1.Service, clientset *cl
 			}
 		}
 		serviceObject.ObjectMeta.ResourceVersion = service.GetResourceVersion()
-		return clientset.Serving.ServingV1().Services(s.Namespace).Update(serviceObject)
+		return clientset.Serving.ServingV1().Services(s.Namespace).Update(ctx, serviceObject, metav1.UpdateOptions{})
 	}
 	return newService, err
 }
@@ -210,7 +212,8 @@ func mapFromSlice(slice []string) map[string]string {
 }
 
 func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
-	svcWatchInterface, err := clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
+	ctx := context.Background()
+	svcWatchInterface, err := clientset.Serving.ServingV1().Services(s.Namespace).Watch(ctx, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 	})
 	if err != nil {
@@ -235,7 +238,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 		case event := <-svcWatchInterface.ResultChan():
 			if event.Object == nil {
 				svcWatchInterface.Stop()
-				if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
+				if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(ctx, metav1.ListOptions{
 					FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 				}); err != nil {
 					return "", err
@@ -263,7 +266,7 @@ func (s *Service) wait(clientset *client.ConfigSet) (string, error) {
 					if v.Reason == "RevisionFailed" && firstError {
 						time.Sleep(time.Second * 3)
 						svcWatchInterface.Stop()
-						if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(metav1.ListOptions{
+						if svcWatchInterface, err = clientset.Serving.ServingV1().Services(s.Namespace).Watch(ctx, metav1.ListOptions{
 							FieldSelector: fmt.Sprintf("metadata.name=%s", s.Name),
 						}); err != nil {
 							return "", err

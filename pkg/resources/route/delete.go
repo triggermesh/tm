@@ -15,11 +15,13 @@
 package route
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Route removes knative route object
 func (r *Route) Delete(clientset *client.ConfigSet) error {
-	return clientset.Serving.ServingV1alpha1().Routes(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+	return clientset.Serving.ServingV1().Routes(r.Namespace).Delete(context.Background(), r.Name, metav1.DeleteOptions{})
 }
