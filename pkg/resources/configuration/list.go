@@ -15,6 +15,7 @@
 package configuration
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -74,5 +75,5 @@ func (cf *Configuration) row(item *servingv1.Configuration) []string {
 
 // List returns k8s list object
 func (cf *Configuration) List(clientset *client.ConfigSet) (*servingv1.ConfigurationList, error) {
-	return clientset.Serving.ServingV1().Configurations(cf.Namespace).List(metav1.ListOptions{})
+	return clientset.Serving.ServingV1().Configurations(cf.Namespace).List(context.Background(), metav1.ListOptions{})
 }

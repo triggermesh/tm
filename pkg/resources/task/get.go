@@ -15,6 +15,8 @@
 package task
 
 import (
+	"context"
+
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -39,7 +41,7 @@ func (t *Task) GetObject(task *v1beta1.Task) printer.Object {
 
 // Get return tekton Task object
 func (t *Task) Get(clientset *client.ConfigSet) (*v1beta1.Task, error) {
-	return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
+	return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(context.Background(), t.Name, metav1.GetOptions{})
 }
 
 // Exist returns true if Task with provided name is available in current namespace

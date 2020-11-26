@@ -15,6 +15,7 @@
 package revision
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -74,5 +75,5 @@ func (r *Revision) row(item *servingv1.Revision) []string {
 
 // List returns k8s list object
 func (r *Revision) List(clientset *client.ConfigSet) (*servingv1.RevisionList, error) {
-	return clientset.Serving.ServingV1().Revisions(r.Namespace).List(metav1.ListOptions{})
+	return clientset.Serving.ServingV1().Revisions(r.Namespace).List(context.Background(), metav1.ListOptions{})
 }

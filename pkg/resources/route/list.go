@@ -15,6 +15,7 @@
 package route
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/triggermesh/tm/pkg/client"
@@ -66,5 +67,5 @@ func (rt *Route) row(item *servingv1.Route) []string {
 
 // List returns k8s list object
 func (rt *Route) List(clientset *client.ConfigSet) (*servingv1.RouteList, error) {
-	return clientset.Serving.ServingV1().Routes(rt.Namespace).List(metav1.ListOptions{})
+	return clientset.Serving.ServingV1().Routes(rt.Namespace).List(context.Background(), metav1.ListOptions{})
 }

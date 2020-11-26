@@ -15,6 +15,8 @@
 package route
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/printer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,5 +41,5 @@ func (r *Route) GetObject(route *servingv1.Route) printer.Object {
 
 // Get returns k8s object
 func (r *Route) Get(clientset *client.ConfigSet) (*servingv1.Route, error) {
-	return clientset.Serving.ServingV1().Routes(r.Namespace).Get(r.Name, metav1.GetOptions{})
+	return clientset.Serving.ServingV1().Routes(r.Namespace).Get(context.Background(), r.Name, metav1.GetOptions{})
 }

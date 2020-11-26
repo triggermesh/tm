@@ -16,6 +16,7 @@ package credential
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -35,11 +36,12 @@ func (c *RegistryCreds) CreateRegistryCreds(clientset *client.ConfigSet) error {
 		}
 	}
 	secret := fmt.Sprintf("{\"project\":%q,\"auths\":{%q:{\"username\":%q,\"password\":%q}}}", c.ProjectID, c.Host, c.Username, c.Password)
-	if s, err := clientset.Core.CoreV1().Secrets(c.Namespace).Get(c.Name, metav1.GetOptions{}); err == nil {
+	ctx := context.Background()
+	if s, err := clientset.Core.CoreV1().Secrets(c.Namespace).Get(ctx, c.Name, metav1.GetOptions{}); err == nil {
 		for k, v := range s.Data {
 			secrets[k] = string(v)
 		}
-		if err = clientset.Core.CoreV1().Secrets(c.Namespace).Delete(c.Name, &metav1.DeleteOptions{}); err != nil {
+		if err = clientset.Core.CoreV1().Secrets(c.Namespace).Delete(ctx, c.Name, metav1.DeleteOptions{}); err != nil {
 			return err
 		}
 	}
@@ -65,19 +67,19 @@ func (c *RegistryCreds) CreateRegistryCreds(clientset *client.ConfigSet) error {
 		},
 		StringData: secrets,
 	}
-	if _, err := clientset.Core.CoreV1().Secrets(client.Namespace).Create(&newSecret); err != nil {
+	if _, err := clientset.Core.CoreV1().Secrets(client.Namespace).Create(ctx, &newSecret, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
 	if c.Pull || c.Pull == c.Push {
-		sa, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Get("default", metav1.GetOptions{})
+		sa, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Get(ctx, "default", metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		sa.ImagePullSecrets = []corev1.LocalObjectReference{
 			{Name: c.Name},
 		}
-		if _, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Update(sa); err != nil {
+		if _, err := clientset.Core.CoreV1().ServiceAccounts(client.Namespace).Update(ctx, sa, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 	}

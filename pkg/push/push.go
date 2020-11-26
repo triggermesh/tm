@@ -15,6 +15,7 @@
 package push
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -256,13 +257,15 @@ func getTask(name, namespace string) *tekton.Task {
 }
 
 func createOrUpdateConfigmap(clientset *client.ConfigSet, cm *corev1.ConfigMap) error {
-	if _, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Create(cm); k8serrors.IsAlreadyExists(err) {
-		cmObj, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Get(cm.Name, metav1.GetOptions{})
+	ctx := context.Background()
+	_, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Create(ctx, cm, metav1.CreateOptions{})
+	if k8serrors.IsAlreadyExists(err) {
+		cmObj, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Get(ctx, cm.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		cm.ObjectMeta.ResourceVersion = cmObj.GetResourceVersion()
-		if _, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Update(cm); err != nil {
+		if _, err := clientset.Core.CoreV1().ConfigMaps(cm.Namespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 	} else if err != nil {
@@ -272,13 +275,16 @@ func createOrUpdateConfigmap(clientset *client.ConfigSet, cm *corev1.ConfigMap) 
 }
 
 func createOrUpdateContainersource(clientset *client.ConfigSet, cs *sourcesv1alpha2.ContainerSource) error {
-	if _, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Create(cs); k8serrors.IsAlreadyExists(err) {
-		csObj, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Get(cs.Name, metav1.GetOptions{})
+	ctx := context.Background()
+	_, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Create(ctx, cs, metav1.CreateOptions{})
+	if k8serrors.IsAlreadyExists(err) {
+		csObj, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Get(ctx, cs.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		cs.ObjectMeta.ResourceVersion = csObj.GetResourceVersion()
-		if _, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Update(cs); err != nil {
+		_, err = clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Update(ctx, cs, metav1.UpdateOptions{})
+		if err != nil {
 			return err
 		}
 	} else if err != nil {

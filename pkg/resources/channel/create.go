@@ -15,13 +15,14 @@
 package channel
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ghodss/yaml"
 	"github.com/triggermesh/tm/pkg/client"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	messagingapi "knative.dev/eventing/pkg/apis/messaging/v1beta1"
+	messagingapi "knative.dev/eventing/pkg/apis/messaging/v1"
 )
 
 // Deploy knative eventing channel
@@ -48,14 +49,14 @@ func (c *Channel) newObject(clientset *client.ConfigSet) messagingapi.InMemoryCh
 }
 
 func (c *Channel) createOrUpdate(channelObject messagingapi.InMemoryChannel, clientset *client.ConfigSet) error {
-	_, err := clientset.Eventing.MessagingV1beta1().InMemoryChannels(c.Namespace).Create(&channelObject)
+	_, err := clientset.Eventing.MessagingV1().InMemoryChannels(c.Namespace).Create(context.Background(), &channelObject, metav1.CreateOptions{})
 	if k8serrors.IsAlreadyExists(err) {
-		channel, err := clientset.Eventing.MessagingV1beta1().InMemoryChannels(c.Namespace).Get(channelObject.ObjectMeta.Name, metav1.GetOptions{})
+		channel, err := clientset.Eventing.MessagingV1().InMemoryChannels(c.Namespace).Get(context.Background(), channelObject.ObjectMeta.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		channelObject.ObjectMeta.ResourceVersion = channel.GetResourceVersion()
-		_, err = clientset.Eventing.MessagingV1beta1().InMemoryChannels(c.Namespace).Update(&channelObject)
+		_, err = clientset.Eventing.MessagingV1().InMemoryChannels(c.Namespace).Update(context.Background(), &channelObject, metav1.UpdateOptions{})
 		return err
 	}
 	return err

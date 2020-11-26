@@ -15,6 +15,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -58,7 +59,7 @@ func (s *Service) pingSource(schedule, jsonData string, owner kmeta.OwnerRefable
 }
 
 func (s *Service) createPingSource(ps *eventingv1alpha2.PingSource, clientset *client.ConfigSet) error {
-	_, err := clientset.Eventing.SourcesV1alpha2().PingSources(ps.Namespace).Create(ps)
+	_, err := clientset.Eventing.SourcesV1alpha2().PingSources(ps.Namespace).Create(context.Background(), ps, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("cannot create PingSource %q: %w", ps.Name, err)
 	}
@@ -66,7 +67,7 @@ func (s *Service) createPingSource(ps *eventingv1alpha2.PingSource, clientset *c
 }
 
 func (s *Service) removePingSources(uid types.UID, clientset *client.ConfigSet) error {
-	err := clientset.Eventing.SourcesV1alpha2().PingSources(s.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{
+	err := clientset.Eventing.SourcesV1alpha2().PingSources(s.Namespace).DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: serviceLabelKey + "=" + s.Name,
 	})
 	if err != nil {

@@ -15,6 +15,7 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -155,31 +156,33 @@ func (t *Task) readYAML() (*tekton.Task, error) {
 
 // CreateOrUpdate creates new tekton Task object or updates existing one
 func (t *Task) CreateOrUpdate(task *tekton.Task, clientset *client.ConfigSet) (*tekton.Task, error) {
+	ctx := context.Background()
 	if task.GetGenerateName() != "" {
-		return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Create(task)
+		return clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Create(ctx, task, metav1.CreateOptions{})
 	}
 
-	taskObj, err := clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Create(task)
+	taskObj, err := clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Create(ctx, task, metav1.CreateOptions{})
 	if k8serrors.IsAlreadyExists(err) {
 		clientset.Log.Debugf("task %q is already exist, updating", task.GetName())
-		if taskObj, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(task.ObjectMeta.Name, metav1.GetOptions{}); err != nil {
+		if taskObj, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(ctx, task.ObjectMeta.Name, metav1.GetOptions{}); err != nil {
 			return nil, err
 		}
 		task.ObjectMeta.ResourceVersion = taskObj.GetResourceVersion()
-		taskObj, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Update(task)
+		taskObj, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Update(ctx, task, metav1.UpdateOptions{})
 	}
 	return taskObj, err
 }
 
 // SetOwner updates tekton Task object with provided owner reference
 func (t *Task) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
-	task, err := clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(t.Name, metav1.GetOptions{})
+	ctx := context.Background()
+	task, err := clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Get(ctx, t.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	clientset.Log.Debugf("setting task \"%s/%s\" owner to %s/%s", task.GetNamespace(), task.GetName(), owner.Kind, owner.Name)
 	task.SetOwnerReferences([]metav1.OwnerReference{owner})
-	_, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Update(task)
+	_, err = clientset.TektonTasks.TektonV1beta1().Tasks(t.Namespace).Update(ctx, task, metav1.UpdateOptions{})
 	return err
 }
 

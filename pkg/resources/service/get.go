@@ -15,6 +15,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/printer"
 	corev1 "k8s.io/api/core/v1"
@@ -43,5 +45,5 @@ func (s *Service) GetObject(service *servingv1.Service) printer.Object {
 
 // Get returns k8s object
 func (s *Service) Get(clientset *client.ConfigSet) (*servingv1.Service, error) {
-	return clientset.Serving.ServingV1().Services(s.Namespace).Get(s.Name, metav1.GetOptions{})
+	return clientset.Serving.ServingV1().Services(s.Namespace).Get(context.Background(), s.Name, metav1.GetOptions{})
 }

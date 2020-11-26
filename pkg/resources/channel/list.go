@@ -15,6 +15,7 @@
 package channel
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -71,5 +72,5 @@ func (c *Channel) row(item *messagingapi.InMemoryChannel) []string {
 
 // List returns list of knative build objects
 func (c *Channel) List(clientset *client.ConfigSet) (*messagingapi.InMemoryChannelList, error) {
-	return clientset.Eventing.MessagingV1beta1().InMemoryChannels(c.Namespace).List(metav1.ListOptions{})
+	return clientset.Eventing.MessagingV1beta1().InMemoryChannels(c.Namespace).List(context.Background(), metav1.ListOptions{})
 }

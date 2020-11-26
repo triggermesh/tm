@@ -15,6 +15,8 @@
 package clustertask
 
 import (
+	"context"
+
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,5 +24,5 @@ import (
 
 // List return tekton ClusterTaskList object
 func (ct *ClusterTask) List(clientset *client.ConfigSet) (*v1beta1.ClusterTaskList, error) {
-	return clientset.TektonTasks.TektonV1beta1().ClusterTasks().List(metav1.ListOptions{})
+	return clientset.TektonTasks.TektonV1beta1().ClusterTasks().List(context.Background(), metav1.ListOptions{})
 }

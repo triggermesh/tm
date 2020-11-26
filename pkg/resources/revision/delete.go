@@ -15,11 +15,13 @@
 package revision
 
 import (
+	"context"
+
 	"github.com/triggermesh/tm/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Revision remove knative revision object
 func (r *Revision) Delete(clientset *client.ConfigSet) error {
-	return clientset.Serving.ServingV1alpha1().Revisions(r.Namespace).Delete(r.Name, &metav1.DeleteOptions{})
+	return clientset.Serving.ServingV1().Revisions(r.Namespace).Delete(context.Background(), r.Name, metav1.DeleteOptions{})
 }

@@ -29,7 +29,7 @@ import (
 	triggersApi "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
 	logwrapper "github.com/triggermesh/tm/pkg/log"
 	printerwrapper "github.com/triggermesh/tm/pkg/printer"
-	githubSource "knative.dev/eventing-contrib/github/pkg/client/clientset/versioned"
+	githubSource "knative.dev/eventing-github/pkg/client/clientset/versioned"
 	eventingApi "knative.dev/eventing/pkg/client/clientset/versioned"
 	servingApi "knative.dev/serving/pkg/client/clientset/versioned"
 

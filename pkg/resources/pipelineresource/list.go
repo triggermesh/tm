@@ -15,6 +15,8 @@
 package pipelineresource
 
 import (
+	"context"
+
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/triggermesh/tm/pkg/client"
 	"github.com/triggermesh/tm/pkg/printer"
@@ -51,5 +53,5 @@ func (plr *PipelineResource) row(item *v1alpha1.PipelineResource) []string {
 
 // List returns k8s list object
 func (plr *PipelineResource) List(clientset *client.ConfigSet) (*v1alpha1.PipelineResourceList, error) {
-	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).List(metav1.ListOptions{})
+	return clientset.TektonPipelines.TektonV1alpha1().PipelineResources(plr.Namespace).List(context.Background(), metav1.ListOptions{})
 }

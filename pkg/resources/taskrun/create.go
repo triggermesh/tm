@@ -15,6 +15,7 @@
 package taskrun
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -95,7 +96,7 @@ func (tr *TaskRun) Deploy(clientset *client.ConfigSet) (string, error) {
 		return string(taskObj), err
 	}
 
-	taskRunObject, err = clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Create(taskRunObject)
+	taskRunObject, err = clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Create(context.Background(), taskRunObject, metav1.CreateOptions{})
 	if err != nil {
 		return "", fmt.Errorf("creating taskrun: %s", err)
 	}
@@ -297,7 +298,7 @@ func (tr *TaskRun) imageName(clientset *client.ConfigSet) (string, error) {
 	if len(clientset.Registry.Secret) == 0 {
 		return fmt.Sprintf("%s/%s/%s", clientset.Registry.Host, tr.Namespace, tr.Name), nil
 	}
-	secret, err := clientset.Core.CoreV1().Secrets(tr.Namespace).Get(clientset.Registry.Secret, metav1.GetOptions{})
+	secret, err := clientset.Core.CoreV1().Secrets(tr.Namespace).Get(context.Background(), clientset.Registry.Secret, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -328,7 +329,7 @@ func gitlabEnv() (string, bool) {
 }
 
 func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
-	trWatchInterface, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+	trWatchInterface, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Watch(context.Background(), metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("metadata.name=%s", tr.Name),
 	})
 	if err != nil || trWatchInterface == nil {
@@ -364,18 +365,18 @@ func (tr *TaskRun) wait(clientset *client.ConfigSet) error {
 
 // SetOwner updates TaskRun object with provided owner reference
 func (tr *TaskRun) SetOwner(clientset *client.ConfigSet, owner metav1.OwnerReference) error {
-	taskrun, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
+	taskrun, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Get(context.Background(), tr.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	clientset.Log.Debugf("setting taskrun \"%s/%s\" owner to %s/%s", taskrun.GetNamespace(), taskrun.GetName(), owner.Kind, owner.Name)
 	taskrun.SetOwnerReferences([]metav1.OwnerReference{owner})
-	_, err = clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Update(taskrun)
+	_, err = clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Update(context.Background(), taskrun, metav1.UpdateOptions{})
 	return err
 }
 
 func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
-	watch, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Watch(metav1.ListOptions{
+	watch, err := clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Watch(context.Background(), metav1.ListOptions{
 		FieldSelector: "metadata.name=" + tr.Name,
 	})
 	if err != nil || watch == nil {
@@ -415,7 +416,7 @@ func (tr *TaskRun) taskPod(clientset *client.ConfigSet) (string, error) {
 }
 
 func (tr *TaskRun) sourceContainer(clientset *client.ConfigSet, podName string) (string, error) {
-	watch, err := clientset.Core.CoreV1().Pods(tr.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + podName})
+	watch, err := clientset.Core.CoreV1().Pods(tr.Namespace).Watch(context.Background(), metav1.ListOptions{FieldSelector: "metadata.name=" + podName})
 	if err != nil || watch == nil {
 		return "", fmt.Errorf("can't get watch interface, please check taskrun status: %s", err)
 	}

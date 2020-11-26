@@ -15,6 +15,8 @@
 package taskrun
 
 import (
+	"context"
+
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/triggermesh/tm/pkg/client"
@@ -41,5 +43,5 @@ func (tr *TaskRun) GetObject(taskrun *v1beta1.TaskRun) printer.Object {
 
 // Get returns k8s object
 func (tr *TaskRun) Get(clientset *client.ConfigSet) (*v1beta1.TaskRun, error) {
-	return clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Get(tr.Name, metav1.GetOptions{})
+	return clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).Get(context.Background(), tr.Name, metav1.GetOptions{})
 }

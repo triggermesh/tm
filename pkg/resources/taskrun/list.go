@@ -15,6 +15,7 @@
 package taskrun
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -69,5 +70,5 @@ func (tr *TaskRun) row(item *v1beta1.TaskRun) []string {
 
 // List returns k8s list object
 func (tr *TaskRun) List(clientset *client.ConfigSet) (*v1beta1.TaskRunList, error) {
-	return clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).List(metav1.ListOptions{})
+	return clientset.TektonTasks.TektonV1beta1().TaskRuns(tr.Namespace).List(context.Background(), metav1.ListOptions{})
 }
