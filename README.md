@@ -217,6 +217,29 @@ tm deploy -f python --registry-secret gcr --wait
 
 As a result, Knative service image will be pushed to `eu.gcr.io/my-org/my-project` registry
 
+#### AWS ECR
+
+ECR is a specific case of the custom registry destination with an additional requirement - a repository must be created before pushing the image. Thus, service deployment steps should be slightly altered:
+
+1. Create ECR repository in `<project>/<service>` format where "project" is an arbitrary identifier for the service (e.g. namespace) and "service" is the name of the service that is being deployed (in the example below it is `python-test`). 
+1. Retrieve ECR token:
+    ```
+    TOKEN=$(aws ecr get-login-password --region <region>)
+    ```
+1. Create the registry auth secret by running following command:
+    ```
+    tm set registry-auth ecr --registry <registry host> --project <project> --username AWS --password $TOKEN
+    ```
+
+1. Deploy the service. For example Python KLR: 
+    ```
+    tm deploy service python-test -f https://github.com/serverless/examples \
+      --runtime https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python37/runtime.yaml \
+      --registry-secret ecr \
+      --build-argument DIRECTORY=aws-python-simple-http-endpoint \
+      --build-argument HANDLER=handler.endpoint \
+      --wait
+    ```
 
 #### Unauthenticated registry
 
