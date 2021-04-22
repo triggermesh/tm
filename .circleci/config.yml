@@ -76,6 +76,7 @@ jobs:
       - gcp-cli/initialize
       - run:
           name: Publishing docker image
+          no_output_timeout: 20m
           command: gcloud builds submit --config cloudbuild.yaml --substitutions COMMIT_SHA=${CIRCLE_SHA1},TAG_NAME=${CIRCLE_TAG:-$(git describe --tags --always)},_KANIKO_IMAGE_TAG=${CIRCLE_TAG:-latest}
 
   release:
