@@ -1,8 +1,8 @@
 version: 2.1
 
 orbs:
-  go: circleci/go@1.1.1
-  gcp-cli: circleci/gcp-cli@1.8.4
+  go: circleci/go@1
+  gcp-cli: circleci/gcp-cli@1
 
 jobs:
   checkout:
