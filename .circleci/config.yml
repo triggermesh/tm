@@ -1,8 +1,9 @@
 version: 2.1
 
 orbs:
-  go: circleci/go@1
+  aws-eks: circleci/aws-eks@1
   gcp-cli: circleci/gcp-cli@1
+  go: circleci/go@1
 
 jobs:
   checkout:
@@ -43,11 +44,9 @@ jobs:
       - run:
           name: Running vet
           command: make vet
-      - gcp-cli/install
-      - gcp-cli/initialize
-      - run:
-          name: Fetching cluster credentials
-          command: gcloud container clusters get-credentials ${GOOGLE_CLUSTER_NAME}
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: $AWS_CLUSTER_NAME
+          aws-region: $AWS_REGION
       - run:
           name: Creating tm config file
           command: mkdir -p ~/.tm/ && cp ~/.kube/config ~/.tm/config.json
