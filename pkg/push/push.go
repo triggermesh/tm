@@ -30,7 +30,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	sourcesv1alpha2 "knative.dev/eventing/pkg/apis/sources/v1alpha2"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
@@ -138,8 +138,8 @@ func Push(clientset *client.ConfigSet, token string) error {
 	return nil
 }
 
-func getContainerSource(project, owner, token string) *sourcesv1alpha2.ContainerSource {
-	return &sourcesv1alpha2.ContainerSource{
+func getContainerSource(project, owner, token string) *sourcesv1.ContainerSource {
+	return &sourcesv1.ContainerSource{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ContainerSource",
 			APIVersion: "sources.knative.dev/v1alpha2",
@@ -148,7 +148,7 @@ func getContainerSource(project, owner, token string) *sourcesv1alpha2.Container
 			Name:      project,
 			Namespace: client.Namespace,
 		},
-		Spec: sourcesv1alpha2.ContainerSourceSpec{
+		Spec: sourcesv1.ContainerSourceSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
 					Ref: &duckv1.KReference{
@@ -274,16 +274,16 @@ func createOrUpdateConfigmap(clientset *client.ConfigSet, cm *corev1.ConfigMap) 
 	return nil
 }
 
-func createOrUpdateContainersource(clientset *client.ConfigSet, cs *sourcesv1alpha2.ContainerSource) error {
+func createOrUpdateContainersource(clientset *client.ConfigSet, cs *sourcesv1.ContainerSource) error {
 	ctx := context.Background()
-	_, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Create(ctx, cs, metav1.CreateOptions{})
+	_, err := clientset.Eventing.SourcesV1().ContainerSources(cs.Namespace).Create(ctx, cs, metav1.CreateOptions{})
 	if k8serrors.IsAlreadyExists(err) {
-		csObj, err := clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Get(ctx, cs.Name, metav1.GetOptions{})
+		csObj, err := clientset.Eventing.SourcesV1().ContainerSources(cs.Namespace).Get(ctx, cs.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 		cs.ObjectMeta.ResourceVersion = csObj.GetResourceVersion()
-		_, err = clientset.Eventing.SourcesV1alpha2().ContainerSources(cs.Namespace).Update(ctx, cs, metav1.UpdateOptions{})
+		_, err = clientset.Eventing.SourcesV1().ContainerSources(cs.Namespace).Update(ctx, cs, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
