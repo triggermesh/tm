@@ -37,7 +37,7 @@ func TestList(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestBuild(t *testing.T) {
+func TestDeploy(t *testing.T) {
 
 	namespace := "test-namespace"
 	if ns, ok := os.LookupEnv("NAMESPACE"); ok {

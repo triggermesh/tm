@@ -78,7 +78,7 @@ func TestPingSource(t *testing.T) {
 			assert.NoError(t, err)
 			defer tc.service.Delete(&serviceClient)
 
-			psList, err := serviceClient.Eventing.SourcesV1alpha2().PingSources(tc.service.Namespace).List(context.Background(), metav1.ListOptions{
+			psList, err := serviceClient.Eventing.SourcesV1().PingSources(tc.service.Namespace).List(context.Background(), metav1.ListOptions{
 				LabelSelector: serviceLabelKey + "=" + tc.service.Name,
 			})
 			assert.NoError(t, err)
@@ -99,7 +99,7 @@ func TestPingSource(t *testing.T) {
 			assert.Equal(t, ps.OwnerReferences[0].Kind, "Service")
 			assert.Equal(t, ps.OwnerReferences[0].Name, tc.service.Name)
 
-			assert.Equal(t, ps.Spec.JsonData, tc.service.Schedule[0].JSONData)
+			assert.Equal(t, ps.Spec.Data, tc.service.Schedule[0].JSONData)
 			assert.Equal(t, ps.Spec.Schedule, tc.service.Schedule[0].Cron)
 		})
 	}

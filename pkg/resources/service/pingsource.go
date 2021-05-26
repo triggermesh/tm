@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	eventingv1alpha2 "knative.dev/eventing/pkg/apis/sources/v1alpha2"
+	sourcesv1 "knative.dev/eventing/pkg/apis/sources/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
@@ -31,8 +31,8 @@ import (
 
 const serviceLabelKey = "cli.triggermesh.io/service"
 
-func (s *Service) pingSource(schedule, jsonData string, owner kmeta.OwnerRefable) *eventingv1alpha2.PingSource {
-	return &eventingv1alpha2.PingSource{
+func (s *Service) pingSource(schedule, data string, owner kmeta.OwnerRefable) *sourcesv1.PingSource {
+	return &sourcesv1.PingSource{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: s.Name + "-",
 			Namespace:    s.Namespace,
@@ -41,9 +41,9 @@ func (s *Service) pingSource(schedule, jsonData string, owner kmeta.OwnerRefable
 			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
-		Spec: eventingv1alpha2.PingSourceSpec{
+		Spec: sourcesv1.PingSourceSpec{
 			Schedule: schedule,
-			JsonData: jsonData,
+			Data:     data,
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
 					Ref: &duckv1.KReference{
@@ -58,8 +58,8 @@ func (s *Service) pingSource(schedule, jsonData string, owner kmeta.OwnerRefable
 	}
 }
 
-func (s *Service) createPingSource(ps *eventingv1alpha2.PingSource, clientset *client.ConfigSet) error {
-	_, err := clientset.Eventing.SourcesV1alpha2().PingSources(ps.Namespace).Create(context.Background(), ps, metav1.CreateOptions{})
+func (s *Service) createPingSource(ps *sourcesv1.PingSource, clientset *client.ConfigSet) error {
+	_, err := clientset.Eventing.SourcesV1().PingSources(ps.Namespace).Create(context.Background(), ps, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("cannot create PingSource %q: %w", ps.Name, err)
 	}
@@ -67,7 +67,7 @@ func (s *Service) createPingSource(ps *eventingv1alpha2.PingSource, clientset *c
 }
 
 func (s *Service) removePingSources(uid types.UID, clientset *client.ConfigSet) error {
-	err := clientset.Eventing.SourcesV1alpha2().PingSources(s.Namespace).DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
+	err := clientset.Eventing.SourcesV1().PingSources(s.Namespace).DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
 		LabelSelector: serviceLabelKey + "=" + s.Name,
 	})
 	if err != nil {
