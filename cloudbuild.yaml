@@ -1,5 +1,5 @@
 steps:
-- name: gcr.io/kaniko-project/executor:v1.6.0-debug
+- name: gcr.io/kaniko-project/executor:v1.3.0
   args:
   - --dockerfile=Dockerfile
   - --destination=gcr.io/$PROJECT_ID/tm:${COMMIT_SHA}
@@ -23,7 +23,6 @@ substitutions:
 
 options:
   substitution_option: 'ALLOW_LOOSE'
-  machineType: 'N1_HIGHCPU_8'
 
 tags:
   - tm
