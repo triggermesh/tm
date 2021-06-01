@@ -23,6 +23,7 @@ substitutions:
 
 options:
   substitution_option: 'ALLOW_LOOSE'
+  machineType: 'N1_HIGHCPU_8'
 
 tags:
   - tm
