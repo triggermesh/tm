@@ -142,7 +142,7 @@ func getContainerSource(project, owner, token string) *sourcesv1.ContainerSource
 	return &sourcesv1.ContainerSource{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ContainerSource",
-			APIVersion: "sources.knative.dev/v1alpha2",
+			APIVersion: "sources.knative.dev/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      project,
@@ -163,7 +163,7 @@ func getContainerSource(project, owner, token string) *sourcesv1.ContainerSource
 					Containers: []corev1.Container{
 						{
 							Name:  "user-container",
-							Image: "triggermesh/github-third-party-source",
+							Image: "gcr.io/triggermesh/github-third-party-source",
 							Env: []corev1.EnvVar{
 								{
 									Name:  "OWNER",
