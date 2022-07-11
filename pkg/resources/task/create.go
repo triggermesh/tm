@@ -124,11 +124,10 @@ func (t *Task) Clone(clientset *client.ConfigSet, task *tekton.Task) (*tekton.Ta
 
 func (t *Task) customStep() tekton.Step {
 	return tekton.Step{
-		Container: corev1.Container{
-			Name:    "sources-receiver",
-			Image:   "busybox",
-			Command: []string{"sh"},
-			Args: []string{"-c", fmt.Sprintf(`
+		Name:    "sources-receiver",
+		Image:   "busybox",
+		Command: []string{"sh"},
+		Args: []string{"-c", fmt.Sprintf(`
 				while [ ! -f %s ]; do 
 					sleep 1; 
 				done; 
@@ -140,8 +139,7 @@ func (t *Task) customStep() tekton.Step {
 				fi
 				ls -lah /workspace/workspace;
 				sync;`,
-				uploadDoneTrigger)},
-		},
+			uploadDoneTrigger)},
 	}
 }
 

@@ -9,7 +9,7 @@ jobs:
   checkout:
     executor:
       name: go/default
-      tag: '1.15'
+      tag: '1.18'
     steps:
       - checkout
       - go/mod-download-cached
@@ -22,7 +22,7 @@ jobs:
   build:
     executor:
       name: go/default
-      tag: '1.15'
+      tag: '1.18'
     steps:
       - attach_workspace:
           at: ~/
@@ -34,7 +34,7 @@ jobs:
   test:
     executor:
       name: go/default
-      tag: '1.15'
+      tag: '1.18'
     steps:
       - attach_workspace:
           at: ~/
@@ -81,7 +81,7 @@ jobs:
   release:
     executor:
       name: go/default
-      tag: '1.15'
+      tag: '1.18'
     steps:
       - attach_workspace:
           at: ~/

@@ -51,7 +51,7 @@ func (c *Channel) row(item *messagingapi.InMemoryChannel) []string {
 	namespace := item.Namespace
 	url := item.Status.Address.URL.String()
 	age := duration.HumanDuration(time.Since(item.GetCreationTimestamp().Time))
-	ready := fmt.Sprintf("%v", item.Status.IsReady())
+	ready := fmt.Sprintf("%v", item.IsReady())
 	readyCondition := item.Status.GetCondition(messagingapi.ChannelConditionReady)
 	reason := ""
 	if readyCondition != nil {

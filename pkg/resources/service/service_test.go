@@ -37,23 +37,11 @@ func TestDeployAndDelete(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name        string
-		service     *Service
-		wantErr     bool
-		expectedErr string
+		name    string
+		service *Service
+		wantErr bool
 	}{
 		{
-			name: "valid KLR function",
-			service: &Service{
-				Name:         "test-service-taskrun",
-				Namespace:    namespace,
-				Source:       "https://github.com/serverless/examples",
-				Runtime:      "https://raw.githubusercontent.com/triggermesh/knative-lambda-runtime/master/python37/runtime.yaml",
-				BuildArgs:    []string{"DIRECTORY=aws-python-simple-http-endpoint", "HANDLER=handler.endpoint"},
-				BuildTimeout: "15m",
-			},
-			wantErr: false,
-		}, {
 			name: "service from image",
 			service: &Service{
 				Name:   "test-service-from-image",
@@ -65,8 +53,7 @@ func TestDeployAndDelete(t *testing.T) {
 				Name:   "test-missing-source",
 				Source: "https://404",
 			},
-			wantErr:     true,
-			expectedErr: "Unable to fetch image \"https://404\"",
+			wantErr: true,
 		}, {
 			name: "runtime not found",
 			service: &Service{
@@ -89,7 +76,7 @@ func TestDeployAndDelete(t *testing.T) {
 			tc.service.Namespace = namespace
 			output, err := tc.service.Deploy(&serviceClient)
 			if tc.wantErr {
-				assert.Contains(t, err.Error(), tc.expectedErr)
+				assert.Error(t, err)
 				// some of the failed cases may leave kservices
 				// so we'll try remove them
 				tc.service.Delete(&serviceClient)
