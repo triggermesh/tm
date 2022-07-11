@@ -23,4 +23,4 @@ RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /go/bin/tm /bin/tm
+COPY --from=build /go/bin/linux_amd64/tm /bin/tm
