@@ -1,4 +1,4 @@
-FROM golang:1.15 AS build
+FROM golang:1.18 AS build
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux
@@ -23,4 +23,4 @@ RUN apt-get update && \
     apt-get install --no-install-recommends --no-install-suggests -y ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /go/bin/tm /bin/tm
+COPY --from=build /go/bin/linux_amd64/tm /bin/tm
