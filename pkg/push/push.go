@@ -243,13 +243,11 @@ func getTask(name, namespace string) *tekton.Task {
 			},
 			Steps: []tekton.Step{
 				{
-					Container: corev1.Container{
-						Name:    "deploy",
-						Image:   "gcr.io/triggermesh/tm",
-						Command: []string{"tm"},
-						// TODO: move sources from this illogical path; update pipelineresource/create.go
-						Args: []string{"deploy", "-f", "/workspace/url/", "--wait"},
-					},
+					Name:    "deploy",
+					Image:   "gcr.io/triggermesh/tm",
+					Command: []string{"tm"},
+					// TODO: move sources from this illogical path; update pipelineresource/create.go
+					Args: []string{"deploy", "-f", "/workspace/url/", "--wait"},
 				},
 			},
 		},
