@@ -93,7 +93,7 @@ jobs:
             GIT_TAG: ${CIRCLE_TAG}
       - run:
           name: Installing github-release
-          command: go get github.com/meterup/github-release
+          command: go install github.com/github-release/github-release@latest
       - run:
           name: Creating github release
           command: |
