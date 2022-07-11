@@ -4,7 +4,7 @@ TARGETS      ?= darwin/amd64 linux/amd64 windows/amd64
 DIST_DIR     ?=
 
 GIT_REPO      = github.com/triggermesh/tm
-GIT_TAG      ?= $(shell git describe --tags --always)
+GIT_TAG      ?= $(shell git for-each-ref refs/tags --sort=-taggerdate --format='%(refname:short)' --count=1)
 
 DOCKER        = docker
 IMAGE_REPO   ?= gcr.io/triggermesh
