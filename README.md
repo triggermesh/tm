@@ -1,5 +1,7 @@
 [![Release](https://img.shields.io/github/v/release/triggermesh/tm?label=release)](https://github.com/triggermesh/tm/releases) [![Downloads](https://img.shields.io/github/downloads/triggermesh/tm/total?label=downloads)](https://github.com/triggermesh/tm/releases) [![CircleCI](https://circleci.com/gh/triggermesh/tm/tree/master.svg?style=shield)](https://circleci.com/gh/triggermesh/tm/tree/master) [![Go Report Card](https://goreportcard.com/badge/github.com/triggermesh/tm)](https://goreportcard.com/report/github.com/triggermesh/tm) [![License](https://img.shields.io/github/license/triggermesh/tm?label=license)](LICENSE)
 
+*THIS REPOSITORY IS NOW ARCHIVED IN FAVOR OF https://github.com/triggermesh/tmctl*
+
 A CLI for [knative](https://github.com/knative)
 
 ## Installation
